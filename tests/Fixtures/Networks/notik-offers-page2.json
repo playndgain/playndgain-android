@@ -1,0 +1,23 @@
+{
+    "offers": {
+        "current_page": 2,
+        "next_page_url": null,
+        "data": [
+            {
+                "offer_id": 88611,
+                "name": "Food Delivery - First Order",
+                "description1": "Place your first order.",
+                "description2": null,
+                "description3": null,
+                "image_url": null,
+                "click_url": "https://notik.me/click?oid=88611&pubid=4821",
+                "payout": "9.0000",
+                "reward_name": "USD",
+                "country_code": "gb",
+                "os": "ios",
+                "categories": ["shopping"],
+                "events": []
+            }
+        ]
+    }
+}

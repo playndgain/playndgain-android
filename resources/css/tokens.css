@@ -1,0 +1,114 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   AdVault design tokens — docs/09-landing-site.md §1, §4.
+
+   The single token file. Imported by the landing site, the offerwall, and the
+   Filament panel theme. Two token files always drift, so nothing that belongs
+   to one surface may live here — no layout, no components, no page chrome.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Self-hosted faces. Descriptors are Google's own, verbatim; only the URLs
+      changed. `font-stretch` is load-bearing: drop it and the browser clamps
+      the wdth axis to 100%, which silently flattens .display / .display-x to
+      normal-width Archivo. Latin + latin-ext only — neither family ships an
+      Arabic cut, so the phase-2 `ar` offerwall locale needs a third family. ── */
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 300 800;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo';
+  font-style: normal;
+  font-weight: 300 800;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url('/fonts/geist-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 300 600;
+  font-display: swap;
+  src: url('/fonts/geist-mono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@theme {
+  /* Surfaces — cool, near-black, never pure #000 */
+  --color-obsidian-950: #08090A;
+  --color-obsidian-900: #0E1013;
+  --color-steel-850:    #14171B;
+  --color-steel-800:    #1A1E24;
+  --color-steel-700:    #262B33;
+  --color-steel-600:    #363D47;
+
+  /* Text */
+  --color-chalk:        #E9ECF1;
+  --color-steel-300:    #A2ABB8;
+  --color-steel-400:    #6E7784;
+
+  /* Brand — amber. Gold in a vault. */
+  --color-amber-500:    #F5A524;
+  --color-amber-400:    #FFBE4D;
+  --color-amber-950:    #2A1C05;
+
+  /* Semantic. Green and red mean money direction and nothing else: no green
+     success toasts, no red decorative accents. When green appears on an
+     AdVault surface, the publisher earned something. */
+  --color-gain:         #2FBF71;
+  --color-loss:         #E5484D;
+
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-sans:    "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "Geist Mono", ui-monospace, monospace;
+}
+
+/* ── The three type roles. System-wide, not landing-only: the panels and the
+      offerwall carry the same headings and the same figures. ── */
+
+/* Display type uses the width axis — this is the thing that makes headings unmistakable. */
+.display   { font-family: "Archivo", sans-serif; font-variation-settings: "wdth" 112; letter-spacing: -0.022em; }
+.display-x { font-family: "Archivo", sans-serif; font-variation-settings: "wdth" 125; letter-spacing: -0.03em; }
+
+/* Every monetary figure, everywhere — landing, docs, both dashboards, the
+   offerwall. $0.130000 above $2.520000 aligns on the decimal. */
+.num { font-family: "Geist Mono", monospace; font-variant-numeric: tabular-nums; }
+
+/* ── Brand lockup ──────────────────────────────────────────────────────────
+   Plain CSS rather than utility classes on the component, because the panels
+   build from a different Tailwind entry than the site: utilities written in
+   resources/views/components never reached the panel bundle, and the lockup
+   arrived there with no flex at all — glyph stacked on top of the wordmark.
+   This file is imported by all three entries, so a rule here is the one thing
+   guaranteed to exist wherever the mark renders. ── */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.brand-mark svg { flex: none; }
+
+.brand-mark-word {
+  font-family: "Archivo", sans-serif;
+  font-variation-settings: "wdth" 112;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  color: currentColor;
+}

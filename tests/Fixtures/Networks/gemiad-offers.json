@@ -1,0 +1,89 @@
+{
+  "success": true,
+  "offers": [
+    {
+      "id": "offer123",
+      "name": "Download App",
+      "description": {
+        "en": "Download and install the app to earn rewards"
+      },
+      "payout": 150.5,
+      "events": [
+        {
+          "eventId": "event1",
+          "action": {
+            "en": "Install and open the app"
+          },
+          "payout": 50
+        },
+        {
+          "eventId": "event2",
+          "action": {
+            "en": "Reach level 5"
+          }
+        },
+        {
+          "eventId": "event3",
+          "action": {
+            "en": "Complete tutorial"
+          },
+          "payout": 100.5
+        }
+      ],
+      "multiEvent": true,
+      "multiComplete": false,
+      "trackingType": "CPI",
+      "previewUrl": "https://play.google.com/store/apps/details?id=com.example.app",
+      "video": "https://cdn.gemiwall.com/video.mp4",
+      "banner": "https://cdn.gemiwall.com/banner.jpg",
+      "icon": "https://cdn.gemiwall.com/icon.png",
+      "category": "app",
+      "country": ["US", "UK", "CA"],
+      "url": "https://api.gemiwall.com/api/offers/click?offerId=offer123&userId=[USER_ID]&placementId=placement123",
+      "device": ["android", "ios"],
+      "dailyCap": 1000,
+      "dailyClickCap": 5000,
+      "epc": 0.25,
+      "cvr": 12.5
+    },
+    {
+      "id": "offer456",
+      "name": "Consumer habits survey",
+      "description": {
+        "en": "Answer 20 questions about your weekly shopping"
+      },
+      "payout": 1.75,
+      "events": [
+        {
+          "eventId": "event1",
+          "action": {
+            "en": "Complete the survey"
+          },
+          "payout": 1.75
+        }
+      ],
+      "multiEvent": false,
+      "multiComplete": true,
+      "trackingType": "CPE",
+      "previewUrl": null,
+      "video": null,
+      "banner": null,
+      "icon": "https://cdn.gemiwall.com/survey.png",
+      "category": "survey",
+      "country": ["TR"],
+      "url": "https://api.gemiwall.com/api/offers/click?offerId=offer456&placementId=placement123",
+      "device": ["desktop"],
+      "dailyCap": null,
+      "dailyClickCap": null,
+      "epc": 0.08,
+      "cvr": 4.2
+    },
+    {
+      "name": "Offer with no id",
+      "payout": 3,
+      "url": "https://api.gemiwall.com/api/offers/click?userId=[USER_ID]",
+      "country": ["US"],
+      "device": ["android"]
+    }
+  ]
+}

@@ -1,0 +1,195 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      # MySQL, not SQLite and not MariaDB. The constraints this suite exists to
+      # protect — the (network_id, network_txid) unique index above all — are
+      # exactly what a different engine would fake. Local dev runs MariaDB; CI
+      # is where the production engine gets a say.
+      mysql:
+        image: mysql:9.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: advalut_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      redis:
+        image: redis:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: bcmath, curl, gd, intl, mbstring, pdo_mysql, redis, zip
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # Three tests read the built manifest rather than the source: the bundle
+      # assertion that keeps GSAP out of the offerwall, the build-freshness
+      # check, and the landing page's `.js-ready` reveal rule. Without a build
+      # step they do not skip — they fail, which is how a gate stops being one.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Build assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Lint (Pint)
+        run: vendor/bin/pint --test
+
+      - name: Static analysis (PHPStan level 5)
+        run: vendor/bin/phpstan analyse --no-progress
+
+      - name: Tests (Pest)
+        run: vendor/bin/pest
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: advalut_test
+          DB_USERNAME: root
+          DB_PASSWORD: ''
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+
+  # ---------------------------------------------------------------------------
+  # docs/09-landing-site.md §8 — the performance budget, enforced against a
+  # production build. A breach fails the build.
+  # ---------------------------------------------------------------------------
+  #
+  # Its own job, not a step in `test`: it needs a served application and a
+  # headless Chrome, and a flaky network run should be readable as "Lighthouse
+  # failed", not as "the money-path suite failed".
+  lighthouse:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:9.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: advault
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: bcmath, curl, gd, intl, mbstring, pdo_mysql, redis, zip
+          coverage: none
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          npm ci
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --force --seed
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: advault
+          DB_USERNAME: root
+          DB_PASSWORD: ''
+          # Redis is not a service in this job — the landing page's only cache
+          # use is its stats block, and a file store measures the same page.
+          CACHE_STORE: file
+          SESSION_DRIVER: file
+          QUEUE_CONNECTION: sync
+          # No Redis service in this job, and the landing route wears the
+          # response cache — left at its `redis` default the very first request
+          # throws and Lighthouse measures an error page.
+          RESPONSE_CACHE_DRIVER: file
+
+      - name: Build assets
+        run: npm run build
+
+      # The budget is written against a production build served the way
+      # production serves it: caches warmed, debug off. `artisan serve` is a
+      # single PHP process, which is slower than PHP-FPM, so a green run here
+      # is a conservative result rather than a flattering one.
+      - name: Serve the application
+        run: |
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan serve --host=127.0.0.1 --port=8000 &
+          npx --yes wait-on http://127.0.0.1:8000 --timeout 60000
+        env:
+          APP_ENV: production
+          APP_DEBUG: 'false'
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: advault
+          DB_USERNAME: root
+          DB_PASSWORD: ''
+          CACHE_STORE: file
+          SESSION_DRIVER: file
+          QUEUE_CONNECTION: sync
+          # No Redis service in this job, and the landing route wears the
+          # response cache — left at its `redis` default the very first request
+          # throws and Lighthouse measures an error page.
+          RESPONSE_CACHE_DRIVER: file
+
+      - name: Lighthouse CI (landing route)
+        run: npx --yes @lhci/cli@0.15.x autorun

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <!--
+        No Unit suite. Git does not track empty directories, so declaring one
+        that holds no tests makes the whole run abort with "Test directory not
+        found" on any fresh checkout - CI included - before a single test
+        executes. Add the directory back together with the first test in it.
+    -->
+    <testsuites>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="BROADCAST_CONNECTION" value="null"/>
+        <env name="CACHE_STORE" value="array"/>
+        <!--
+            Deliberately not SQLite. The constraints this suite exists to
+            protect - the (network_id, network_txid) unique index above all -
+            are exactly what SQLite would fake. Tests run against the same
+            engine family as production.
+        -->
+        <env name="DB_CONNECTION" value="mysql"/>
+        <env name="DB_DATABASE" value="advault_test"/>
+        <env name="DB_URL" value=""/>
+        <!--
+            Pinned true so the suite always exercises the production-correct
+            configuration, whatever a developer has set in their own .env.
+        -->
+        <env name="ADVAULT_REQUIRE_ADMIN_2FA" value="true"/>
+        <!--
+            Same reason, two more values a developer's own .env would otherwise
+            decide. `APP_URL` is asserted verbatim by the tests that check a
+            form posts to the right place, and a local domain fails them on a
+            machine that is configured correctly. `ADVAULT_DEV_COUNTRY` is the
+            local-preview geo stand-in: blank here so the suite's addresses stay
+            unplaced and the fail-closed rules are exercised, whatever a
+            developer set to see their own wall.
+        -->
+        <env name="APP_NAME" value="AdVault"/>
+        <env name="APP_URL" value="http://localhost"/>
+        <env name="MAIL_FROM_ADDRESS" value="no-reply@advault.io"/>
+        <env name="MAIL_FROM_NAME" value="AdVault"/>
+        <env name="ADVAULT_DEV_COUNTRY" value=""/>
+        <env name="MAIL_MAILER" value="array"/>
+        <!--
+            Off in tests. A full-page cache on the landing route would serve one
+            test's HTML to the next one's assertions, and the thing under test is
+            never the cache.
+        -->
+        <env name="RESPONSE_CACHE_ENABLED" value="false"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+        <env name="NIGHTWATCH_ENABLED" value="false"/>
+    </php>
+</phpunit>

@@ -1,0 +1,32 @@
+{
+    "status": "success",
+    "campaigns": [
+        {
+            "id": 90211,
+            "name": "Solitaire Grand Harvest - Level 40",
+            "description": "Install Solitaire Grand Harvest and reach level 40.",
+            "image": "https://cdn.monlix.com/offers/90211.png",
+            "url": "https://api.monlix.com/click?appid=8812&campaign=90211",
+            "payout": "12.7500",
+            "countries": ["us", "ca", "au"],
+            "os": "iphone,ipad",
+            "categories": ["Games"],
+            "goals": [
+                { "name": "Reach level 10", "payouts": [{ "payout": "4.0000" }] },
+                { "name": "Reach level 40", "payouts": [{ "payout": "8.7500" }] }
+            ]
+        },
+        {
+            "id": 90455,
+            "name": "Consumer Survey",
+            "description": "Answer a five minute survey.",
+            "image": null,
+            "url": "https://api.monlix.com/click?appid=8812&campaign=90455",
+            "payout": "1.1000",
+            "countries": [],
+            "os": [],
+            "categories": ["Surveys"],
+            "goals": []
+        }
+    ]
+}

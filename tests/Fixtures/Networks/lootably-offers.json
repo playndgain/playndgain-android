@@ -1,0 +1,49 @@
+{
+    "success": true,
+    "data": {
+        "offers": [
+            {
+                "offerID": "a1b2c3",
+                "name": "Match Masters - Reach Level 30",
+                "description": "Install and reach level 30.",
+                "image": "https://cdn.lootably.com/offers/a1b2c3.png",
+                "link": "https://wall.lootably.com/offer/a1b2c3?placementID=plc_1&userID=1",
+                "type": "multistep",
+                "revenue": 0,
+                "goals": [
+                    { "description": "Reach level 10", "revenue": 1.4 },
+                    { "description": "Reach level 30", "revenue": 4.6 }
+                ],
+                "categories": ["Games"],
+                "countries": ["US", "DE"],
+                "devices": ["android", "ios"]
+            },
+            {
+                "offerID": "d4e5f6",
+                "name": "Finance App - Sign Up",
+                "description": "Create an account.",
+                "image": null,
+                "link": "https://wall.lootably.com/offer/d4e5f6?placementID=plc_1&userID={userID}",
+                "type": "singlestep",
+                "revenue": 9.25,
+                "goals": [],
+                "categories": [],
+                "countries": [],
+                "devices": []
+            },
+            {
+                "offerID": "g7h8i9",
+                "name": "Variable Revenue Offer",
+                "description": "Pays an unknown amount.",
+                "image": null,
+                "link": "https://wall.lootably.com/offer/g7h8i9?placementID=plc_1&userID=1",
+                "type": "singlestep",
+                "revenue": "variable",
+                "goals": [],
+                "categories": [],
+                "countries": [],
+                "devices": []
+            }
+        ]
+    }
+}

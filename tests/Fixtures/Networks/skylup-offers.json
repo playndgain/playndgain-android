@@ -1,0 +1,1169 @@
+{
+  "ads": [
+    {
+      "id": "34986",
+      "name": "Balls and Ropes: Cut 'n Bounce",
+      "description": "<p>Play Balls and Ropes: Cut 'n Bounce and watch ads to receive your $&nbsp;You must complete this offer in full from install to finish on the same device, changing devices will not result in $. New installs and players only - if you've ever installed or played this game, you will not receive $.</p>",
+      "additional_information": "Install, Play, and Watch Ads for Reward!",
+      "kpi": "Play Balls and Ropes: Cut 'n Bounce and watch ads to receive your $ \n You must complete this offer in full from install to finish on the same device, changing devices will not result in $. New installs and players only - if you've ever installed or played this game, you will not receive $.",
+      "payout": 0.3375,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=34986&pub_id=519",
+      "preview_url": "https://play.google.com/store/apps/details?id=com.PlayHallaGames.BallsNRopes&hl=en",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/1e0ae4fd-8d8a-4d33-b9ed-5e7845773b47.webp",
+      "status": "active",
+      "tags": [
+        "FREE",
+        "GAMING_APP",
+        "NO_CC",
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "34987",
+      "name": "Pop Block Puzzle",
+      "description": "<p><br></p>",
+      "additional_information": "Install and Reach Levels for Rewards!",
+      "kpi": "Complete Level 20 \n You must hit \"Allow\" when the app asks to track your activity in order to receive your $. You must complete this offer in full from install to finish on the same device, changing devices will not result in $. New installs and players only - if you've ever installed or played this game, you will not receive $.",
+      "payout": 0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=34987&pub_id=519",
+      "preview_url": "https://apps.apple.com/us/app/pop-block-puzzle-match-3-game/id1624388008",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/5c381a49-3406-4917-89cf-e08cf794a415.png",
+      "status": "active",
+      "tags": [
+        "FREE",
+        "GAMING_APP",
+        "NO_CC",
+        "OFFERWALL"
+      ],
+      "eventTypes": [
+        {
+          "id": "16407",
+          "name": "Complete Level 20",
+          "classification": "MONETIZATION",
+          "payout": {
+            "currency": "USD",
+            "margin": null,
+            "points": null,
+            "value": 0.015
+          }
+        },
+        {
+          "id": "16408",
+          "name": "Complete Level 70",
+          "classification": "MONETIZATION",
+          "payout": {
+            "currency": "USD",
+            "margin": null,
+            "points": null,
+            "value": 0.0375
+          }
+        },
+        {
+          "id": "16409",
+          "name": "Complete Level 100",
+          "classification": "MONETIZATION",
+          "payout": {
+            "currency": "USD",
+            "margin": null,
+            "points": null,
+            "value": 0.0525
+          }
+        }
+      ],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "IOS",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "RS",
+            "PT",
+            "BG",
+            "LT",
+            "LV",
+            "SA",
+            "BR",
+            "SI",
+            "ID",
+            "EC",
+            "GH",
+            "ZA",
+            "CL",
+            "MX",
+            "CO",
+            "ET",
+            "VE",
+            "TH",
+            "PE",
+            "LB",
+            "CZ",
+            "PH",
+            "VN",
+            "NG",
+            "PL",
+            "TR"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "38180",
+      "name": "Soccer Referee Simulator",
+      "description": "<p><strong>Description:</strong></p><p>Be the decision-maker for the soccer matches!</p><p><strong>Conversion Flow:</strong></p><p>1.&nbsp;Install the app</p><p>2.&nbsp;Watch 10 rewarded video ads (15-20 min, New users)</p>",
+      "additional_information": "Install Soccer Referee Simulator and watch 10 rewarded ads to earn rewards.\n",
+      "kpi": null,
+      "payout": 0.8925,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=38180&pub_id=519",
+      "preview_url": "https://play.google.com/store/apps/details?id=com.flatgames.football.referee.simulator",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/d9c0cd50-8075-4bfa-afb2-79838c81d80f.png",
+      "status": "active",
+      "tags": [
+        "FREE",
+        "GAMING_APP",
+        "NO_CC",
+        "OFFERWALL"
+      ],
+      "eventTypes": [
+        {
+          "id": "20353",
+          "name": "Watch 10 rewarded video ads to earn rewards.",
+          "classification": "QUALITY",
+          "payout": null
+        }
+      ],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": "10.0.0"
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": 20
+    },
+    {
+      "id": "33536",
+      "name": "Hero Wars: Alliance",
+      "description": "<p>Install the app. Once the app is installed, return to this screen to confirm that this task is checked off before proceeding with the other tasks.</p>",
+      "additional_information": "Install and Reach Levels for Rewards!",
+      "kpi": "Install the app. Once the app is installed, return to this screen to confirm that this task is checked off before proceeding with the other tasks. \n You must hit \"Allow\" when the app asks to track your activity in order to receive your $. You must complete this offer in full from install to finish on the same device, changing devices will not result in $. New installs and players only - if you've ever installed or played this game, you will not receive $. Events must be completed within 60 days to be eligible for $.",
+      "payout": 0.0075,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=33536&pub_id=519",
+      "preview_url": "https://apps.apple.com/us/app/hero-wars-alliance-fantasy/id1158967485",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/7d13d110-f589-4b48-871e-f664e992b0ae.jpeg",
+      "status": "active",
+      "tags": [
+        "FREE",
+        "GAMING_APP",
+        "NO_CC",
+        "OFFERWALL"
+      ],
+      "eventTypes": [
+        {
+          "id": "11991",
+          "name": "Reach Team level 10",
+          "classification": "MONETIZATION",
+          "payout": {
+            "currency": "USD",
+            "margin": null,
+            "points": null,
+            "value": 0.075
+          }
+        },
+        {
+          "id": "11992",
+          "name": "Reach Team level 20",
+          "classification": "MONETIZATION",
+          "payout": {
+            "currency": "USD",
+            "margin": null,
+            "points": null,
+            "value": 0.075
+          }
+        }
+      ],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "IOS",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "GB"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "34740",
+      "name": "Whatnot",
+      "description": null,
+      "additional_information": "Install and Purchase for Reward!",
+      "kpi": null,
+      "payout": 0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=34740&pub_id=519",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/8ea20adc-78d2-4b75-bfce-3cd963fca293.jpeg",
+      "status": "active",
+      "tags": [
+        "CC_REQUIRED",
+        "OFFERWALL"
+      ],
+      "eventTypes": [
+        {
+          "id": "16004",
+          "name": "Make a purchase of at least $5 to earn rewards.",
+          "classification": "MONETIZATION",
+          "payout": {
+            "currency": "USD",
+            "margin": null,
+            "points": null,
+            "value": 9.75
+          }
+        }
+      ],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "WEB",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "35905",
+      "name": "Walmart Money Card",
+      "description": "<p>Register with&nbsp;valid personal data (Contact info, address, SSN#) Fund your debit account for the first time.</p>",
+      "additional_information": "Install, Register, and Fund Account for Reward!",
+      "kpi": "<p>5% funding KPI</p>",
+      "payout": 1.5,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=35905&pub_id=519",
+      "preview_url": "https://www.walmartmoneycard.com/",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/abd103fa-d13b-485f-98b0-ec8748448899.png",
+      "status": "active",
+      "tags": [
+        "CC_REQUIRED",
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "CHROME OS",
+          "minOsVersion": "149.0.0"
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": 10
+    },
+    {
+      "id": "35159",
+      "name": "Surveoo",
+      "description": "<p>Cadastre-se e conclua uma pesquisa / Reg\u00edstrese y complete una encuesta</p>",
+      "additional_information": "Instale e responda pesquisas para receber uma recompensa! / \u00a1Instala y responde encuestas para obtener una recompensa!",
+      "kpi": null,
+      "payout": 0.7875,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=35159&pub_id=519",
+      "preview_url": "https://app.surveoo.com/",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/ab872f79-0769-4b7f-ab6e-26cce3148fc8.png",
+      "status": "active",
+      "tags": [
+        "FREE",
+        "NO_CC",
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "MACOS",
+          "minOsVersion": "10.15.7"
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "PT",
+            "ES"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "40131",
+      "name": "Deezer ",
+      "description": "<p>Profitez de musique illimit\u00e9e avec Deezer Premium. D\u00e9couvrez des millions de titres, playlists et podcasts, sans publicit\u00e9 et avec \u00e9coute hors ligne.</p>",
+      "additional_information": "Commencez votre essai gratuit de 3 mois Deezer Premium",
+      "kpi": null,
+      "payout": 0,
+      "payout_currency": "USD",
+      "leadflow": "MULTI_REWARD",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=40131&pub_id=519",
+      "preview_url": "http://www.deezer.com/fr/offers/premium/acq-2",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/e338b035-c1fc-4710-9439-3ec993321cf5.png",
+      "status": "active",
+      "tags": [
+        "CC_REQUIRED",
+        "OFFERWALL"
+      ],
+      "eventTypes": [
+        {
+          "id": "20692",
+          "name": "Commencez votre essai gratuit de 3 mois Deezer Premium",
+          "classification": "MONETIZATION",
+          "payout": {
+            "currency": "USD",
+            "margin": null,
+            "points": null,
+            "value": 3.6
+          }
+        }
+      ],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "WEB",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "FR"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "40135",
+      "name": "Testaankoop",
+      "description": "<p>Kies je welkomstcadeau uit tientallen merken \ud83c\udf81</p>",
+      "additional_information": "Schrijf je in bij Testaankoop en kies je welkomstgeschenk om beloningen te verdienen.",
+      "kpi": null,
+      "payout": 13.5,
+      "payout_currency": "USD",
+      "leadflow": "MULTI_REWARD",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=40135&pub_id=519",
+      "preview_url": "https://gift-offer.testachats.be/mg-nov-23/home?utm_campaign=ultra_2023_2euros2months_mg&utm_source=performancebay&utm_medium=affiliates&utm_content=multigift_banner-bf_2023&click_id=10229268eeda8044d4a87d0608eed3",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/2f933f44-b9f0-400f-9bcd-f108a3d90726.avif",
+      "status": "active",
+      "tags": [
+        "FREE",
+        "NO_CC",
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "WEB",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "BE"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "36840",
+      "name": "Theorem Reach Surveys",
+      "description": null,
+      "additional_information": null,
+      "kpi": null,
+      "payout": 0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=36840&pub_id=519",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/54a1b1dd-5df5-427e-93c1-df8b08bc1c0f.svg",
+      "status": "active",
+      "tags": [
+        "HIDDEN",
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "WEB",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "PR",
+            "PS",
+            "PT",
+            "PW",
+            "PY",
+            "QA",
+            "AD",
+            "AE",
+            "AF",
+            "AG",
+            "AI",
+            "AL",
+            "AM",
+            "AO",
+            "AQ",
+            "AR",
+            "AS",
+            "AT",
+            "RE",
+            "AU",
+            "AW",
+            "AX",
+            "AZ",
+            "RO",
+            "BA",
+            "BB",
+            "RS",
+            "BD",
+            "BE",
+            "RU",
+            "BF",
+            "BG",
+            "RW",
+            "BH",
+            "BI",
+            "BJ",
+            "BL",
+            "BM",
+            "BN",
+            "BO",
+            "SA",
+            "BQ",
+            "SB",
+            "BR",
+            "SC",
+            "BS",
+            "SD",
+            "BT",
+            "SE",
+            "BV",
+            "SG",
+            "BW",
+            "SH",
+            "SI",
+            "BY",
+            "SJ",
+            "BZ",
+            "SK",
+            "SL",
+            "SM",
+            "SN",
+            "SO",
+            "CA",
+            "SR",
+            "CC",
+            "SS",
+            "CD",
+            "ST",
+            "CF",
+            "SV",
+            "CG",
+            "CH",
+            "SX",
+            "CI",
+            "SY",
+            "SZ",
+            "CK",
+            "CL",
+            "CM",
+            "CN",
+            "CO",
+            "CR",
+            "TC",
+            "TD",
+            "CU",
+            "TF",
+            "CV",
+            "TG",
+            "CW",
+            "TH",
+            "CX",
+            "CY",
+            "TJ",
+            "CZ",
+            "TK",
+            "TL",
+            "TM",
+            "TN",
+            "TO",
+            "TR",
+            "TT",
+            "DE",
+            "TV",
+            "TW",
+            "DJ",
+            "TZ",
+            "DK",
+            "DM",
+            "DO",
+            "UA",
+            "UG",
+            "DZ",
+            "UM",
+            "EC",
+            "US",
+            "EE",
+            "EG",
+            "EH",
+            "UY",
+            "UZ",
+            "VA",
+            "ER",
+            "VC",
+            "ES",
+            "ET",
+            "VE",
+            "VG",
+            "VI",
+            "VN",
+            "VU",
+            "FI",
+            "FJ",
+            "FK",
+            "FM",
+            "FO",
+            "FR",
+            "WF",
+            "GA",
+            "GB",
+            "WS",
+            "GD",
+            "GE",
+            "GF",
+            "GG",
+            "GH",
+            "GI",
+            "GL",
+            "GM",
+            "GN",
+            "GP",
+            "GQ",
+            "GR",
+            "GS",
+            "GT",
+            "GU",
+            "GW",
+            "GY",
+            "XK",
+            "HK",
+            "HM",
+            "HN",
+            "HR",
+            "HT",
+            "YE",
+            "HU",
+            "ID",
+            "YT",
+            "IE",
+            "IL",
+            "IM",
+            "IN",
+            "IO",
+            "ZA",
+            "IQ",
+            "IR",
+            "IS",
+            "IT",
+            "ZM",
+            "JE",
+            "ZW",
+            "JM",
+            "JO",
+            "JP",
+            "KE",
+            "KG",
+            "KH",
+            "KI",
+            "KM",
+            "KN",
+            "KP",
+            "KR",
+            "KW",
+            "KY",
+            "KZ",
+            "LA",
+            "LB",
+            "LC",
+            "LI",
+            "LK",
+            "LR",
+            "LS",
+            "LT",
+            "LU",
+            "LV",
+            "LY",
+            "MA",
+            "MC",
+            "MD",
+            "ME",
+            "MF",
+            "MG",
+            "MH",
+            "MK",
+            "ML",
+            "MM",
+            "MN",
+            "MO",
+            "MP",
+            "MQ",
+            "MR",
+            "MS",
+            "MT",
+            "MU",
+            "MV",
+            "MW",
+            "MX",
+            "MY",
+            "MZ",
+            "NA",
+            "NC",
+            "NE",
+            "NF",
+            "NG",
+            "NI",
+            "NL",
+            "NO",
+            "NP",
+            "NR",
+            "NU",
+            "NZ",
+            "OM",
+            "PA",
+            "PE",
+            "PF",
+            "PG",
+            "PH",
+            "PK",
+            "PL",
+            "PM",
+            "PN"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "28483",
+      "name": "CashNow - Mobile Cash Loan App",
+      "description": "<p>Install and open the app to earn rewards.</p>",
+      "additional_information": "Install and open the app to earn rewards.",
+      "kpi": null,
+      "payout": 0.165,
+      "payout_currency": "USD",
+      "leadflow": "CPI",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=28483&pub_id=519",
+      "preview_url": "https://play.google.com/store/apps/details?id=com.payby.android.cashnow&hl=en&gl=US",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/cfc37c42-c0f6-4358-9505-91187edee626.jpg",
+      "status": "active",
+      "tags": [
+        "INSTALL_ONLY",
+        "UNDER_30S",
+        "PREMIUM",
+        "OFFERWALL",
+        "No_Traffic",
+        "FREE",
+        "NO_CC"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "AE"
+          ]
+        }
+      },
+      "daily_leads": 20
+    },
+    {
+      "id": "40134",
+      "name": "Tinaba",
+      "description": "<p>Tinaba App: Paga, Gestisci e Condividi Denaro Senza Vincoli!</p>",
+      "additional_information": "Installa Tinaba e inizia a gestire il tuo denaro per guadagnare premi.",
+      "kpi": null,
+      "payout": 3.9225,
+      "payout_currency": "USD",
+      "leadflow": "CPI",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=40134&pub_id=519",
+      "preview_url": "https://play.google.com/store/apps/details?id=it.tinaba.app",
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/e9f7507d-63ac-4f58-94a1-b5d94f4587a4.jpg",
+      "status": "active",
+      "tags": [
+        "FREE",
+        "NO_CC",
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "IT"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "90001",
+      "name": "Euro only",
+      "description": null,
+      "additional_information": "Do the thing",
+      "kpi": null,
+      "payout": 2.0,
+      "payout_currency": "EUR",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=90001&pub_id=519",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/synth.png",
+      "status": "active",
+      "tags": [
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "90002",
+      "name": "Paused campaign",
+      "description": null,
+      "additional_information": "Do the thing",
+      "kpi": null,
+      "payout": 1.0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=90001&pub_id=519",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/synth.png",
+      "status": "paused",
+      "tags": [
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": null,
+      "name": "No id",
+      "description": null,
+      "additional_information": "Do the thing",
+      "kpi": null,
+      "payout": 1.0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=90001&pub_id=519",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/synth.png",
+      "status": "active",
+      "tags": [
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "90004",
+      "name": "No click",
+      "description": null,
+      "additional_information": "Do the thing",
+      "kpi": null,
+      "payout": 1.0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/synth.png",
+      "status": "active",
+      "tags": [
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "90005",
+      "name": "UK plus US",
+      "description": null,
+      "additional_information": "Do the thing",
+      "kpi": null,
+      "payout": 1.0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=90001&pub_id=519",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/synth.png",
+      "status": "active",
+      "tags": [
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "IOS",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "UK",
+            "US"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "90006",
+      "name": "Everywhere",
+      "description": null,
+      "additional_information": "Do the thing",
+      "kpi": null,
+      "payout": 1.0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=90001&pub_id=519",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/synth.png",
+      "status": "active",
+      "tags": [
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "PR",
+            "PS",
+            "PT",
+            "PW",
+            "PY",
+            "QA",
+            "AD",
+            "AE",
+            "AF",
+            "AG",
+            "AI",
+            "AL",
+            "AM",
+            "AO",
+            "AQ",
+            "AR",
+            "AS",
+            "AT",
+            "RE",
+            "AU",
+            "AW",
+            "AX",
+            "AZ",
+            "RO",
+            "BA",
+            "BB",
+            "RS",
+            "BD",
+            "BE",
+            "RU",
+            "BF",
+            "BG",
+            "RW",
+            "BH",
+            "BI",
+            "BJ",
+            "BL",
+            "BM",
+            "BN",
+            "BO",
+            "SA",
+            "BQ",
+            "SB",
+            "BR",
+            "SC",
+            "BS",
+            "SD",
+            "BT",
+            "SE",
+            "BV",
+            "SG",
+            "BW",
+            "SH",
+            "SI",
+            "BY",
+            "SJ",
+            "BZ",
+            "SK",
+            "SL",
+            "SM",
+            "SN",
+            "SO",
+            "CA",
+            "SR",
+            "CC",
+            "SS",
+            "CD",
+            "ST",
+            "CF",
+            "SV",
+            "CG",
+            "CH",
+            "SX",
+            "CI",
+            "SY",
+            "SZ",
+            "CK",
+            "CL",
+            "CM",
+            "CN",
+            "CO",
+            "CR",
+            "TC",
+            "TD",
+            "CU",
+            "TF",
+            "CV",
+            "TG",
+            "CW",
+            "TH",
+            "CX",
+            "CY",
+            "TJ",
+            "CZ",
+            "TK",
+            "TL",
+            "TM",
+            "TN",
+            "TO",
+            "TR",
+            "TT",
+            "DE",
+            "TV",
+            "TW",
+            "DJ",
+            "TZ",
+            "DK",
+            "DM",
+            "DO",
+            "UA",
+            "UG",
+            "DZ",
+            "UM",
+            "EC",
+            "US",
+            "EE",
+            "EG",
+            "EH",
+            "UY",
+            "UZ",
+            "VA",
+            "ER",
+            "VC",
+            "ES",
+            "ET",
+            "VE",
+            "VG",
+            "VI",
+            "VN",
+            "VU",
+            "FI",
+            "FJ",
+            "FK",
+            "FM",
+            "FO",
+            "FR",
+            "WF",
+            "GA",
+            "GB",
+            "WS",
+            "GD",
+            "GE",
+            "GF",
+            "GG",
+            "GH",
+            "GI",
+            "GL",
+            "GM",
+            "GN",
+            "GP",
+            "GQ",
+            "GR",
+            "GS",
+            "GT",
+            "GU",
+            "GW",
+            "GY",
+            "XK",
+            "HK",
+            "HM",
+            "HN",
+            "HR",
+            "HT",
+            "YE",
+            "HU",
+            "ID",
+            "YT",
+            "IE",
+            "IL",
+            "IM",
+            "IN",
+            "IO",
+            "ZA",
+            "IQ",
+            "IR",
+            "IS",
+            "IT",
+            "ZM",
+            "JE",
+            "ZW",
+            "JM",
+            "JO",
+            "JP",
+            "KE",
+            "KG",
+            "KH",
+            "KI",
+            "KM",
+            "KN",
+            "KP",
+            "KR",
+            "KW",
+            "KY",
+            "KZ",
+            "LA",
+            "LB",
+            "LC",
+            "LI",
+            "LK",
+            "LR"
+          ]
+        }
+      },
+      "daily_leads": null
+    },
+    {
+      "id": "90007",
+      "name": "Unpriced",
+      "description": null,
+      "additional_information": "Do the thing",
+      "kpi": null,
+      "payout": 0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "click_url": "https://skylup.trckswrm.com/click?offer_id=90001&pub_id=519",
+      "preview_url": null,
+      "creatives_url": "https://creatives.skylup.swaarm-clients.com/objects/146/synth.png",
+      "status": "active",
+      "tags": [
+        "OFFERWALL"
+      ],
+      "eventTypes": [],
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "os": "ANDROID",
+          "minOsVersion": null
+        },
+        "allowedGeoTargeting": {
+          "countries": [
+            "US"
+          ]
+        }
+      },
+      "daily_leads": null
+    }
+  ],
+  "publisher": {
+    "id": "519",
+    "subSources": null
+  }
+}

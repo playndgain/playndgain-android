@@ -1,0 +1,41 @@
+{
+    "status": "success",
+    "offers": [
+        {
+            "id": 918204,
+            "name": "Coin Master - Reach Village 15",
+            "description": "Install Coin Master and reach village 15.",
+            "introduction": "Spin, raid and build your way to village 15.",
+            "conversion_instructions_short": "Reach village 15 within 14 days.",
+            "icon": "https://cdn.ayetstudios.com/offers/918204.png",
+            "tracking_link": "https://www.ayetstudios.com/offers/click/918204/USER_ID_HERE",
+            "payout_usd": "2.1000",
+            "tasks": [
+                { "name": "Reach village 5", "payout": "2.1000" },
+                { "name": "Reach village 10", "payout": "4.4000" },
+                { "name": "Reach village 15", "payout": "7.5000" }
+            ],
+            "countries": ["us", "ca"],
+            "platforms": ["android"],
+            "tags": { "categories": ["Games", "Casual"] },
+            "conversion_type": "cpi",
+            "category": "Games"
+        },
+        {
+            "id": 918377,
+            "name": "Meal Kit - First Order",
+            "description": "",
+            "introduction": "Order your first box and get cooking.",
+            "conversion_instructions_short": "Complete a first paid order.",
+            "icon": null,
+            "tracking_link": "https://www.ayetstudios.com/offers/click/918377?adslot=4471&external_identifier=[USER_ID]",
+            "payout_usd": "12.5000",
+            "tasks": [],
+            "countries": [],
+            "platform": "ios",
+            "tags": { "categories": [] },
+            "conversion_type": "purchase",
+            "category": "Shopping"
+        }
+    ]
+}

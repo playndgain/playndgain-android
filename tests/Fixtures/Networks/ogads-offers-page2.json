@@ -1,0 +1,35 @@
+{
+    "data": [
+        {
+            "id": 88001,
+            "created_at": "2025-03-02T08:00:00.000000Z",
+            "name": "Survey Junkie - Complete First Survey - US, Desktop",
+            "description": "Sign up and finish one survey.",
+            "instructions": "Register, then complete a single survey.",
+            "thumbnail": "https://media.go2speed.org/brand/files/ogmobi/88001/thumbnails_100/icon.png",
+            "tracking_url": "https://jump.offerclk.net/aff_c?offer_id=88001&aff_id=463539&aff_sub=PrivateOfferAPI&aff_sub2=&aff_sub3=&aff_sub4=&aff_sub5=",
+            "capped": false,
+            "paused": false,
+            "payout": "1.75000",
+            "payout_type": "cpa_flat",
+            "epc": "0.12000",
+            "my_epc": "0.00000",
+            "expiration_date": "0000-00-00 00:00:00",
+            "conversion_cap": 0,
+            "click_cap": 0,
+            "cap_percentages": {"total": null, "clicks": null, "conversions": null},
+            "categories": ["Surveys"],
+            "countries": ["US"],
+            "devices": ["Desktop", "Windows", "Mac OS"],
+            "offer_targeting_rules": []
+        }
+    ],
+    "meta": {
+        "current_page": 2,
+        "from": 8,
+        "last_page": 2,
+        "per_page": 1000,
+        "to": 8,
+        "total": 8
+    }
+}

@@ -1,0 +1,210 @@
+{
+  "offers": [
+    {
+      "network_offer_id": 4412,
+      "network_id": 611,
+      "name": "Raid Legends - US - Android - CPI",
+      "offer_status": "active",
+      "currency_id": "USD",
+      "html_description": "<p>Install the game and <b>reach level 10</b>.</p><br>New players only.",
+      "thumbnail_url": "https://cdn.adtogame.com/thumbs/4412.png",
+      "preview_url": "https://play.google.com/store/apps/details?id=com.adtogame.raidlegends",
+      "tracking_url": "https://trk.adtogame.com/?offer_id=4412&affiliate_id=1873",
+      "relationship": {
+        "category": {
+          "network_category_id": 12,
+          "name": "Games",
+          "status": "active"
+        },
+        "payouts": {
+          "entries": [
+            {
+              "entry_name": "",
+              "payout_type": "cpi",
+              "payout_amount": 1.4,
+              "payout_percentage": 0,
+              "is_default": true
+            }
+          ],
+          "total": 1
+        },
+        "ruleset": {
+          "countries": [
+            {
+              "country_code": "US",
+              "country_name": "United States",
+              "targeting_type": "include"
+            }
+          ],
+          "platforms": [
+            {
+              "platform": "android",
+              "targeting_type": "include"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "network_offer_id": 4527,
+      "network_id": 611,
+      "name": "Kingdom Wars - EU - CPA",
+      "offer_status": "active",
+      "currency_id": "USD",
+      "html_description": "",
+      "thumbnail_url": "",
+      "tracking_url": "https://trk.adtogame.com/?offer_id=4527&affiliate_id=1873&sub1=legacy&sub2=wall",
+      "relationship": {
+        "category": {
+          "network_category_id": 12,
+          "name": "Games",
+          "status": "active"
+        },
+        "payouts": {
+          "entries": [
+            {
+              "entry_name": "",
+              "payout_type": "cpa",
+              "payout_amount": 2.5,
+              "payout_percentage": 0,
+              "is_default": true
+            },
+            {
+              "entry_name": "first_deposit",
+              "payout_type": "cpa",
+              "payout_amount": 15,
+              "payout_percentage": 0,
+              "is_default": false
+            },
+            {
+              "entry_name": "revenue_share",
+              "payout_type": "cps",
+              "payout_amount": 0,
+              "payout_percentage": 20,
+              "is_default": false
+            }
+          ],
+          "total": 3
+        },
+        "ruleset": {
+          "countries": [
+            {
+              "country_code": "GB",
+              "country_name": "United Kingdom",
+              "targeting_type": "include"
+            },
+            {
+              "country_code": "DE",
+              "country_name": "Germany",
+              "targeting_type": "include"
+            },
+            {
+              "country_code": "FR",
+              "country_name": "France",
+              "targeting_type": "exclude"
+            }
+          ],
+          "platforms": [
+            {
+              "platform": "desktop",
+              "targeting_type": "include"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "network_offer_id": 4530,
+      "network_id": 611,
+      "name": "Dragon Tactics - US - paused",
+      "offer_status": "paused",
+      "currency_id": "USD",
+      "html_description": "<p>Reach level 5.</p>",
+      "thumbnail_url": "https://cdn.adtogame.com/thumbs/4530.png",
+      "tracking_url": "https://trk.adtogame.com/?offer_id=4530&affiliate_id=1873",
+      "relationship": {
+        "category": {"name": "Games"},
+        "payouts": {
+          "entries": [
+            {"entry_name": "", "payout_type": "cpa", "payout_amount": 3.1, "payout_percentage": 0, "is_default": true}
+          ],
+          "total": 1
+        },
+        "ruleset": {
+          "countries": [{"country_code": "US", "targeting_type": "include"}]
+        }
+      }
+    },
+    {
+      "network_offer_id": 4544,
+      "network_id": 611,
+      "name": "Casino Royale - DE - EUR",
+      "offer_status": "active",
+      "currency_id": "EUR",
+      "html_description": "<p>Register and deposit.</p>",
+      "thumbnail_url": "https://cdn.adtogame.com/thumbs/4544.png",
+      "tracking_url": "https://trk.adtogame.com/?offer_id=4544&affiliate_id=1873",
+      "relationship": {
+        "category": {"name": "Casino"},
+        "payouts": {
+          "entries": [
+            {"entry_name": "", "payout_type": "cpa", "payout_amount": 22, "payout_percentage": 0, "is_default": true}
+          ],
+          "total": 1
+        },
+        "ruleset": {
+          "countries": [{"country_code": "DE", "targeting_type": "include"}]
+        }
+      }
+    },
+    {
+      "network_offer_id": 4551,
+      "network_id": 611,
+      "name": "Poker Stars - WW - revenue share only",
+      "offer_status": "active",
+      "currency_id": "USD",
+      "html_description": "<p>Play a hand.</p>",
+      "thumbnail_url": "https://cdn.adtogame.com/thumbs/4551.png",
+      "tracking_url": "https://trk.adtogame.com/?offer_id=4551&affiliate_id=1873",
+      "relationship": {
+        "category": {"name": "Casino"},
+        "payouts": {
+          "entries": [
+            {"entry_name": "", "payout_type": "cps", "payout_amount": 0, "payout_percentage": 25, "is_default": true}
+          ],
+          "total": 1
+        },
+        "ruleset": {
+          "countries": []
+        }
+      }
+    },
+    {
+      "network_offer_id": 4562,
+      "network_id": 611,
+      "name": "War of Thrones - US - not approved",
+      "offer_status": "active",
+      "currency_id": "USD",
+      "html_description": "<p>Reach level 20.</p>",
+      "thumbnail_url": "https://cdn.adtogame.com/thumbs/4562.png",
+      "tracking_url": null,
+      "relationship": {
+        "category": {"name": "Games"},
+        "payouts": {
+          "entries": [
+            {"entry_name": "", "payout_type": "cpa", "payout_amount": 4.75, "payout_percentage": 0, "is_default": true}
+          ],
+          "total": 1
+        },
+        "ruleset": {
+          "countries": [{"country_code": "US", "targeting_type": "include"}]
+        }
+      }
+    }
+  ],
+  "paging": {
+    "page": 1,
+    "page_size": 100,
+    "total_count": 6
+  }
+}

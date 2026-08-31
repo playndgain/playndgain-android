@@ -1,0 +1,43 @@
+{
+  "//": "docs/09-landing-site.md §8 — the performance budget, enforced. A breach fails the build. Defaults are Lighthouse's mobile emulation with throttling, which is what the budget table is written against; do not switch this to the desktop preset to make a number go green.",
+  "ci": {
+    "collect": {
+      "url": ["http://127.0.0.1:8000/"],
+      "numberOfRuns": 3,
+      "settings": {
+        "//": "Two audits are meaningless here and would fail every run: the page is served over plain HTTP from a throwaway process, and its assets are local files with no CDN in front of them.",
+        "skipAudits": ["is-on-https", "redirects-http", "uses-http2"]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.95 }],
+        "categories:accessibility": ["error", { "minScore": 1 }],
+        "categories:best-practices": ["warn", { "minScore": 0.95 }],
+        "categories:seo": ["warn", { "minScore": 0.95 }],
+
+        "largest-contentful-paint": ["error", { "maxNumericValue": 1800 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.05 }],
+
+        "//js": "70 KB gzipped. Lighthouse reports transfer size, which is the gzipped figure nginx would send.",
+        "resource-summary:script:size": ["error", { "maxNumericValue": 71680 }],
+        "//css": "30 KB gzipped.",
+        "resource-summary:stylesheet:size": ["error", { "maxNumericValue": 30720 }],
+        "//fonts": "Two families, four files. The budget is a count, not a size.",
+        "resource-summary:font:count": ["error", { "maxNumericValue": 4 }],
+
+        "//a11y": "Accessibility is 100 or the build fails — these are the rows that most often take it below.",
+        "color-contrast": "error",
+        "image-alt": "error",
+        "label": "error",
+        "link-name": "error",
+        "button-name": "error",
+        "html-has-lang": "error",
+        "meta-viewport": "error"
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

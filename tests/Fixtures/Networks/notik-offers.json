@@ -1,0 +1,56 @@
+{
+    "offers": {
+        "current_page": 1,
+        "next_page_url": "https://notik.me/api/v2/get-offers/all?page=2",
+        "data": [
+            {
+                "offer_id": 88213,
+                "name": "Royal Match - Reach Level 120",
+                "description1": "Install Royal Match and reach level 120.",
+                "description2": "New users only.",
+                "description3": null,
+                "image_url": "https://cdn.notik.me/offers/88213.png",
+                "click_url": "https://notik.me/click?oid=88213&pubid=4821",
+                "payout": "6.2500",
+                "reward_name": "USD",
+                "country_code": ["us", "ca"],
+                "os": "android",
+                "categories": ["games", "casual"],
+                "events": [
+                    { "name": "Reach level 50", "payout": "2.0000" },
+                    { "name": "Reach level 120", "payout": "4.2500" }
+                ]
+            },
+            {
+                "offer_id": 88407,
+                "name": "Crypto Exchange - First Deposit",
+                "description1": "Register and make a first deposit of $10 or more.",
+                "description2": null,
+                "description3": null,
+                "image_url": "https://cdn.notik.me/offers/88407.png",
+                "click_url": "https://notik.me/click?oid=88407&pubid=4821",
+                "payout": "42.0000",
+                "reward_name": "USD",
+                "country_code": [],
+                "os": ["android", "ios", "desktop"],
+                "categories": ["finance"],
+                "events": []
+            },
+            {
+                "offer_id": 88500,
+                "name": "Points Priced Offer",
+                "description1": "Pays in placement points, not dollars.",
+                "description2": null,
+                "description3": null,
+                "image_url": null,
+                "click_url": "https://notik.me/click?oid=88500&pubid=4821",
+                "payout": "1500",
+                "reward_name": "Points",
+                "country_code": ["us"],
+                "os": "android",
+                "categories": ["games"],
+                "events": []
+            }
+        ]
+    }
+}

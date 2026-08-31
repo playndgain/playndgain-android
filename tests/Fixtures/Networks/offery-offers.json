@@ -1,0 +1,111 @@
+{
+    "status": "success",
+    "results": 4,
+    "data": [
+        {
+            "offer": {
+                "id": "9529",
+                "name": "Opera GX",
+                "description": "Install the browser built for gamers",
+                "requirements": "Download, install and open Opera GX",
+                "image": "https://offery.io/img/offers/9529.png"
+            },
+            "payout": {
+                "usd": "4.36",
+                "reward": "436",
+                "currency": "Coins"
+            },
+            "featured": "no",
+            "devices": ["Android", "iOS"],
+            "events": [
+                {
+                    "name": "Install",
+                    "payout": 0.5
+                },
+                {
+                    "name": "Reach Level 10",
+                    "payout": 0
+                },
+                {
+                    "name": "Finish Game",
+                    "payout": 3.09
+                }
+            ],
+            "geo_targeting": {
+                "allowed_countries": ["US", "us", "CA"],
+                "excluded_countries": []
+            },
+            "url": "https://offery.io/click/7o2mrg9zqmg7xewf66mbk7pek11r1v/9529/USER_ID"
+        },
+        {
+            "offer": {
+                "id": "1187",
+                "name": "Daily Trivia Quiz",
+                "description": "Answer ten questions",
+                "requirements": "Complete the quiz",
+                "image": "https://offery.io/img/offers/1187.png"
+            },
+            "payout": {
+                "usd": "0.75",
+                "reward": "75",
+                "currency": "Coins"
+            },
+            "featured": "yes",
+            "devices": ["PC"],
+            "events": [
+                {
+                    "name": "Complete quiz",
+                    "payout": 0.75
+                }
+            ],
+            "geo_targeting": {
+                "allowed_countries": [],
+                "excluded_countries": ["BR", "IN"]
+            },
+            "url": "https://offery.io/click/7o2mrg9zqmg7xewf66mbk7pek11r1v/1187"
+        },
+        {
+            "offer": {
+                "id": "2043",
+                "name": "Survey Router",
+                "description": null,
+                "requirements": null,
+                "image": null
+            },
+            "payout": {
+                "usd": "1.10",
+                "reward": "110",
+                "currency": "Coins"
+            },
+            "featured": "no",
+            "devices": [],
+            "events": [],
+            "geo_targeting": {
+                "allowed_countries": ["DE"],
+                "excluded_countries": []
+            },
+            "url": "https://offery.io/click/7o2mrg9zqmg7xewf66mbk7pek11r1v/2043/USER_ID"
+        },
+        {
+            "offer": {
+                "name": "Offer with no id",
+                "description": "Nothing to key an offer on",
+                "requirements": "",
+                "image": null
+            },
+            "payout": {
+                "usd": "9.99",
+                "reward": "999",
+                "currency": "Coins"
+            },
+            "featured": "no",
+            "devices": ["Android"],
+            "events": [],
+            "geo_targeting": {
+                "allowed_countries": ["US"],
+                "excluded_countries": []
+            },
+            "url": "https://offery.io/click/7o2mrg9zqmg7xewf66mbk7pek11r1v/0/USER_ID"
+        }
+    ]
+}

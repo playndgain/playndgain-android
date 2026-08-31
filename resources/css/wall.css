@@ -1,0 +1,33 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Offerwall — docs/03 §5.
+
+   Imported by resources/js/wall.js so it ships with the wall entry. The chrome
+   itself lives in wall-ui.css so the Filament theme can paint the same cards
+   on the publisher live preview. Everything themeable is a custom property
+   set on :root by the layout
+   from `apps.theme`; there are no per-app stylesheets and no per-app builds.
+
+   The publisher owns the palette, so none of the design below may depend on a
+   colour it does not control: every surface, line and tint here is derived from
+   the five theme properties with color-mix. The atmosphere photograph is the
+   one exception, and even that is washed with `--wall-bg` so a custom theme
+   tints it. That is also why the page's personality lives in structure, type
+   and state rather than in hue.
+
+   The one deliberate move: rewards are a ledger column. Fixed tabular figures
+   flush to the card's inline-end edge, so payouts stack on a single axis down
+   the list and the user compares them by glance instead of by reading. It is
+   the only job the wall has.
+
+   Written with logical properties throughout (inline-start, padding-inline,
+   margin-block) because the same stylesheet serves the RTL Arabic wall. A
+   single `dir="rtl"` on <html> mirrors the layout with no RTL overrides.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@import 'tailwindcss' source(none);
+@import './tokens.css';
+@import './wall-ui.css';
+
+/* Only the wall's own views. An unscoped source would sweep the landing page's
+   utilities into this bundle and eat the budget. */
+@source '../views/wall';
