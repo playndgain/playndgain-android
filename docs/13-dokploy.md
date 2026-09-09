@@ -70,14 +70,17 @@ Dokploy does not convert the type in place.
 
 #### Advanced → Command (required)
 
-Stack cannot `build:` by itself. Set the custom command to:
+Stack cannot `build:` by itself. Dokploy prefixes the field with `docker` and
+**rejects shell metacharacters** (`&&`, `|`, `>`), so do not paste a shell
+pipeline. Use a one-shot `docker run` that mounts the compose code and the
+Docker socket, then runs `docker/dokploy-stack-deploy.sh`:
 
 ```bash
-sh docker/dokploy-stack-deploy.sh <this-compose-appName>
+run --rm -v /var/run/docker.sock:/var/run/docker.sock -v /etc/dokploy/compose/playndgain-u0obl7/code:/work -w /work docker:27-cli sh docker/dokploy-stack-deploy.sh playndgain-u0obl7
 ```
 
-Replace `<this-compose-appName>` with the appName Dokploy shows on the General
-tab (same string it would pass to `docker stack deploy`). The script:
+Replace `playndgain-u0obl7` if your General-tab appName differs. That becomes
+`docker run …` on the host and:
 
 1. Builds `playndgain-app:latest` with Compose
 2. Resolves the compose file for Swarm
