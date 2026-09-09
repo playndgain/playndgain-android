@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\Network;
 use App\Models\Offer;
 use App\Services\Wall\OfferFeed;
 use App\Services\Wall\WallContext;
@@ -126,34 +125,69 @@ it('reorders on ?sort= and falls back to the default on anything else', function
     wallGet($app, extra: ['sort' => 'nonsense'])->assertOk()->assertSee($featured->name);
 });
 
-it('shows the featured rail only once there are two offers on it', function () {
+it('shows pinned offers in a featured rail and marks them in the list', function () {
     wallGeo('US');
     [$app, $network] = wallFixture();
 
     wallOffer($network, ['name' => 'Only Pinned', 'is_featured' => true, 'countries' => [], 'devices' => []]);
+    wallOffer($network, ['name' => 'Not Pinned', 'countries' => [], 'devices' => []]);
 
-    // A rail of one is a card with a scrollbar.
-    wallGet($app)->assertOk()->assertDontSee('wall-rail__track', false);
-
-    wallOffer($network, ['name' => 'Second Pinned', 'is_featured' => true, 'countries' => [], 'devices' => []]);
-
-    // New inventory does not invalidate the payload by itself — a sync job or
-    // an admin save flushes it by tag (App\Networks\OfferCacheFlusher), and
-    // this stands in for that.
     Cache::flush();
 
-    wallGet($app)->assertOk()->assertSee('wall-rail__track', false);
+    $html = (string) wallGet($app)->assertOk()->getContent();
+
+    // The rail is a second rendering of the same pin, not a replacement for
+    // the list mark. A filter that hides the rail card still leaves the lead
+    // edge on the row below, so the list stays honest about what is pinned.
+    expect($html)
+        ->toContain('wall-rail')
+        ->toContain('wall-card--rail')
+        ->toContain('wall-card--lead')
+        ->toContain(__('wall.featured_offers'))
+        ->toContain('wall-catalogue__title');
+
+    expect(substr_count($html, 'wall-card--lead'))->toBe(1)
+        ->and(substr_count($html, 'wall-card--rail'))->toBe(1)
+        ->and(substr_count($html, 'Only Pinned'))->toBe(2);
 });
 
-it('always shows the history and offerwall tabs', function () {
+it('omits the featured rail when nothing is pinned', function () {
+    wallGeo('US');
+    [$app, $network] = wallFixture();
+
+    wallOffer($network, ['name' => 'Not Pinned', 'countries' => [], 'devices' => []]);
+
+    Cache::flush();
+
+    $html = (string) wallGet($app)->assertOk()->getContent();
+
+    expect($html)
+        ->not->toContain('wall-rail')
+        ->not->toContain('wall-card--rail')
+        ->not->toContain('wall-card--lead');
+});
+
+it('always shows the history tab and hides offerwall when none are running', function () {
     wallGeo('US');
     [$app, $network] = wallFixture();
     wallOffer($network, ['countries' => [], 'devices' => []]);
 
+    // The tab label is "Offerwall", which is also the start of the strip's
+    // aria-label ("Offerwall sections"). Assert the destination, not the word.
     wallGet($app)->assertOk()
         ->assertSee(__('wall.tabs.history'))
-        ->assertSee(__('wall.tabs.partners'))
         ->assertSee('/wall/history?appid='.$app->app_id, false)
+        ->assertDontSee('/wall/partners?appid='.$app->app_id, false);
+});
+
+it('shows the offerwall tab when a partner wall is running', function () {
+    wallGeo('US');
+    [$app, $network] = wallFixture();
+    wallOffer($network, ['countries' => [], 'devices' => []]);
+    partnerNetwork();
+
+    wallGet($app)->assertOk()
+        ->assertSee(__('wall.tabs.partners'))
         ->assertSee('/wall/partners?appid='.$app->app_id, false);
 });
 
@@ -169,15 +203,16 @@ it('ships the offer sheet chrome and a loading skeleton', function () {
         ->assertSee(__('wall.offer.loading'));
 });
 
-it('ships a device filter next to search', function () {
+it('ships a device filter in the filter row', function () {
     wallGeo('US');
     [$app, $network] = wallFixture();
     wallOffer($network, ['countries' => [], 'devices' => ['android']]);
 
+    // Three toggles and no "all" button: the row already carries a chip with
+    // that word, and pressing an active device turns it back off.
     wallGet($app)->assertOk()
         ->assertSee('wall-devices', false)
         ->assertSee(__('wall.filter.device'))
-        ->assertSee(__('wall.filter.all_devices'))
         ->assertSee('href="#ic-android"', false)
         ->assertSee('href="#ic-ios"', false)
         ->assertSee('href="#ic-desktop"', false);

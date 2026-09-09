@@ -6,8 +6,10 @@ use App\Mail\ContactMessage;
 use App\Support\Identity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
+use Throwable;
 
 /**
  * The contact form — docs/09 §7 routes it to this app, so there is no CORS
@@ -17,6 +19,9 @@ use Illuminate\View\View;
  *
  * The topic is an allowlist rather than free text because it is the only field
  * that reaches a mail header. Everything the sender typed goes in the body.
+ *
+ * Delivery goes to Identity::supportEmail(), never to `mail.from.address` —
+ * the from-address is a no-reply nobody reads.
  */
 class ContactController extends Controller
 {
@@ -67,12 +72,35 @@ class ContactController extends Controller
         // Read back through the typed accessors rather than the validator's
         // array, which is `mixed` all the way down and would need a cast per
         // field to reach a typed constructor.
-        Mail::to((string) config('mail.from.address'))->send(new ContactMessage(
+        $message = new ContactMessage(
             senderName: $request->string('name')->toString(),
             senderEmail: $request->string('email')->toString(),
             topic: self::topics()[$request->string('topic')->toString()],
             body: $request->string('message')->toString(),
-        ));
+        );
+
+        // The support mailbox, not `mail.from.address`. Those are two different
+        // addresses on purpose: mail leaves from a no-reply that nobody watches,
+        // and a contact form delivered there is a form nobody answers.
+        // Identity::supportEmail() is the same resolution every other mailbox in
+        // the app uses, so a Settings row overrides it without a deploy.
+        try {
+            Mail::to(Identity::supportEmail())->send($message);
+        } catch (Throwable $e) {
+            // A transport that is down must not become a 500 on top of a message
+            // that is already lost. The sender gets the address they can write
+            // to by hand and their text is still in the form behind them.
+            Log::error('Contact form could not be delivered.', [
+                'exception' => $e->getMessage(),
+                'sender' => $request->string('email')->toString(),
+                'topic' => $request->string('topic')->toString(),
+            ]);
+
+            return redirect()
+                ->route('contact')
+                ->withInput()
+                ->with('delivery_failed', 'We could not send that just now. Write to '.Identity::supportEmail().' and it reaches the same desk.');
+        }
 
         // Redirect rather than render, so a refresh on the thank-you does not
         // re-send. The flash is read by a role="status" region on the form page.

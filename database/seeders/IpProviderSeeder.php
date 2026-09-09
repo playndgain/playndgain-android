@@ -33,7 +33,13 @@ class IpProviderSeeder extends Seeder
         // starting number for lack of a better one. An operator raises or
         // clears it once traffic shows what the real ceiling should be.
         ['key' => 'proxycheck', 'name' => 'ProxyCheck.io', 'priority' => 10, 'ttl_seconds' => 86400, 'daily_cap' => 1000],
-        ['key' => 'ipqualityscore', 'name' => 'IPQualityScore', 'priority' => 20, 'ttl_seconds' => 86400, 'daily_cap' => 1000],
+        // 200/day is the account's real tier, and the seven-day TTL is what
+        // makes it go anywhere: a vendor fraud score moves weekly, so a one-day
+        // cache re-bills the same address daily for an unchanged answer. At
+        // seven days the same 200 covers roughly 1,400 distinct addresses.
+        // Only the raw provider layer is held longer — the merged verdict still
+        // expires hourly, so a stale country is never served.
+        ['key' => 'ipqualityscore', 'name' => 'IPQualityScore', 'priority' => 20, 'ttl_seconds' => 604800, 'daily_cap' => 200],
     ];
 
     public function run(): void

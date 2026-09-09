@@ -123,7 +123,7 @@ Icon, offer name, when, status, and the reward when there is one. Status comes f
 | `rejected` | **Rejected** | With `rejected_reason` when one is stored |
 | `reversed` | **Reversed** | |
 
-**Statuses are text, not colour.** Green and red mean money direction and nothing else on any AdVault surface (design.md §2), and a wall of green "Credited" pills would spend the one signal the product reserves. The credited *amount* is the green thing, because it is money.
+**Statuses are text, not colour.** Green and red mean money direction and nothing else on any PLAYNDGAIN surface (design.md §2), and a wall of green "Credited" pills would spend the one signal the product reserves. The credited *amount* is the green thing, because it is money.
 
 One click, several conversions: the row shows the **sum** of what cleared and the status of the newest. Two separate rows can also name the same offer — a user may start a repeatable offer twice, and that is what its history should look like.
 

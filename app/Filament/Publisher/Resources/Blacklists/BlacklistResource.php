@@ -9,6 +9,7 @@ use App\Filament\Publisher\Resources\PublisherScopedResource;
 use App\Filament\Publisher\Support\CurrentPublisher;
 use App\Filament\Publisher\Support\EligibleOffers;
 use App\Filament\Publisher\Support\PublisherPayout;
+use App\Filament\Support\AppColumns;
 use App\Models\App;
 use App\Models\Blacklist;
 use App\Models\Offer;
@@ -22,7 +23,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -44,9 +44,11 @@ class BlacklistResource extends PublisherScopedResource
 {
     protected static ?string $model = Blacklist::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNoSymbol;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-ban';
 
-    protected static ?int $navigationSort = 10;
+    protected static string|\UnitEnum|null $navigationGroup = 'Protection';
+
+    protected static ?int $navigationSort = 40;
 
     public static function form(Schema $schema): Schema
     {
@@ -119,13 +121,13 @@ class BlacklistResource extends PublisherScopedResource
     {
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query
-                ->with('app:id,name')
+                ->with(AppColumns::eager())
                 ->where('type', '!=', BlacklistType::Network))
             ->columns([
                 TextColumn::make('type')->badge(),
                 TextColumn::make('value')
                     ->formatStateUsing(fn (Blacklist $record): string => EligibleOffers::label($record)),
-                TextColumn::make('app.name')->label('Applies to')->placeholder('All apps'),
+                AppColumns::show()->label('Applies to')->placeholder('All apps'),
                 TextColumn::make('reason')->placeholder('—')->wrap(),
                 TextColumn::make('created_at')->label('Added')->date()->sortable(),
             ])

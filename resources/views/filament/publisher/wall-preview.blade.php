@@ -78,11 +78,6 @@
         return $sample;
     }, $samples);
 
-    $featured = array_values(array_filter(
-        $samples,
-        static fn (array $offer): bool => $offer['is_featured'] && ! $offer['is_test'],
-    ));
-
     $style = collect($vars)->map(fn (string $value, string $key): string => "{$key}: {$value}")->implode('; ');
 @endphp
 
@@ -99,7 +94,11 @@
             <div class="wall-shell">
                 <div class="wall-topbar">
                     <span class="wall-topbar__brand">
-                        <x-brand-mark :size="26" />
+                        <span class="wall-topbar__mark" aria-hidden="true">{{ mb_substr($appName, 0, 1) }}</span>
+                        <span class="wall-topbar__lockup">
+                            <span class="wall-topbar__name">{{ $appName }}</span>
+                            <span class="wall-topbar__title">{{ __('wall.earn', ['currency' => $currencyName]) }}</span>
+                        </span>
                     </span>
 
                     <span class="wall-topbar__end">
@@ -112,15 +111,10 @@
                                 <svg class="wall-tab__icon" aria-hidden="true"><use href="#ic-clock"/></svg>
                                 {{ __('wall.tabs.history') }}
                             </span>
-                            <span class="wall-tab">
-                                <svg class="wall-tab__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
-                                {{ __('wall.tabs.partners') }}
-                            </span>
                         </nav>
 
                         <span class="wall-topbar__cluster">
                             <span class="wall-balance" title="{{ $currencyName }}">
-                                <svg class="wall-balance__icon" aria-hidden="true"><use href="#ic-coin"/></svg>
                                 <span class="num" dir="ltr">1,250</span>
                                 <span class="wall-sr">{{ $currencyName }}</span>
                             </span>
@@ -128,23 +122,33 @@
                     </span>
                 </div>
 
-                <div class="wall-chips" role="group" aria-label="{{ __('wall.title') }}">
-                    <span class="wall-chip is-on">
-                        <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
-                        {{ __('wall.all') }}
-                    </span>
-                    <span class="wall-chip">
-                        <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-game"/></svg>
-                        Games
-                    </span>
-                    <span class="wall-chip">
-                        <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-survey"/></svg>
-                        Surveys
-                    </span>
-                    <span class="wall-chip">
-                        <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-bag"/></svg>
-                        Apps
-                    </span>
+                <div class="wall-filters">
+                    <div class="wall-chips" role="group" aria-label="{{ __('wall.title') }}">
+                        <span class="wall-chip is-on">
+                            <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
+                            {{ __('wall.all') }}
+                        </span>
+                        <span class="wall-chip">
+                            <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-game"/></svg>
+                            Games
+                        </span>
+                        <span class="wall-chip">
+                            <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-survey"/></svg>
+                            Surveys
+                        </span>
+                        <span class="wall-chip">
+                            <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-bag"/></svg>
+                            Apps
+                        </span>
+                    </div>
+
+                    <div class="wall-devices" role="group" aria-label="{{ __('wall.filter.device') }}">
+                        @foreach (['android', 'ios', 'desktop'] as $kind)
+                            <span class="wall-devices__btn">
+                                <svg class="wall-devices__icon" aria-hidden="true"><use href="#ic-{{ $kind }}"/></svg>
+                            </span>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </header>
@@ -152,26 +156,20 @@
         <div class="wall-preview__scroll">
             <main class="wall-main">
                 <div class="wall-shell">
-                    @if (count($featured) > 1)
-                        <section class="wall-rail" aria-labelledby="wall-preview-rail">
-                            <h2 class="wall-rail__h" id="wall-preview-rail">{{ __('wall.featured_offers') }}</h2>
-
-                            <div class="wall-rail__frame">
-                                <ul class="wall-rail__track">
-                                    @foreach ($featured as $offer)
-                                        <li>@include('wall.partials.card', ['rail' => true, 'preview' => true])</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </section>
-                    @endif
+                    <section class="wall-rail" aria-label="{{ __('wall.featured_offers') }}">
+                        <h2 class="wall-rail__title">{{ __('wall.featured_offers') }}</h2>
+                        <ul class="wall-rail__scroller">
+                            @foreach ($samples as $offer)
+                                @if ($offer['is_featured'])
+                                    <li>@include('wall.partials.card', ['rail' => true, 'preview' => true])</li>
+                                @endif
+                            @endforeach
+                        </ul>
+                    </section>
 
                     <div class="wall-catalogue">
-                        <div class="wall-catalogue__lede">
-                            <h2 class="wall-catalogue__h">{{ __('wall.all_offers') }}</h2>
-                        </div>
-
-                        <div class="wall-tools">
+                        <h2 class="wall-catalogue__title">{{ __('wall.all_offers') }}</h2>
+                        <div class="wall-catalogue__tools">
                             <label class="wall-search">
                                 <span class="wall-sr">{{ __('wall.search') }}</span>
                                 <svg class="wall-search__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -179,15 +177,6 @@
                                 </svg>
                                 <input type="search" placeholder="{{ __('wall.search_placeholder') }}" disabled>
                             </label>
-
-                            <div class="wall-devices" role="group" aria-label="{{ __('wall.filter.device') }}">
-                                <span class="wall-devices__btn is-on">{{ __('wall.all') }}</span>
-                                @foreach (['android', 'ios', 'desktop'] as $kind)
-                                    <span class="wall-devices__btn">
-                                        <svg class="wall-devices__icon" aria-hidden="true"><use href="#ic-{{ $kind }}"/></svg>
-                                    </span>
-                                @endforeach
-                            </div>
                         </div>
                     </div>
 
@@ -201,7 +190,7 @@
 
             <footer class="wall-footer">
                 <span>{{ __('wall.powered_by') }}</span>
-                <x-brand-mark :size="16" />
+                <x-brand-mark :size="14" />
             </footer>
         </div>
 
@@ -215,10 +204,6 @@
                 <span>{{ __('wall.tabs.history') }}</span>
             </span>
             <span class="wall-nav__item">
-                <svg class="wall-nav__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
-                <span>{{ __('wall.tabs.partners') }}</span>
-            </span>
-            <span class="wall-nav__item">
                 <svg class="wall-nav__icon" aria-hidden="true"><use href="#ic-menu"/></svg>
                 <span>{{ __('wall.menu.label') }}</span>
             </span>
@@ -226,7 +211,7 @@
     </div>
 
     <p class="wall-preview__note">
-        Sample inventory at your {{ rtrim(rtrim(number_format($revShare, 2), '0'), '.') }}% share and
-        {{ number_format($rate) }} {{ $currencyName }} per $1. Real offers are whatever is eligible for your traffic.
+        Sample inventory at {{ number_format($rate) }} {{ $currencyName }} per $1.
+        Real offers are whatever is eligible for your traffic.
     </p>
 </div>

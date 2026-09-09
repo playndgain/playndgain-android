@@ -1369,7 +1369,7 @@ git commit -m "Put the tab strip above the offers, where a second wall now lives
 
 - [ ] **Step 1: Write the failing test**
 
-`tests/Feature/Panel/NetworkWallUrlTest.php`. The admin arrangement is copied from `tests/Feature/Panel/NetworkLogoTest.php` — `ADVAULT_REQUIRE_ADMIN_2FA` is on in `phpunit.xml`, so the config has to be switched off and the user needs its two-factor columns filled:
+`tests/Feature/Panel/NetworkWallUrlTest.php`. The admin arrangement is copied from `tests/Feature/Panel/NetworkLogoTest.php` — `PLAYNDGAIN_REQUIRE_ADMIN_2FA` is on in `phpunit.xml`, so the config has to be switched off and the user needs its two-factor columns filled:
 
 ```php
 <?php
@@ -1382,7 +1382,7 @@ use Illuminate\Support\Facades\Config;
 use function Pest\Livewire\livewire;
 
 beforeEach(function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $this->actingAs(User::factory()->admin()->create([
         'two_factor_secret' => 'JBSWY3DPEHPK3PXP',

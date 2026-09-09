@@ -23,6 +23,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Count;
@@ -58,7 +59,7 @@ class IncomingPostbackResource extends Resource
             return 'Incoming postback';
         }
 
-        $partner = $record->network?->name ?? $record->driver;
+        $partner = $record->network->name ?? $record->driver;
 
         return $partner.' #'.$record->id;
     }
@@ -70,8 +71,8 @@ class IncomingPostbackResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('Result')->columns(3)->schema([
+        return $schema->columns(1)->components([
+            Section::make('Result')->columnSpanFull()->columns(3)->schema([
                 TextEntry::make('result')->badge(),
                 TextEntry::make('created_at')->label('Received')->dateTime(),
                 TextEntry::make('conversion.trans_id')->label('Conversion')
@@ -81,7 +82,7 @@ class IncomingPostbackResource extends Resource
                 TextEntry::make('reject_reason')->label('Reason')->placeholder('—')->columnSpanFull(),
                 TextEntry::make('network.name')
                     ->label('Network')
-                    ->state(fn (IncomingPostback $record): string => $record->network?->name ?? $record->driver),
+                    ->state(fn (IncomingPostback $record): string => $record->network->name ?? $record->driver),
                 TextEntry::make('driver')->badge(),
                 TextEntry::make('method')->badge(),
                 TextEntry::make('ip')->label('IP')->copyable(),
@@ -89,7 +90,7 @@ class IncomingPostbackResource extends Resource
                 IconEntry::make('ip_allowed')->label('IP allowed')->boolean(),
             ]),
 
-            Section::make('What they sent')->columns(3)->schema([
+            Section::make('What they sent')->columnSpanFull()->columns(3)->schema([
                 TextEntry::make('payout')
                     ->state(fn (IncomingPostback $record): ?string => $record->queryValue('payout', 'payout_usd', 'pay', 'revenue', 'payout_amount'))
                     ->placeholder('—'),
@@ -128,13 +129,14 @@ class IncomingPostbackResource extends Resource
                     ->columnSpanFull(),
             ]),
 
-            Section::make('Query')->schema([
+            Section::make('Query')->columnSpanFull()->schema([
                 KeyValueEntry::make('query_pairs')
                     ->label('')
                     ->state(fn (IncomingPostback $record): array => $record->stringMap($record->query)),
             ]),
 
             Section::make('Body')
+                ->columnSpanFull()
                 ->collapsed()
                 ->visible(fn (IncomingPostback $record): bool => filled($record->body))
                 ->schema([
@@ -144,6 +146,7 @@ class IncomingPostbackResource extends Resource
                 ]),
 
             Section::make('Headers')
+                ->columnSpanFull()
                 ->collapsed()
                 ->visible(fn (IncomingPostback $record): bool => filled($record->headers))
                 ->schema([
@@ -197,6 +200,7 @@ class IncomingPostbackResource extends Resource
                 TextColumn::make('conversion.trans_id')->label('Conversion')
                     ->placeholder('—')
                     ->copyable()
+                    ->copyableState(fn (?string $state): ?string => $state)
                     ->limit(16)
                     ->searchable()
                     ->url(fn (IncomingPostback $record): ?string => self::conversionUrl($record)),
@@ -228,7 +232,7 @@ class IncomingPostbackResource extends Resource
                 DateRangeFilter::make(),
             ])
             ->recordActions([
-                ViewAction::make()->slideOver(),
+                ViewAction::make()->slideOver()->modalWidth(Width::TwoExtraLarge),
                 Action::make('match')
                     ->label('Match to click')
                     ->icon(Heroicon::OutlinedLink)

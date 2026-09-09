@@ -60,17 +60,17 @@ class Settings extends Page
             'invoice_email' => (string) (Setting::get('invoice_email') ?? ''),
             'invoice_directors' => (string) (Setting::get('invoice_directors') ?? ''),
             'invoice_vat_rate' => (string) (Setting::get('invoice_vat_rate') ?? ''),
-            'default_rev_share' => Setting::get('default_rev_share', config('advault.default_rev_share')),
-            'default_min_payout' => Setting::get('default_min_payout', config('advault.default_min_payout')),
+            'default_rev_share' => Setting::get('default_rev_share', config('playndgain.default_rev_share')),
+            'default_min_payout' => Setting::get('default_min_payout', config('playndgain.default_min_payout')),
             'signups_enabled' => (bool) Setting::get('signups_enabled', true),
             'auto_approve_publishers' => (bool) Setting::get('auto_approve_publishers', false),
             'wall_offers_limit' => Setting::get('wall_offers_limit', 100),
             'consent_required_countries' => json_decode((string) Setting::get('consent_required_countries', '[]'), true) ?: [],
             'alert_emails' => json_decode((string) Setting::get('alert_emails', '[]'), true) ?: [],
-            'alert_cooldown_minutes' => Setting::get('alert_cooldown_minutes', config('advault.alerts.cooldown_minutes')),
-            'alert_postback_failure_rate' => Setting::get('alert_postback_failure_rate', config('advault.alerts.postback_failure_rate')),
-            'alert_queue_depth' => Setting::get('alert_queue_depth', config('advault.alerts.queue_depth')),
-            'alert_conversion_silence_hours' => Setting::get('alert_conversion_silence_hours', config('advault.alerts.conversion_silence_hours')),
+            'alert_cooldown_minutes' => Setting::get('alert_cooldown_minutes', config('playndgain.alerts.cooldown_minutes')),
+            'alert_postback_failure_rate' => Setting::get('alert_postback_failure_rate', config('playndgain.alerts.postback_failure_rate')),
+            'alert_queue_depth' => Setting::get('alert_queue_depth', config('playndgain.alerts.queue_depth')),
+            'alert_conversion_silence_hours' => Setting::get('alert_conversion_silence_hours', config('playndgain.alerts.conversion_silence_hours')),
         ]);
     }
 
@@ -104,8 +104,8 @@ class Settings extends Page
                     TextInput::make('support_email')
                         ->email()
                         ->maxLength(191)
-                        ->placeholder(fn () => (string) config('advault.support_email'))
-                        ->helperText('Leave blank to use ADVAULT_SUPPORT_EMAIL, or MAIL_FROM_ADDRESS if that is unset.'),
+                        ->placeholder(fn () => (string) config('playndgain.support_email'))
+                        ->helperText('Leave blank to use PLAYNDGAIN_SUPPORT_EMAIL, or MAIL_FROM_ADDRESS if that is unset.'),
                 ]),
 
                 Section::make('Credit-note issuer')->columns(2)->schema([

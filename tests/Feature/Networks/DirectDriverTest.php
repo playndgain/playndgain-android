@@ -56,11 +56,11 @@ it('reports what is on the shelf instead of testing a connection', function () {
 it('puts the click id into the advertiser link', function () {
     $offer = Offer::factory()->create([
         'network_id' => $this->network->id,
-        'tracking_url' => 'https://advertiser.example/lp?ref=advault&c={click_id}',
+        'tracking_url' => 'https://advertiser.example/lp?ref=playndgain&c={click_id}',
     ]);
 
     expect((new DirectDriver($this->network))->buildTrackingUrl($offer, 'abc-123'))
-        ->toBe('https://advertiser.example/lp?ref=advault&c=abc-123');
+        ->toBe('https://advertiser.example/lp?ref=playndgain&c=abc-123');
 });
 
 it('parses a credited postback', function () {

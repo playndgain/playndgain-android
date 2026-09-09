@@ -1,0 +1,45 @@
+- generic [active] [ref=f14e1]:
+  - link "Skip to content" [ref=f14e2] [cursor=pointer]:
+    - /url: "#fi-main-content"
+  - navigation "Topbar" [ref=f14e4]:
+    - link "PLAYNDGAIN Publisher" [ref=f14e6] [cursor=pointer]:
+      - /url: https://playndgain.test/dashboard
+      - generic [ref=f14e13]:
+        - generic [ref=f14e14]: PLAYNDGAIN
+        - generic [ref=f14e15]: Publisher
+    - generic [ref=f14e16]:
+      - generic [ref=f14e19]:
+        - generic [ref=f14e20]: Global search
+        - searchbox "Search" [ref=f14e26]
+      - button "User menu" [ref=f14e29] [cursor=pointer]:
+        - img "Avatar of demo@playndgain.test" [ref=f14e30]
+  - main [ref=f14e33]:
+    - generic [ref=f14e35]:
+      - heading "Dashboard" [level=1] [ref=f14e38]
+      - generic [ref=f14e41]:
+        - generic [ref=f14e45]:
+          - generic [ref=f14e48]:
+            - generic [ref=f14e49]:
+              - heading "Welcome back, demo@playndgain.test" [level=2] [ref=f14e50]
+              - generic [ref=f14e51]:
+                - generic [ref=f14e52]: UTC
+                - generic [ref=f14e53]: ·UTC
+            - generic [ref=f14e54]: Live
+          - generic [ref=f14e61]:
+            - generic [ref=f14e62]: Viewing
+            - generic [ref=f14e66]: Every figure below sums across all your apps until you pick one.
+        - generic [ref=f14e78]:
+          - status [ref=f14e79]:
+            - generic [ref=f14e80]: Loading...
+          - status [ref=f14e81]:
+            - generic [ref=f14e82]: Loading...
+          - status [ref=f14e83]:
+            - generic [ref=f14e84]: Loading...
+          - status [ref=f14e85]:
+            - generic [ref=f14e86]: Loading...
+          - status [ref=f14e87]:
+            - generic [ref=f14e88]: Loading...
+          - status [ref=f14e89]:
+            - generic [ref=f14e90]: Loading...
+  - generic:
+    - status

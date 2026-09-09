@@ -7,14 +7,35 @@ use App\Filament\Publisher\Resources\Apps\AppResource;
 use App\Filament\Publisher\Support\CurrentPublisher;
 use App\Models\App;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Resources\Pages\CreateRecord\Concerns\HasWizard;
+use Filament\Schemas\Components\Wizard\Step;
+use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Illuminate\Validation\ValidationException;
 
 class CreateApp extends CreateRecord
 {
+    use HasWizard;
+
     protected static string $resource = AppResource::class;
 
     protected Width|string|null $maxContentWidth = Width::Full;
+
+    /**
+     * A first app is set up in order: each step validates before the next
+     * opens, and "Create" is the last step's button. The steps and the
+     * preview beside them are the resource's own.
+     */
+    public function form(Schema $schema): Schema
+    {
+        return AppResource::wizardForm($schema, $this->getWizardComponent());
+    }
+
+    /** @return list<Step> */
+    public function getSteps(): array
+    {
+        return AppResource::steps();
+    }
 
     /**
      * The publisher and the status are ours to set, not the form's. A pending

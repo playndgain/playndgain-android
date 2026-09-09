@@ -42,7 +42,7 @@ Every resource extends this. Every model in the publisher's world also carries a
 |---|---|
 | `pending` | Full navigation visible, persistent banner: *"Your account is under review. You can create apps now — they'll go live once approved."* App creation allowed, wall serves nothing. |
 | `approved` | Normal. |
-| `suspended` | Read-only. Withdrawal blocked. Banner with the reason and a support link. |
+| `suspended` | Panel access blocked. Login blocked with a message explaining the suspension. |
 | `banned` | Login blocked with a message. |
 
 Letting pending publishers explore and configure is deliberate — the alternative is an empty dashboard and a support ticket asking what to do next.
@@ -59,8 +59,7 @@ Statistics
 Transactions
 Offerwall Clicks
 Postback Reports
-Withdrawals
-Payment Details
+Payments
 Blacklists
 Banned Users
 Documentation      → external link to /docs
@@ -78,7 +77,7 @@ Flat. Matches the reference layout, which publishers in this vertical already kn
 **Earnings row:** Today · This Month · Last Month · This Year — each with a vs-previous-period delta.
 
 **Balance row:**
-- **Available** — `withdrawableBalance()`, i.e. cleared minus any open request, with a *Withdraw* button. Never `clearedBalance()` — see [06-ledger-payouts.md](06-ledger-payouts.md) §2.
+- **Available** — `withdrawableBalance()`, i.e. cleared minus any open request, linking to Payments. Never `clearedBalance()` — see [06-ledger-payouts.md](06-ledger-payouts.md) §2.
 - **Pending** — in hold, with a tooltip: *"Earnings clear at the start of next month"*
 - **Lifetime earnings**
 
@@ -208,25 +207,31 @@ A **Postback health** summary sits at the top: success rate over 24h, failures, 
 
 ---
 
-## 10. Withdrawals
+## 10. Payments
 
-**Header cards:** Available balance · Minimum payout ($20) · Payment frequency (Monthly) · Next eligible date.
+One page for everything money — the shape publishers know from the networks they already work with.
 
-**Request form:** amount (defaults to full available, validated against it), payment method selector, confirmation step showing the exact destination.
+**Header cards:** This Month · Pending Payment · Total Paid · Minimum Payout ($20) · Payment Terms (NET 30 — "paid by the last day of the following month", with the next due date once a statement is open).
 
-Blocked with a clear reason when: below minimum · another request is open · the balance is negative · the account is suspended. Each of those states says which one it is — a greyed-out button with no explanation is a support ticket.
+Every figure is the ledger's. "This month" is computed exactly the way next month's statement will be — [06-ledger-payouts.md](06-ledger-payouts.md) §9 — so the card and the row it turns into never disagree. "Pending payment" is the cleared balance plus anything an approved-but-unpaid withdrawal has already debited. "Total paid" is the sum of paid withdrawals.
 
-**History table:** ID · amount · method · destination (masked) · status · requested · paid · reference.
+**Payment method:** crypto only — asset + network + address, with the chain spelled out under the select — edited in place with a **Save** and an **Activate** button and an *Active* pill. PayPal, bank and Wise survive in `PaymentMethodType` for the history of payouts already made but are no longer offered; a legacy destination that still holds the Active flag is named on the card so the publisher knows why nothing reaches the wallet they can see, and the first wallet they save takes the flag over it. One destination per type per publisher is a unique key. Details are the publisher's own and are shown in full; there is no mask-and-reveal. Beside the card, a short "How you get paid" note states the cycle.
+
+*"Changing a destination does not move a payout that is already requested"* — because the destination is snapshotted at request time and publishers assume otherwise.
+
+A suspended account sees the cards and cannot change them (§1); the policy refuses the write, not just the button.
+
+**Payment history:** one row per calendar month — Period · Due date · Payment amount (gross) · Chargeback (red) · Actual payment (net, green) · Status (Pending / Carried forward / Paid) · Method · **View**. Green and red here are money direction, never state — design.md §2.
+
+**Payment details modal:** Status · Period · Due date tiles; the breakdown (gross, chargebacks, adjustments when non-zero, "carried from earlier periods" when the payout covers more than this month, net); and — once a payout exists — where it went (currency, network and wallet for crypto; email for PayPal/Wise; account for bank), the transaction ID the admin recorded, the paid date, and the other months the same payout settled. A pending month has no destination yet, so that section is absent.
+
+There is no *Request withdrawal* button. Payouts open themselves on the 1st; a publisher who fails a rule sees the reason on the statement and in a mail.
 
 ---
 
-## 11. Payment Details
+## 11. (merged into §10)
 
-Cards per saved method, matching the reference layout: PayPal · Crypto (asset + network + address) · Bank · Wise.
-
-Add / Edit / Delete, with one marked default. Addresses and emails are masked after save (`Coco****@gmail.com`), revealed on an explicit action.
-
-**Warning on edit:** *"Changing this will not affect withdrawals already requested."* — because the destination is snapshotted at request time and publishers assume otherwise.
+Payment details are edited on the Payments page — §10.
 
 ---
 
@@ -258,7 +263,9 @@ System-issued bans are shown but not removable by the publisher — an auto-ban 
 
 ## 14. My Profile
 
-Matches the reference screenshot: Profile information (name, email, avatar) · Update password · **Two-factor authentication** (optional here, mandatory for admins) · Browser sessions with a *log out other sessions* action.
+Matches the reference screenshot: Profile information (name, locked email, avatar) · Update password · **Two-factor authentication** (optional here, mandatory for admins) · Browser sessions with a *log out other sessions* action.
+
+The email is the login and cannot be changed here. An admin changes it if the publisher writes in.
 
 Plus: notification preferences (postback failures, withdrawal status, account status, monthly summary) and timezone, which drives every date shown in the panel.
 

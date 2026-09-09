@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Enums\AppStatus;
+use App\Filament\Tables\Columns\AppColumn;
 use App\Models\App;
 use Filament\Support\Enums\FontFamily;
 use Filament\Tables\Columns\TextColumn;
@@ -17,21 +18,39 @@ use Filament\Tables\Columns\ViewColumn;
  */
 final class AppColumns
 {
-    public static function identity(): ViewColumn
+    public static function identity(): AppColumn
     {
-        return ViewColumn::make('name')
+        return AppColumn::make('name')
             ->label('App')
-            ->view('filament.tables.columns.app-identity')
             ->searchable(['name', 'app_id'])
             ->sortable();
     }
 
+    /**
+     * The same identity cell on a row that belongs to an app (conversion,
+     * click, postback, ban). Load `AppColumns::eager()` on the query.
+     */
+    public static function show(): AppColumn
+    {
+        return AppColumn::make('app')
+            ->label('App')
+            ->searchable();
+    }
+
+    /** Columns the identity cell reads. Use as `with(AppColumns::eager())`. */
+    public static function eager(string ...$extra): string
+    {
+        return 'app:'.implode(',', ['id', 'name', 'app_id', 'icon_path', 'url', ...$extra]);
+    }
+
     public static function platform(): ViewColumn
     {
+        // No alignCenter: it centres the header label only, while the pill in
+        // the cell starts at the column's 12px inset — the header then sits
+        // off its own content. Status is the pattern; these two follow it.
         return ViewColumn::make('platform')
             ->view('filament.tables.columns.platform-mark')
             ->grow(false)
-            ->alignCenter()
             ->sortable();
     }
 
@@ -47,8 +66,7 @@ final class AppColumns
         return ViewColumn::make('postback_url')
             ->label('Postback')
             ->view('filament.tables.columns.postback-pill')
-            ->grow(false)
-            ->alignCenter();
+            ->grow(false);
     }
 
     /**

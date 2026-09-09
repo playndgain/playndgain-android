@@ -72,7 +72,7 @@ class OfferIconController extends Controller
         }
 
         try {
-            $response = Http::timeout(5)->withUserAgent('AdVault/1.0')->get((string) $offer->icon_url);
+            $response = Http::timeout(5)->withUserAgent('PLAYNDGAIN/1.0')->get((string) $offer->icon_url);
         } catch (Throwable) {
             $response = null;
         }

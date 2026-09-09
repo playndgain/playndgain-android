@@ -53,7 +53,7 @@ function incomingPostbackRow(): IncomingPostback
 
 function actingAsIncomingPostbackAdmin(): void
 {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     test()->actingAs(User::factory()->admin()->create([
         'two_factor_secret' => 'JBSWY3DPEHPK3PXP',

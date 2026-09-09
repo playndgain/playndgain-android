@@ -55,7 +55,15 @@ class AdminUserResource extends Resource
         return $schema->columns(1)->components([
             Section::make()->columns(2)->schema([
                 TextInput::make('name')->required()->maxLength(191),
-                TextInput::make('email')->email()->required()->unique(ignoreRecord: true)->maxLength(191),
+                TextInput::make('email')
+                    ->email()
+                    ->required()
+                    ->unique(ignoreRecord: true)
+                    ->maxLength(191)
+                    // Own address is the login. Changing it here would undo
+                    // the profile lock; another admin still can.
+                    ->disabled(fn (?User $record): bool => $record !== null && $record->is(Auth::user()))
+                    ->dehydrated(fn (?User $record): bool => $record === null || ! $record->is(Auth::user())),
                 TextInput::make('password')
                     ->password()
                     ->revealable()

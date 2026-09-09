@@ -17,9 +17,8 @@ enum BlacklistType: string
      */
     public static function publisherCases(): array
     {
-        return array_values(array_filter(
-            self::cases(),
-            fn (self $type): bool => $type !== self::Network,
-        ));
+        // Named rather than filtered from cases(): a case added later stays
+        // admin-only until someone decides publishers should see it.
+        return [self::Offer, self::Country, self::Device];
     }
 }

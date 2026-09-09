@@ -1,6 +1,6 @@
-{{-- Status as a mark + label, not a Filament success/danger badge.
-     Green and red are money direction (design.md §2); these tones are
-     amber for attention and steel/slate for state. --}}
+{{-- Status as a mark + label. The tones follow the panel's success /
+     warning / danger ramps (theme.css .ad-status--*): green settled,
+     amber waiting, rose refused, mist for the rest. --}}
 @php
     use Filament\Support\Contracts\HasIcon;
     use Filament\Support\Contracts\HasLabel;

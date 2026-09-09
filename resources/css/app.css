@@ -1,217 +1,486 @@
-/* Landing + docs. The offerwall and the Filament theme get their own entry;
-   all three import tokens.css. wall-ui.css is here so the landing mock
-   paints with the wall's own cards instead of a restyle of them. */
+/* PLAYNDGAIN marketing site — the landing page, the docs, the legal pages and
+   the contact form. One family, two surfaces (ink and paper), one accent, and
+   one motion system: every duration and easing here is a token from
+   site-tokens.css. The offerwall and the Filament theme are separate entries
+   with their own tokens; the only file all three share is brand-mark.css. */
 
 @import 'tailwindcss' source(none);
-@import './tokens.css';
-@import './wall-ui.css';
+@import './site-fonts.css';
+@import './site-tokens.css';
+@import './brand-mark.css';
+@import './site-intro.css';
 
-/* Explicit sources. Automatic detection would also sweep prototype/*.html and
-   drag the (unported) auth pages' utilities into this bundle. */
+/* Explicit sources: the views and the one script. */
 @source '../views';
 @source '../js';
 
-:root { color-scheme: dark; }
+:root {
+  color-scheme: dark;
+  /* The wordmark's face on this surface — see brand-mark.css. */
+  --font-brand: var(--font-sans);
+}
 
-body { background: #08090A; }
+html { -webkit-text-size-adjust: 100%; }
 
-/* Alpine hides these on init. Without it, `x-show` panes — all four code tabs —
-   are painted until Alpine boots, and stay painted with JS off. */
+body {
+  background: var(--color-ink-950);
+  color: var(--color-fog-50);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+img { max-width: 100%; height: auto; }
+
+::selection { background: var(--color-amber-400); color: var(--color-on-amber); }
+
+/* Alpine hides these on init. Without it every enhancement-gated control is
+   painted until Alpine boots, and stays painted with JS off. */
 [x-cloak] { display: none !important; }
 
-/* Reveals start VISIBLE. JS hides them on mount. If GSAP fails, the page still reads. */
-.reveal { opacity: 1; transform: none; }
-.js-ready .reveal { opacity: 0; transform: translateY(10px); }
-.js-ready .reveal.in { opacity: 1; transform: none;
-  transition: opacity .32s cubic-bezier(.2,.8,.2,1), transform .32s cubic-bezier(.2,.8,.2,1); }
+/* The open mobile menu owns the viewport: the page behind it does not scroll. */
+html.menu-open { overflow: hidden; }
 
-/* ── App icon tiles: gradient + specular highlight + glyph.
-      In production these are real icons from the networks' CDNs
-      (offers.icon_url). Flat gradient squares are what made the wall
-      read as a wireframe instead of a product. ── */
-.icon-tile {
-  position: relative; display: grid; place-items: center;
-  border-radius: 10px; overflow: hidden;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.30), inset 0 -1px 0 rgba(0,0,0,.28);
-}
-.icon-tile::after {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(158deg, rgba(255,255,255,.32), transparent 46%);
-}
-.icon-tile svg {
-  position: relative; z-index: 1; width: 56%; height: 56%;
-  fill: #fff; opacity: .96; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.3));
-}
-
-/* ── Depth: cards lift toward the light instead of casting a shadow ── */
-.lift { transition: border-color .2s, background-color .2s, box-shadow .2s, transform .2s; }
-.lift:hover {
-  border-color: #3D444F; transform: translateY(-2px);
-  box-shadow: 0 0 0 1px rgba(245,165,36,.10), 0 18px 40px -24px rgba(0,0,0,.9);
-}
-
-/* ── Hero wallpaper: machined vault steel under a slow drift ──
-   Layer order in the hero is explicit, because a parent's ::before
-   otherwise paints beneath its element children and the grain vanishes. */
-.hero-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-.hero-bg img {
-  width: 100%; height: 100%; object-fit: cover; object-position: 62% 34%;
-  opacity: .62; transform-origin: 66% 30%;
-  animation: vault-drift 52s ease-in-out infinite alternate;
-}
-/* Falls off to page colour so the headline never sits on texture. */
-.hero-bg::after {
-  content: ""; position: absolute; inset: 0;
-  background:
-    radial-gradient(115% 75% at 52% 4%, transparent 0%, rgba(8,9,10,.55) 48%, #08090A 78%),
-    linear-gradient(to bottom, rgba(8,9,10,.30) 0%, rgba(8,9,10,.10) 26%, rgba(8,9,10,.86) 74%, #08090A 96%);
-}
-@keyframes vault-drift {
-  from { transform: scale(1.03) translate3d(0, 0, 0); }
-  to   { transform: scale(1.13) translate3d(-1.6%, 1.2%, 0); }
-}
-@media (prefers-reduced-motion: reduce) { .hero-bg img { animation: none; } }
-
-.grain::before { z-index: 1; }
-
-/* Ambient light, drifting. Two layers so it never repeats visibly. */
-.aurora { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
-.aurora i {
-  position: absolute; display: block; border-radius: 9999px;
-  filter: blur(120px); opacity: .5;
-}
-.aurora i:nth-child(1) {
-  width: 780px; height: 420px; left: 50%; top: -120px; margin-left: -390px;
-  background: #F5A524; opacity: .085; animation: drift-a 26s ease-in-out infinite alternate;
-}
-.aurora i:nth-child(2) {
-  width: 560px; height: 380px; left: 8%; top: 220px;
-  background: #3B6FA8; opacity: .07; animation: drift-b 34s ease-in-out infinite alternate;
-}
-@keyframes drift-a { to { transform: translate3d(60px, 40px, 0) scale(1.12); } }
-@keyframes drift-b { to { transform: translate3d(-70px, -30px, 0) scale(1.08); } }
-@media (prefers-reduced-motion: reduce) { .aurora i { animation: none; } }
-
-.grain::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
-  background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.045) 1px, transparent 0);
-  background-size: 22px 22px;
-}
-
-.hairline { background: linear-gradient(90deg, transparent, #262B33 15%, #262B33 85%, transparent); }
-
-/* Below lg there is no room to orbit the device. DOM order is already
-   chronological, so the composition becomes a vertical timeline — which is
-   what a trace should look like on a phone anyway. */
-@media (max-width: 1023px) {
-  #traceWrap { height: auto; display: flex; flex-direction: column; gap: 10px; }
-  #traceWrap .chip { position: static; width: 100%; }
-  /* Tailwind v4 centers via the `translate` property, not `transform` —
-     resetting transform alone leaves the device half off-screen.
-     The reset runs through Tailwind's own variables because the production
-     minifier folds a neighbouring `translate: none` into `transform` and drops
-     it, which put the device back off-screen in the build but not in dev. */
-  #traceWrap #device {
-    position: static; left: auto; transform: none;
-    --tw-translate-x: 0px; --tw-translate-y: 0px; translate: none;
-    margin: 0 auto 18px;
+/* ── Focus. One ring for every surface: amber, outside the element. ────────
+   In the base layer on purpose: an input inside a composite field (the docs
+   search modal) sets outline-none, and that utility must win — unlayered,
+   this rule beat it and the modal drew a square ring around the bare input
+   on top of its own frame. */
+@layer base {
+  :where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-amber-400);
+    outline-offset: 3px;
   }
-  #traceWrap > p { position: static; margin-top: 6px; }
 }
 
-/* Connectors tie each trace chip back to the device it describes. */
-@media (min-width: 1024px) {
-  .chip-l::after, .chip-r::after {
-    content: ""; position: absolute; top: 50%; width: 62px; height: 1px;
+@layer components {
+  /* ── Shell and sections. 1280 including 48px gutters, 20px on a phone. ──── */
+  .shell { max-width: var(--container); margin-inline: auto; padding-inline: var(--gutter); }
+  .section { padding-block: var(--section); }
+
+  /* The two surfaces. A section says which one it is; everything inside
+     reads the matching text ramp. */
+  .on-ink { background: var(--color-ink-950); color: var(--color-fog-50); color-scheme: dark; }
+  .on-paper { background: var(--color-paper-50); color: var(--color-coal-900); color-scheme: light; }
+
+  /* Where the surface changes (landing.blade.php puts a .seam between the
+     bands): the incoming surface arrives as a sheet with a rounded top edge,
+     laid a little way over the outgoing band's bottom padding. ::after is
+     the outgoing ground the corners cut into, ::before is the sheet. Static
+     everywhere; the motion query below adds the scroll-linked part. */
+  .seam { --seam: 40px; position: relative; height: var(--seam); margin-top: calc(var(--seam) * -0.6); pointer-events: none; }
+  .seam::before, .seam::after { content: ""; position: absolute; inset: 0; }
+  .seam::before { z-index: 1; border-radius: var(--seam) var(--seam) 0 0; }
+  .seam-to-paper::before { background: var(--color-paper-50); }
+  .seam-to-paper::after { background: var(--color-ink-950); }
+  .seam-to-ink::before { background: var(--color-ink-950); box-shadow: 0 -18px 40px -22px rgb(10 11 20 / 0.55); }
+  .seam-to-ink::after { background: var(--color-paper-50); }
+  @media (max-width: 47.99rem) { .seam { --seam: 28px; } }
+
+  /* ── Type roles: weight and size carry the hierarchy, one family does. ──── */
+  .display-1 { font-weight: 700; font-size: clamp(2.625rem, 4.6vw + 0.75rem, 4.5rem); line-height: 1.02; letter-spacing: -0.03em; text-wrap: balance; }
+  .display-2 { font-weight: 700; font-size: clamp(2rem, 2.4vw + 1rem, 3.25rem); line-height: 1.06; letter-spacing: -0.025em; text-wrap: balance; }
+  .display-3 { font-weight: 700; font-size: clamp(1.5rem, 1.2vw + 1rem, 2rem); line-height: 1.12; letter-spacing: -0.02em; text-wrap: balance; }
+  .h3 { font-weight: 600; font-size: clamp(1.25rem, 0.6vw + 1rem, 1.5rem); line-height: 1.2; letter-spacing: -0.015em; }
+  .lead { font-size: clamp(1.0625rem, 0.35vw + 0.95rem, 1.25rem); line-height: 1.55; text-wrap: pretty; }
+  .metric { font-weight: 700; font-size: clamp(2rem, 2.6vw + 1.25rem, 4rem); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-amber-400); }
+  .numeral { font-weight: 700; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ── Pills: kickers, tags, chips. ─────────────────────────────────────── */
+  .pill { display: inline-flex; align-items: center; gap: 8px; border-radius: var(--radius-pill); padding: 8px 14px; font-size: 14px; font-weight: 600; line-height: 1; white-space: nowrap; }
+  .pill-ink { background: var(--color-ink-800); color: var(--color-fog-300); box-shadow: inset 0 0 0 1px var(--color-ink-700); }
+  .pill-paper { background: var(--color-paper-100); color: var(--color-coal-700); }
+  .pill-amber { background: color-mix(in srgb, var(--color-amber-400) 14%, transparent); color: var(--color-amber-300); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-amber-400) 32%, transparent); }
+  .pill-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-amber-400); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-amber-400) 25%, transparent); }
+
+  /* ── Buttons: pills, one gradient fill, and outlines for each surface. ─── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 44px; border-radius: var(--radius-pill); padding: 15px 28px;
+    font-size: 15px; font-weight: 600; line-height: 1.2; white-space: nowrap; text-decoration: none; cursor: pointer;
+    transition: background-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
   }
-  .chip-l::after { left: 100%;  background: linear-gradient(90deg,  #363D47, transparent); }
-  .chip-r::after { right: 100%; background: linear-gradient(270deg, #363D47, transparent); }
-  .chip-l::before, .chip-r::before {
-    content: ""; position: absolute; top: 50%; width: 5px; height: 5px;
-    margin-top: -2px; border-radius: 99px; background: #363D47;
+  .btn-sm { min-height: 44px; padding: 11px 18px; font-size: 14px; }
+  .btn-primary { background: linear-gradient(135deg, var(--color-amber-300), var(--color-amber-500)); color: var(--color-on-amber); box-shadow: var(--shadow-glow); }
+  .btn-primary:hover { box-shadow: 0 0 0 1px rgb(255 176 32 / 0.35), 0 28px 72px -24px rgb(255 176 32 / 0.6); }
+  .btn-ink { background: var(--color-ink-950); color: var(--color-fog-50); }
+  .btn-ink:hover { background: var(--color-ink-800); }
+  .btn-ghost-ink { box-shadow: inset 0 0 0 1px var(--color-ink-600); color: var(--color-fog-50); }
+  .btn-ghost-ink:hover { box-shadow: inset 0 0 0 1px var(--color-fog-500); background: rgb(255 255 255 / 0.04); }
+  .btn-ghost-paper { box-shadow: inset 0 0 0 1px var(--color-paper-300); background: var(--color-paper-0); color: var(--color-coal-900); }
+  .btn-ghost-paper:hover { box-shadow: inset 0 0 0 1px var(--color-coal-400); }
+  .btn-white { background: var(--color-paper-0); color: var(--color-coal-900); }
+  .btn-white:hover { background: var(--color-paper-100); }
+
+  /* ── Cards. Elevation is a transition on every card, movement only on
+        pointers that can hover (further down). ───────────────────────────── */
+  .card-ink { background: var(--color-ink-900); border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px var(--color-ink-700), inset 0 1px 0 rgb(255 255 255 / 0.05); }
+  .card-paper { background: var(--color-paper-0); border-radius: var(--radius-md); box-shadow: inset 0 0 0 1px var(--color-paper-200), var(--shadow-paper); }
+  .card-gradient { background: linear-gradient(180deg, var(--color-ink-900) 0%, var(--color-ink-950) 100%); border-radius: var(--radius-lg); box-shadow: inset 0 0 0 1px var(--color-ink-700), inset 0 1px 0 rgb(255 255 255 / 0.05); }
+  .card-lg { border-radius: var(--radius-lg); }
+  .card-lift { transition: transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out); }
+
+  /* ── The hero's ground: ink, an amber glow rising from the bottom, a night
+        tint for depth top-right. The orbs are the ambient motion. ─────────── */
+  .hero-bg { position: relative; isolation: isolate; overflow: hidden; }
+  .hero-bg::before {
+    content: ""; position: absolute; inset: 0; z-index: -2;
+    background:
+      radial-gradient(70% 60% at 50% 108%, rgb(255 176 32 / 0.28), transparent 70%),
+      radial-gradient(40% 45% at 95% -10%, rgb(42 33 112 / 0.6), transparent 70%),
+      var(--color-ink-950);
   }
-  .chip-l::before { left: 100%;  margin-left: -2px; }
-  .chip-r::before { right: 100%; margin-right: -2px; }
+  .hero-orb, .cta-orb { position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; will-change: transform; background: radial-gradient(closest-side, rgb(255 176 32 / 0.32), rgb(255 176 32 / 0.08) 55%, transparent 72%); }
+
+  /* ── Product frames around real screenshots ───────────────────────────── */
+  /* The phone: a thin ink bezel with a hairline of amber, a dynamic-island
+     notch, and (on .phone-stage, further down) a few degrees of perspective
+     that level out under the pointer. */
+  .phone { position: relative; border-radius: 46px; padding: 8px; background: linear-gradient(160deg, #1A1D2E, #0B0C16 55%); box-shadow: var(--shadow-ink), inset 0 0 0 1px rgb(255 255 255 / 0.12), 0 0 0 1px rgb(255 176 32 / 0.18), 0 0 0 5px rgb(10 11 20 / 0.6); }
+  .phone::after { content: ""; position: absolute; top: 16px; left: 50%; width: 72px; height: 20px; border-radius: 999px; background: #0B0C16; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.05); transform: translateX(-50%); }
+  .phone .shot { border-radius: 38px; }
+  .phone-screen { display: block; width: 100%; height: auto; }
+  .phone-stage { transform-origin: 50% 60%; }
+
+  /* The embed frame: the wall as the iframe it is — an ink frame, a slim
+     address bar with the publisher's own URL, the real capture inside, and
+     the one-line snippet that put it there as a chip beside it. */
+  .embed { position: relative; overflow: hidden; border-radius: var(--radius-md); background: #0F1120; box-shadow: var(--shadow-ink), inset 0 0 0 1px rgb(255 255 255 / 0.08), 0 0 0 1px rgb(255 176 32 / 0.14); }
+  .embed-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; border-bottom: 1px solid rgb(255 255 255 / 0.06); }
+  .embed-bar i { width: 8px; height: 8px; border-radius: 50%; background: rgb(255 255 255 / 0.14); }
+  .embed-url { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; height: 24px; margin-left: 6px; padding: 0 11px; border-radius: var(--radius-pill); background: rgb(255 255 255 / 0.06); font-family: var(--font-mono); font-size: 11px; color: var(--color-fog-500); white-space: nowrap; overflow: hidden; }
+  .embed-url::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--color-amber-400); box-shadow: 0 0 0 3px rgb(255 176 32 / 0.2); }
+  .embed-url b { color: var(--color-fog-300); font-weight: 500; }
+  .embed .shot img { display: block; width: 100%; height: auto; }
+  .embed-tag { display: inline-flex; align-items: center; gap: 2px; padding: 9px 16px; border-radius: var(--radius-pill); background: var(--color-ink-950); box-shadow: inset 0 0 0 1px var(--color-ink-700), var(--shadow-ink); font-family: var(--font-mono); font-size: 12px; line-height: 1; color: var(--color-fog-300); white-space: nowrap; }
+  .embed-tag b { color: var(--color-amber-300); font-weight: 600; }
+  .embed-tag span { color: var(--color-fog-500); }
+  .browser { position: relative; overflow: hidden; border-radius: var(--radius-sm); background: #0F1120; box-shadow: var(--shadow-ink), inset 0 0 0 1px rgb(255 255 255 / 0.08); }
+  .browser-bar { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid rgb(255 255 255 / 0.06); }
+  .browser-bar i { width: 10px; height: 10px; border-radius: 50%; background: rgb(255 255 255 / 0.14); }
+  .browser-url { margin-left: 8px; flex: 1; height: 20px; border-radius: 6px; background: rgb(255 255 255 / 0.06); }
+  .browser img { display: block; width: 100%; height: auto; }
+
+  /* A shot is never an empty rectangle: until its image has decoded, the box
+     shows the ink shimmer and the mark; once loaded, the picture fades in.
+     Only when JavaScript is present is the image hidden first — without it
+     the browser paints the image as it arrives, as it always did. */
+  .shot { position: relative; isolation: isolate; overflow: hidden; background: var(--color-ink-900); }
+  .shot::before {
+    content: ""; position: absolute; inset: 0; z-index: 0;
+    background: linear-gradient(110deg, var(--color-ink-900) 25%, var(--color-ink-800) 50%, var(--color-ink-900) 75%);
+    background-size: 200% 100%;
+    transition: opacity var(--motion-base) var(--ease-out);
+  }
+  .shot::after {
+    content: ""; position: absolute; left: 50%; top: 50%; z-index: 0; width: 40px; height: 40px; margin: -20px 0 0 -20px; opacity: 0.4;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23FFB020'/%3E%3Crect x='15.5' y='13.5' width='11' height='38' rx='1.5' fill='%231A1000'/%3E%3Cpath d='M21 19H33a11 11 0 0 1 0 22H21' fill='none' stroke='%231A1000' stroke-width='11'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: opacity var(--motion-base) var(--ease-out);
+  }
+  .shot > img { position: relative; z-index: 1; transition: opacity var(--motion-base) var(--ease-out); }
+  .js .shot > img { opacity: 0; }
+  .js .shot.is-loaded > img { opacity: 1; }
+  .shot.is-loaded::before, .shot.is-loaded::after { opacity: 0; }
+
+  /* ── Floating stat pills over the product shots ───────────────────────── */
+  .float-pill { position: absolute; display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border-radius: var(--radius-pill); background: var(--color-paper-0); color: var(--color-coal-900); font-size: 14px; font-weight: 600; line-height: 1.2; box-shadow: var(--shadow-paper-lg); white-space: nowrap; }
+  .float-pill-icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--color-amber-300), var(--color-amber-500)); color: var(--color-on-amber); }
+  .float-pill small { display: block; font-size: 12px; font-weight: 500; color: var(--color-coal-600); }
+
+  /* ── Metric tiles and their miniature offer row ───────────────────────── */
+  .metric-tile { display: flex; flex-direction: column; }
+  .mini-offer { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border-radius: var(--radius-sm); background: var(--color-ink-950); box-shadow: inset 0 0 0 1px var(--color-ink-700); font-size: 12px; font-weight: 600; color: var(--color-fog-300); white-space: nowrap; }
+  .mini-offer i { display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-xs); background: linear-gradient(135deg, var(--color-amber-300), var(--color-amber-500)); color: var(--color-on-amber); font-style: normal; font-size: 11px; font-weight: 700; }
+  .mini-offer b { color: var(--color-amber-300); font-weight: 700; }
+
+  /* ── The network diagram: the kinds of demand on a dashed orbit around the mark,
+        and a dot that runs the ring once when the diagram comes into view. The
+        nodes are kinds of demand, never partners by name (AGENTS.md). ── */
+  .orbit { position: relative; aspect-ratio: 1; }
+  .orbit-ring { position: absolute; inset: 0; border-radius: 50%; border: 1px dashed var(--color-ink-600); }
+  .orbit-node { position: absolute; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 14px; background: var(--color-ink-800); color: var(--color-amber-300); box-shadow: inset 0 0 0 1px var(--color-ink-600); transform: translate(-50%, -50%); }
+  .orbit-core { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  .orbit-dot { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+  .orbit-dot::after { content: ""; position: absolute; left: 50%; top: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--color-amber-400); box-shadow: 0 0 0 4px rgb(255 176 32 / 0.25), 0 0 18px rgb(255 176 32 / 0.8); }
+  @media (max-width: 39.99rem) {
+    .orbit-node { width: 42px; height: 42px; border-radius: 12px; }
+    .orbit-node svg { width: 18px; height: 18px; }
+  }
+
+  /* ── Code: tempest/highlight's classes on the palette ─────────────────── */
+  .code-card pre { margin: 0; overflow-x: auto; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.8; color: var(--color-fog-300); tab-size: 4; }
+  .code-card .hl-keyword, .code-card .hl-type, .code-card .hl-attribute, .code-card .hl-number { color: var(--color-fog-50); }
+  .code-card .hl-value, .code-card .hl-literal { color: var(--color-amber-300); }
+  .code-card .hl-variable, .code-card .hl-injection, .code-card .hl-property, .code-card .hl-operator, .code-card .hl-generic { color: var(--color-fog-300); }
+  .code-card .hl-comment { color: var(--color-fog-500); }
+
+  /* ── The header: glass that firms up once the page has scrolled ────────── */
+  .header-glass {
+    background: color-mix(in srgb, var(--color-ink-950) 60%, transparent);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border-color: transparent;
+    transition: background-color var(--motion-base) var(--ease-out), border-color var(--motion-base) var(--ease-out);
+  }
+  .header-glass.is-scrolled { background: color-mix(in srgb, var(--color-ink-950) 86%, transparent); border-color: color-mix(in srgb, var(--color-ink-700) 60%, transparent); }
+  .site-menu { background: color-mix(in srgb, var(--color-ink-950) 94%, transparent); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+
+  /* ── Native disclosures (the docs' mobile navigation and contents) ────── */
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+
+  /* ── Toast: the answer to a press that never left the page. One ink card
+        with the amber mark, so it reads the same over paper and over ink; the
+        footer's form is on every page and this has to work on both grounds.
+        Bottom-right on a pointer, full width along the bottom on a phone.
+        The wrapper is a live region in the layout — empty until site.js puts
+        something in it, and it never covers the page because only the cards
+        inside it take pointer events. ─────────────────────────────────────── */
+  .toast-wrap {
+    position: fixed; z-index: 60;
+    left: var(--gutter); right: var(--gutter); bottom: var(--gutter);
+    display: flex; flex-direction: column; gap: 10px;
+    pointer-events: none;
+  }
+  @media (min-width: 40rem) {
+    .toast-wrap { left: auto; bottom: 28px; right: 28px; width: 360px; }
+  }
+  .toast {
+    pointer-events: auto;
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 14px 15px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--color-ink-900);
+    box-shadow: inset 0 0 0 1px var(--color-ink-700), var(--shadow-ink);
+    color: var(--color-fog-50);
+  }
+  /* The refused arm. Amber is the waiting-and-attention tone; rose is money. */
+  .toast-warn { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-amber-400) 38%, transparent), var(--shadow-ink); }
+  .toast-icon { flex: none; width: 20px; height: 20px; margin-top: 1px; color: var(--color-amber-400); }
+  .toast-body { flex: 1; min-width: 0; }
+  .toast-title { font-size: 15px; font-weight: 600; line-height: 1.35; }
+  .toast-note { margin-top: 3px; font-size: 13.5px; line-height: 1.45; color: var(--color-fog-400); }
+  .toast-close {
+    flex: none; display: grid; place-content: center;
+    width: 28px; height: 28px; margin: -3px -3px 0 0;
+    border-radius: var(--radius-pill);
+    color: var(--color-fog-500); cursor: pointer;
+    transition: color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out);
+  }
+  .toast-close:hover { color: var(--color-fog-50); background: var(--color-ink-800); }
+  .toast-close svg { width: 15px; height: 15px; }
+
+  /* Settled, not unavailable: the footer's Subscribe becomes .btn-ghost-paper
+     with a check once the address is in, so it recedes to a secondary weight
+     on the paper ground instead of greying out. Only the cursor says it is
+     done being pressed — dimming it would read as a failure. */
+  .btn:disabled { cursor: default; }
 }
 
-details > summary { list-style: none; cursor: pointer; }
-details > summary::-webkit-details-marker { display: none; }
-details[open] .faq-plus { transform: rotate(45deg); }
-
-a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible {
-  outline: 2px solid #F5A524; outline-offset: 3px; border-radius: 4px;
+/* ── The narrowest phones (≤ 400px): the header's mark and call to action
+      shrink a step so logo, button and menu share one line with room. Outside
+      the components layer on purpose — it has to outrank the utilities. ────── */
+@media (max-width: 24.99rem) {
+  .site-header-mark .brand-mark-tile { width: 26px; height: 26px; }
+  .site-header-mark .brand-mark-word { font-size: 17px !important; }
+  .site-header-cta { padding-inline: 12px; }
 }
 
-/* The landing phone is the publisher preview: same classes, contained so
-   `.wall { min-block-size: 100dvh }` cannot stretch the homepage. */
-.landing-wall {
-  border-radius: 28px;
-  padding: 8px;
-  background: #1A1E24;
-  box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .9);
+/* ── Motion ───────────────────────────────────────────────────────────────────
+   Three kinds, all transform and opacity: entrances (once, when a section
+   comes into view, or on load for the hero), interaction (hover, press,
+   focus), and two ambient glows. Every entrance exists only when JavaScript
+   is present (html.js) and the reader has not asked for less motion — the
+   page as the server sends it is fully visible, and so is the page under
+   prefers-reduced-motion: reduce. ─────────────────────────────────────────── */
+@keyframes rise { from { opacity: 0; transform: translate3d(0, 28px, 0); } to { opacity: 1; transform: none; } }
+@keyframes rise-scale { from { opacity: 0; transform: translate3d(0, 32px, 0) scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes pop { from { opacity: 0; transform: scale(0.55) translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+@keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.06); opacity: 1; } }
+@keyframes drift { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(4%, -5%, 0) scale(1.05); } }
+@keyframes twinkle { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.85; } }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes orbit-once { 0% { transform: rotate(0deg); opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { transform: rotate(360deg); opacity: 0; } }
+@keyframes float-soft {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -7px, 0); }
 }
-.landing-wall .wall.wall-preview__stage {
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-amber-400) 22%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-amber-400) 10%, transparent); }
+}
+
+/* Nav hash links: amber underline that grows under the active / hovered item. */
+[data-nav-link] {
   position: relative;
-  isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  min-block-size: 0;
-  min-height: 0;
-  height: auto;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--wall-line);
-  border-radius: 20px;
+  transition: color var(--motion-fast) var(--ease-out);
 }
-.landing-wall .wall-preview__scroll {
-  flex: 0 1 auto;
-  min-block-size: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-.landing-wall .wall.wall-preview__stage::before {
+[data-nav-link]::after {
+  content: "";
   position: absolute;
-  inset: 0;
-  block-size: auto;
-}
-.landing-wall .wall-preview__stage .wall-grid {
-  grid-template-columns: 1fr;
-}
-.landing-wall .wall-preview__stage .wall-header {
-  flex: none;
-  position: relative;
-  inset-block-start: auto;
-  padding-block: 10px 8px;
-  background: var(--wall-bg);
-  border-start-start-radius: 0;
-  border-start-end-radius: 0;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-.landing-wall .wall-preview__stage .wall-chips { margin-block-start: 6px; }
-.landing-wall .wall-preview__stage .wall-main { padding-block: 8px 10px; }
-.landing-wall .wall-preview__stage .wall-catalogue { margin-block-end: 8px; }
-.landing-wall .wall-preview__stage .wall-nav {
-  display: flex;
-  flex: none;
-  position: relative;
-  inset: auto;
-  z-index: 6;
-  border-block-start: 1px solid var(--wall-line);
-  background: var(--wall-bg);
-}
-.landing-wall__float {
-  position: absolute;
-  inset-inline-end: 12px;
-  inset-block-start: 10px;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  height: 1.5px;
+  border-radius: var(--radius-pill);
+  background: var(--color-amber-400);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--motion-base) var(--ease-out);
   pointer-events: none;
-  color: #2FBF71;
-  font-size: 11px;
-  opacity: 0;
+}
+.site-menu [data-nav-link]::after { bottom: 8px; }
+
+
+@keyframes seam-rise { from { transform: translate3d(0, 22px, 0); border-radius: calc(var(--seam) * 1.8) calc(var(--seam) * 1.8) 0 0; } }
+@keyframes seam-recede { to { opacity: 0.72; transform: translate3d(0, -10px, 0) scale(0.985); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Arrival and exit. Written as a transition rather than a keyframe so the
+     reduce block at the foot of this file collapses it to nothing: under
+     reduced motion the card simply is there, and then simply is not. */
+  .js .toast {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+    transition: opacity var(--motion-base) var(--ease-out), transform var(--motion-base) var(--ease-out);
+  }
+  .js .toast.is-in { opacity: 1; transform: none; }
+  .js .toast.is-out {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+    transition-duration: var(--motion-exit);
+    transition-timing-function: var(--ease-in);
+  }
+
+
+  /* Ambient: two slow glows, the loading shimmer, live product chips. */
+  .hero-orb { animation: breathe var(--motion-ambient) ease-in-out infinite; }
+  .cta-orb { animation: drift var(--motion-ambient) ease-in-out infinite; }
+  .cta-dots { animation: twinkle calc(var(--motion-ambient) * 0.8) ease-in-out infinite; }
+  .shot:not(.is-loaded)::before { animation: shimmer 1.8s linear infinite; }
+  .pill-ink .pill-dot { animation: pulse-dot 2.4s ease-in-out infinite; }
+  .float-pill { animation: float-soft 5.2s ease-in-out infinite; }
+  .float-pill[style*="--i: 1"], .float-pill[style*="--i:1"] { animation-delay: 0.6s; }
+  .float-pill[style*="--i: 2"], .float-pill[style*="--i:2"] { animation-delay: 1.2s; }
+
+  /* Interaction: movement only for pointers that can hover; touch keeps the
+     colour and shadow transitions and gets the pressed state. */
+  @media (hover: hover) and (pointer: fine) {
+    .btn:not(:disabled):hover { transform: translateY(-2px); }
+    .btn:not(:disabled):hover svg { transform: translateX(2px); }
+    .btn svg { transition: transform var(--motion-fast) var(--ease-out); }
+    .card-lift:hover { transform: translateY(-5px); }
+    .card-paper.card-lift:hover { box-shadow: inset 0 0 0 1px var(--color-paper-200), var(--shadow-paper-lg); }
+    .card-ink.card-lift:hover { box-shadow: inset 0 0 0 1px var(--color-ink-600), inset 0 1px 0 rgb(255 255 255 / 0.06), var(--shadow-ink); }
+    .card-gradient.card-lift:hover { box-shadow: inset 0 0 0 1px var(--color-ink-600), inset 0 1px 0 rgb(255 255 255 / 0.06), var(--shadow-ink); }
+    /* The tilt lives on the stage, not the phone: the phone's own entrance
+       animation fills forwards and would pin its transform. */
+    .phone-stage { transform: perspective(1400px) rotateY(-7deg) rotateX(2deg); transition: transform var(--motion-enter) var(--ease-out); }
+    .phone-stage:hover { transform: perspective(1400px) rotateY(0deg) rotateX(0deg) translateY(-4px); }
+    .embed { transition: transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out); }
+    .embed:hover { transform: translateY(-4px); box-shadow: var(--shadow-ink), inset 0 0 0 1px rgb(255 255 255 / 0.1), 0 0 0 1px rgb(255 176 32 / 0.3), 0 24px 64px -24px rgb(255 176 32 / 0.35); }
+    [data-nav-link]:hover { color: var(--color-fog-50); }
+    [data-nav-link]:hover::after { transform: scaleX(1); }
+  }
+  .btn:not(:disabled):active { transform: translateY(0) scale(0.98); transition-duration: var(--motion-fast); }
+  .card-lift:active { transform: translateY(-1px) scale(0.995); }
+
+  /* Entrances on scroll: a short rise + fade, once. Groups stagger children
+     by --i from site.js. */
+  .js [data-reveal] {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+    transition: opacity var(--motion-enter) var(--ease-out), transform var(--motion-enter) var(--ease-out);
+    transition-delay: calc(var(--i, 0) * var(--motion-stagger));
+  }
+  .js [data-reveal].is-in { opacity: 1; transform: none; }
+  .js [data-reveal-group] > * {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+    transition: opacity var(--motion-enter) var(--ease-out), transform var(--motion-enter) var(--ease-out);
+    transition-delay: calc(var(--i, 0) * var(--motion-stagger));
+  }
+  .js [data-reveal-group].is-in > * { opacity: 1; transform: none; }
+
+  /* Sequences inside a revealed block: status chips, ledger rows, the
+     signature check, the pills over a product shot — they arrive in order
+     after their card has. */
+  .js .seq > * {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.97);
+    transition: opacity var(--motion-base) var(--ease-out), transform var(--motion-base) var(--ease-out);
+    transition-delay: calc(var(--motion-enter) * 0.55 + var(--i, 0) * var(--motion-stagger) * 1.4);
+  }
+  .js .is-in .seq > *, .js .is-in.seq > * { opacity: 1; transform: none; }
+
+  /* The hero enters once per tab session. html.hero-seen skips it later; on
+     a first visit the intro holds it (animation: none, below) and --intro-lag
+     starts it a beat after the curtain begins to lift. */
+  .js:not(.hero-seen) .hero-enter [data-enter] { animation: rise 680ms var(--ease-out) both; animation-delay: calc(var(--intro-lag, 0ms) + var(--i, 0) * 90ms); }
+  .js:not(.hero-seen) .hero-enter [data-enter="phone"] { animation-name: rise-scale; animation-delay: calc(var(--intro-lag, 0ms) + 180ms); }
+  .js:not(.hero-seen) .hero-enter [data-enter="pill"] {
+    animation:
+      pop 480ms var(--ease-out) both,
+      float-soft 5.2s ease-in-out calc(900ms + var(--i, 0) * 140ms) infinite;
+    animation-delay: calc(var(--intro-lag, 0ms) + 700ms + var(--i, 0) * 150ms), calc(var(--intro-lag, 0ms) + 1180ms + var(--i, 0) * 150ms);
+  }
+
+  /* The diagram: nodes pop in around the ring, the labels follow, and the
+     dot makes one lap from the app to the network and back. */
+  .js .orbit-node { opacity: 0; transform: translate(-50%, -50%) scale(0.6); transition: opacity var(--motion-base) var(--ease-out), transform var(--motion-base) var(--ease-out); transition-delay: calc(var(--i, 0) * 45ms); }
+  .js .is-in .orbit-node { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .js .orbit-core > * { opacity: 0; transform: translate3d(0, 8px, 0); transition: opacity var(--motion-base) var(--ease-out), transform var(--motion-base) var(--ease-out); transition-delay: calc(560ms + var(--i, 0) * 160ms); }
+  .js .is-in .orbit-core > * { opacity: 1; transform: none; }
+  .js .is-in .orbit-dot { animation: orbit-once 1.6s var(--ease-out) 1s 1 both; }
+
+  /* Between bands, on scroll. Where the browser can drive an animation from
+     a view timeline, each seam's box is stretched 40vh down over the top of
+     the incoming band (transparent, no pointer events) so it is a timeline
+     that runs from the sheet's edge reaching the bottom of the viewport to
+     it standing 40vh up: over that travel the sheet rises the last few
+     pixels into place and the closing band's content settles back — a touch
+     smaller, a touch dimmer — beneath the sheet sliding over it. The timeline
+     names are hoisted to <main> so the band before the seam can read its
+     seam's. Elsewhere the seams are simply the static edges above; under
+     reduced motion this block does not apply at all (a timeline ignores
+     animation-duration, so it cannot live outside the query). */
+  @supports (animation-timeline: view()) {
+    main { timeline-scope: --seam-1, --seam-2, --seam-3; }
+    .seam { height: calc(var(--seam) + 40vh); margin-bottom: -40vh; view-timeline-axis: block; }
+    .seam::before, .seam::after { inset: 0 0 auto 0; height: var(--seam); }
+    .seam[data-seam="1"] { view-timeline-name: --seam-1; }
+    .seam[data-seam="2"] { view-timeline-name: --seam-2; }
+    .seam[data-seam="3"] { view-timeline-name: --seam-3; }
+    .seam::before { animation: seam-rise linear both; animation-range: entry 0% entry 55%; }
+    .seam[data-seam="1"]::before { animation-timeline: --seam-1; }
+    .seam[data-seam="2"]::before { animation-timeline: --seam-2; }
+    .seam[data-seam="3"]::before { animation-timeline: --seam-3; }
+    main > section:has(+ .seam) > .shell { animation: seam-recede linear both; animation-range: entry 0% entry 100%; transform-origin: 50% 100%; }
+    main > section:has(+ [data-seam="1"]) > .shell { animation-timeline: --seam-1; }
+    main > section:has(+ [data-seam="2"]) > .shell { animation-timeline: --seam-2; }
+    main > section:has(+ [data-seam="3"]) > .shell { animation-timeline: --seam-3; }
+  }
+
+  /* In-page nav: current section reads as fog-50 with a grown underline. */
+  [data-nav-link].is-active { color: var(--color-fog-50); }
+  [data-nav-link].is-active::after { transform: scaleX(1); }
+
+
+  /* While the intro holds, the hero waits at full opacity behind the curtain
+     (its capture still counts as the page's largest paint); the entrance
+     starts the moment the curtain begins to lift, a beat behind the mark. */
+  .js.intro .hero-enter [data-enter] { animation: none; }
+  .js.intro-out, .js.intro-done { --intro-lag: 260ms; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .js-ready .reveal { opacity: 1 !important; transform: none !important; }
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-nav-link].is-active { color: var(--color-fog-50); }
 }

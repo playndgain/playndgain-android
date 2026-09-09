@@ -72,11 +72,17 @@ class FraudRuleSeeder extends Seeder
         [
             'key' => 'ip_risk_score',
             'name' => 'IP risk score',
-            'description' => 'A third-party risk score over the threshold. Flags rather than blocks until the score has been calibrated against this platform\'s own traffic.',
+            'description' => 'A third-party risk score at or over the threshold. Refuses the wall render, so the threshold is the most consequential number in the rule set — see the design spec before moving it.',
             'stage' => FraudStage::PreClick,
-            'action' => FraudAction::Flag,
-            'score_weight' => 25,
-            'config' => ['threshold' => 85],
+            'action' => FraudAction::Block,
+            'score_weight' => 40,
+            // 27 is the owner's decision, well under the ~75 IPQualityScore
+            // itself calls suspicious, and paired with the score distribution on
+            // the Protection page so the cost is visible rather than inferred.
+            // The migration moves an already-seeded install; this moves a fresh
+            // one, and both are needed — a guarded migration alone would leave a
+            // new install sitting at the old default.
+            'config' => ['threshold' => 27],
         ],
         [
             'key' => 'geo_mismatch',
@@ -113,6 +119,24 @@ class FraudRuleSeeder extends Seeder
             'action' => FraudAction::Block,
             'score_weight' => 35,
             'config' => ['bot_signatures' => ['curl', 'wget', 'python-requests', 'headlesschrome', 'phantomjs', 'scrapy', 'bot', 'spider']],
+        ],
+        [
+            'key' => 'emulator_device',
+            'name' => 'Emulator device',
+            'description' => 'User agent carries a stock Android emulator or desktop-player build signature. Only unambiguous strings ship here: this rule runs at wall render, so an over-broad token empties the wall for a whole device class. Validate a new token against real click user agents before adding it.',
+            'stage' => FraudStage::PreClick,
+            'action' => FraudAction::Block,
+            'score_weight' => 45,
+            'config' => ['signatures' => [
+                'sdk_gphone',
+                'android sdk built for',
+                'vbox86',
+                'google_sdk',
+                'bluestacks',
+                'nox player',
+                'ldplayer',
+                'memu',
+            ]],
         ],
 
         // --- Post-conversion ------------------------------------------------
@@ -196,6 +220,24 @@ class FraudRuleSeeder extends Seeder
             'action' => FraudAction::Flag,
             'score_weight' => 20,
             'config' => ['multiplier' => 5, 'min_conversions' => 50],
+        ],
+        [
+            'key' => 'conversion_proxy_ip',
+            'name' => 'Conversion from a proxy',
+            'description' => 'The address the conversion arrived from is a VPN, proxy, Tor exit, datacenter or residential proxy. Every pre-click IP rule inspects whoever clicked; this is the only one that inspects whoever completed the offer, which is what a shared tracking URL changes. Inert when the network sends no address.',
+            'stage' => FraudStage::PostConversion,
+            'action' => FraudAction::Block,
+            'score_weight' => 45,
+            'config' => [],
+        ],
+        [
+            'key' => 'conversion_ip_mismatch',
+            'name' => 'Conversion network mismatch',
+            'description' => 'The conversion and the click came from different networks (ASN, not address — a phone moving from wifi to a carrier changes address legitimately). Catches a tracking URL passed to somebody else on an ordinary home connection, which the proxy rule cannot see. Flags rather than blocks: shared connections and genuine carrier handovers are real.',
+            'stage' => FraudStage::PostConversion,
+            'action' => FraudAction::Flag,
+            'score_weight' => 20,
+            'config' => [],
         ],
         [
             'key' => 'auto_ban_threshold',

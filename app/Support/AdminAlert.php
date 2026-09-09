@@ -60,7 +60,7 @@ final class AdminAlert
      */
     private static function claimWindow(string $key): bool
     {
-        $minutes = (int) Setting::get('alert_cooldown_minutes', config('advault.alerts.cooldown_minutes'));
+        $minutes = (int) Setting::get('alert_cooldown_minutes', config('playndgain.alerts.cooldown_minutes'));
 
         if ($minutes <= 0) {
             return true;
@@ -82,7 +82,7 @@ final class AdminAlert
         $configured = json_decode((string) Setting::get('alert_emails', '[]'), true);
 
         if (! is_array($configured) || $configured === []) {
-            $configured = config('advault.alerts.recipients');
+            $configured = config('playndgain.alerts.recipients');
         }
 
         return array_values(array_filter(
@@ -94,7 +94,7 @@ final class AdminAlert
     /** Whether docs/11 §7 rates this signal as a page rather than an email. */
     private static function pages(string $key): bool
     {
-        $paging = config('advault.alerts.page');
+        $paging = config('playndgain.alerts.page');
 
         return is_array($paging) && in_array($key, $paging, true);
     }

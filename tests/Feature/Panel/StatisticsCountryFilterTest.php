@@ -78,11 +78,11 @@ it('offers the publisher their own countries, named', function () {
 
     $options = (new Statistics)->countryOptions;
 
-    expect($options)->toBe([
-        'DE' => 'DE — Germany',
-        'EG' => 'EG — Egypt',
-        'US' => 'US — United States',
-    ]);
+    // Each option is a flag beside the name; the key order is what matters.
+    expect(array_keys($options))->toBe(['DE', 'EG', 'US'])
+        ->and($options['DE'])->toContain('flags/de.svg', 'Germany')
+        ->and($options['EG'])->toContain('flags/eg.svg', 'Egypt')
+        ->and($options['US'])->toContain('flags/us.svg', 'United States');
 });
 
 it('drives the filter through the live component', function () {

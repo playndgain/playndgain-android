@@ -97,7 +97,7 @@ class LedgerEntry extends Model
      * The only way to correct a balance. History is never edited, so the reason
      * is mandatory: an unexplained adjustment is indistinguishable from a bug.
      */
-    public static function createAdjustment(Publisher $publisher, string $amount, string $reason, ?User $actor = null): self
+    public static function createAdjustment(Publisher $publisher, string $amount, string $reason, ?User $actor = null, ?Model $reference = null): self
     {
         return self::record(
             $publisher->id,
@@ -105,7 +105,7 @@ class LedgerEntry extends Model
             Money::format($amount),
             null,
             $reason,
-            null,
+            $reference,
             $actor,
         );
     }

@@ -23,7 +23,10 @@
 
 {{-- The two facts a card could not otherwise answer: what it runs on, and
      whether anybody is actually doing it. Shared by the card and the detail
-     screen, so the screen the user lands on confirms the one they tapped. --}}
+     screen, so the screen the user lands on confirms the one they tapped.
+
+     On the card these sit inside the meta line and are separated by it, so
+     the group carries no separator of its own. --}}
 @if ($glyphs !== [] || $people > 0)
     <span class="wall-facts">
         @if ($glyphs !== [])

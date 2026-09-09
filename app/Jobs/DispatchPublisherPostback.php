@@ -33,7 +33,7 @@ class DispatchPublisherPostback implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public const USER_AGENT = 'AdVault-Postback/1.0';
+    public const USER_AGENT = 'PLAYNDGAIN-Postback/1.0';
 
     private const ERROR_LIMIT = 1000;
 

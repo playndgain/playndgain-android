@@ -15,8 +15,8 @@ it('serves each written page with content of its own', function (string $path, s
         ->assertSee($marker, escape: false)
         ->assertSee('id="main"', escape: false);
 })->with([
-    ['/about', 'About AdVault', 'The ledger is append-only'],
-    ['/advertise', 'Supply offers to AdVault', 'A subid macro in the tracking URL'],
+    ['/about', 'About PLAYNDGAIN', 'The ledger is append-only'],
+    ['/advertise', 'Supply offers to PLAYNDGAIN', 'A subid macro in the tracking URL'],
     ['/status', 'Status', 'an in-app status page cannot report that the app is down'],
 ]);
 

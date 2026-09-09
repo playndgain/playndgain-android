@@ -17,10 +17,12 @@ use App\Models\FraudRule;
 use App\Models\IncomingPostback;
 use App\Models\Network;
 use App\Models\NetworkSync;
+use App\Models\NewsletterSubscriber;
 use App\Models\Offer;
 use App\Models\OfferClick;
 use App\Models\OutgoingPostback;
 use App\Models\PaymentMethod;
+use App\Models\PayoutStatement;
 use App\Models\Publisher;
 use App\Models\User;
 use App\Models\Withdrawal;
@@ -128,14 +130,28 @@ function seedEverything(): Publisher
         'is_default' => true,
     ]);
 
-    Withdrawal::create([
+    $withdrawal = Withdrawal::create([
         'publisher_id' => $publisher->id,
         'payment_method_id' => $method->id,
         'amount' => '25.000000',
         'method' => 'paypal',
-        'payment_details' => json_encode(['email' => 'payee@example.com']),
+        'payment_details' => ['email' => 'payee@example.com'],
         'status' => 'requested',
         'requested_at' => now(),
+    ]);
+
+    PayoutStatement::create([
+        'publisher_id' => $publisher->id,
+        'period' => now()->startOfMonth()->subMonth()->toDateString(),
+        'gross' => '25.000000',
+        'chargebacks' => '0.000000',
+        'adjustments' => '0.000000',
+        'net' => '25.000000',
+        'status' => 'pending',
+        'due_date' => now()->startOfMonth()->endOfMonth()->toDateString(),
+        'withdrawal_id' => $withdrawal->id,
+        'minimum_payout' => '20.00',
+        'generated_at' => now(),
     ]);
 
     Blacklist::create([
@@ -198,13 +214,26 @@ function seedEverything(): Publisher
         'created_at' => now(),
     ]);
 
+    // One of each state, so the mailing list renders both badge branches and
+    // the row action that is only visible on the other one. firstOrCreate
+    // because the list is global rather than per-publisher, and this seeder is
+    // called twice in the isolation test below.
+    NewsletterSubscriber::firstOrCreate(
+        ['email' => 'dana@example.com'],
+        ['source' => '/', 'ip' => '203.0.113.0'],
+    );
+    NewsletterSubscriber::firstOrCreate(
+        ['email' => 'sam@example.com'],
+        ['source' => '/docs/quick-start', 'unsubscribed_at' => now()->subDay()],
+    );
+
     return $publisher;
 }
 
 it('renders every admin page', function (string $path) {
     // 2FA is required in production and pinned on in phpunit.xml; this suite is
     // about the pages, not about the authenticator flow.
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     seedEverything();
 
@@ -213,6 +242,7 @@ it('renders every admin page', function (string $path) {
     $this->get($path)->assertSuccessful();
 })->with([
     '/admin',
+    '/admin/analytics',
     '/admin/networks',
     '/admin/offers',
     '/admin/network-syncs',
@@ -233,7 +263,11 @@ it('renders every admin page', function (string $path) {
     '/admin/audit-logs',
     '/admin/settings',
     '/admin/admin-users',
+    '/admin/newsletter-subscribers',
     '/admin/health',
+    '/admin/announcements',
+    '/admin/announcements/create',
+    '/admin/emails',
 ]);
 
 it('renders every publisher page', function (string $path) {
@@ -251,8 +285,7 @@ it('renders every publisher page', function (string $path) {
     '/dashboard/transactions',
     '/dashboard/offer-clicks',
     '/dashboard/postback-reports',
-    '/dashboard/withdrawals',
-    '/dashboard/payment-methods',
+    '/dashboard/payments',
     '/dashboard/blacklists',
     '/dashboard/banned-end-users',
 ]);
@@ -263,7 +296,7 @@ it('renders the record pages that carry the most custom code', function () {
     $network = Network::query()->firstOrFail();
     $app = App::query()->withoutGlobalScopes()->firstOrFail();
 
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     $this->actingAs(adminWithTwoFactor());
 
     $this->get("/admin/publishers/{$publisher->id}")->assertSuccessful();
@@ -288,7 +321,7 @@ it('keeps a publisher out of the admin panel', function () {
 it('lets an admin open the publisher panel, and shows them none of it', function () {
     $publisher = seedEverything();
 
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     $this->actingAs(adminWithTwoFactor());
 
     // Reachable, so an admin can check the surface their customers use and
@@ -312,5 +345,6 @@ it('does not put another publisher\'s rows in a scoped table', function () {
     expect(Conversion::query()->pluck('publisher_id')->unique()->all())->toBe([$publisher->id])
         ->and(OfferClick::query()->pluck('publisher_id')->unique()->all())->toBe([$publisher->id])
         ->and(Withdrawal::query()->pluck('publisher_id')->unique()->all())->toBe([$publisher->id])
+        ->and(PayoutStatement::query()->pluck('publisher_id')->unique()->all())->toBe([$publisher->id])
         ->and($stranger->id)->not->toBe($publisher->id);
 });

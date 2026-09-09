@@ -33,6 +33,10 @@ const PAGE = 24;
 
 const still = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+/* Interaction only. Card lists do not rise in: a 640ms stagger on a wall
+   of plates reads as the page arriving late. Dialogs keep a short fade. */
+const ENTER = 0.26;
+
 /** Motion, or nothing at all when the reader asked for less of it. */
 function move(target, keyframes, options = {}) {
     if (still.matches || !target || (target.length === 0 && !target.nodeType)) {
@@ -40,6 +44,11 @@ function move(target, keyframes, options = {}) {
     }
 
     return animate(target, keyframes, { duration: 0.3, ease: [0.22, 1, 0.36, 1], ...options });
+}
+
+/** A fade, no rise. Used for the offer sheet body, not the catalogue. */
+function enter(el) {
+    return move(el, { opacity: [0, 1] }, { duration: ENTER });
 }
 
 Alpine.data('wall', (list) => ({
@@ -66,20 +75,7 @@ Alpine.data('wall', (list) => ({
 
         this.$nextTick(() => {
             this.reveal();
-            this.syncRail();
         });
-    },
-
-    /** Hide the rail's next control when every featured card already fits. */
-    syncRail() {
-        const track = document.querySelector('.wall-rail__track');
-        const next = document.querySelector('.wall-rail__next');
-
-        if (! track || ! next) {
-            return;
-        }
-
-        next.hidden = track.scrollWidth <= track.clientWidth + 2;
     },
 
     refresh(reset = false) {
@@ -117,23 +113,8 @@ Alpine.data('wall', (list) => ({
         this.$nextTick(() => this.reveal());
     },
 
-    /**
-     * Fade the cards that just entered the window, staggered down the list.
-     *
-     * `data-in` marks the ones already animated: a card is revealed once, and
-     * re-animating the whole grid on every scroll step is both wasted work and
-     * a flicker on the cards the user is currently reading.
-     */
-    reveal() {
-        const fresh = Array.from(document.querySelectorAll('.wall-grid > li:not([data-in])'))
-            .filter((el) => el.offsetParent !== null)
-            .slice(0, PAGE);
-
-        fresh.forEach((el, i) => {
-            el.dataset.in = '1';
-            move(el, { opacity: [0, 1], transform: ['translateY(10px)', 'none'] }, { delay: i * 0.035 });
-        });
-    },
+    /** Kept so a filter reset still recentres the window. Cards do not animate. */
+    reveal() {},
 
     /**
      * Submit the sort form as soon as the reader picks an order, so the extra
@@ -148,26 +129,6 @@ Alpine.data('wall', (list) => ({
      */
     sortNow(event) {
         event.target.form.requestSubmit();
-    },
-
-    /**
-     * Advance the featured strip by one card. The track is still a native
-     * scroll region — this only saves a swipe. Hidden with `x-cloak` when
-     * Alpine never boots, so a no-JS reader is not left with a dead button.
-     */
-    railNext(event) {
-        const track = event.currentTarget.closest('.wall-rail__frame')?.querySelector('.wall-rail__track');
-        const card = track?.querySelector('li');
-
-        if (! track || ! card) {
-            return;
-        }
-
-        const step = card.getBoundingClientRect().width + 10;
-        const rtl = document.documentElement.dir === 'rtl';
-
-        track.scrollBy({ left: rtl ? -step : step, behavior: still.matches ? 'auto' : 'smooth' });
-        this.syncRail();
     },
 
     /**
@@ -211,7 +172,7 @@ Alpine.data('wall', (list) => ({
 
         dialog.setAttribute('aria-busy', 'false');
         body.scrollTop = 0;
-        move(body.firstElementChild ?? body, { opacity: [0, 1], transform: ['translateY(10px)', 'none'] });
+        enter(body.firstElementChild ?? body);
     },
 }));
 
@@ -281,19 +242,13 @@ document.addEventListener('alpine:init', () => {
     for (const dialog of document.querySelectorAll('dialog')) {
         dialog.addEventListener('click', (event) => {
             if (event.target === dialog || event.target.closest('[data-close]')) {
-                if (dialog.classList.contains('offer-dialog')) {
-                    dismiss(dialog);
-                } else {
-                    dialog.close();
-                }
+                dismiss(dialog);
             }
         });
 
         dialog.addEventListener('cancel', (event) => {
-            if (dialog.classList.contains('offer-dialog')) {
-                event.preventDefault();
-                dismiss(dialog);
-            }
+            event.preventDefault();
+            dismiss(dialog);
         });
     }
 
@@ -302,15 +257,35 @@ document.addEventListener('alpine:init', () => {
     if (menu) {
         for (const trigger of document.querySelectorAll('[data-menu]')) {
             trigger.addEventListener('click', () => {
-                // showModal throws on an already-open dialog; a second tap is
-                // a no-op rather than an exception.
                 if (!menu.open) {
-                    menu.showModal();
+                    present(menu);
                 }
             });
         }
     }
 });
 
+function dismissLoader() {
+    const loader = document.querySelector('.wall-loader');
+
+    if (! loader) {
+        return;
+    }
+
+    const finish = () => loader.remove();
+
+    if (still.matches) {
+        finish();
+        return;
+    }
+
+    loader.classList.add('is-out');
+    loader.addEventListener('transitionend', finish, { once: true });
+    window.setTimeout(finish, 280);
+}
+
 window.Alpine = Alpine;
 Alpine.start();
+
+const fonts = document.fonts?.ready ?? Promise.resolve();
+fonts.then(() => requestAnimationFrame(dismissLoader)).catch(dismissLoader);

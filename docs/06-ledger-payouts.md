@@ -75,7 +75,7 @@ Four numbers, four meanings. Conflating them is the top support question in this
 | Name | Definition | Shown to publisher |
 |---|---|---|
 | **Cleared** | Ledger sum of everything past its hold window. An internal figure. | No |
-| **Withdrawable** | Cleared **minus open withdrawal requests**. What the withdrawal form will accept. | **Yes — labelled "Available"** |
+| **Withdrawable** | Cleared **minus withdrawals still `requested`**. Once a withdrawal is `processing` its ledger entry has already left cleared, so it is not subtracted again. | **Yes — labelled "Available"** |
 | **Pending** | Earnings still inside their hold window. | Yes |
 | **Lifetime** | All positive earnings ever, ignoring reversals and withdrawals. A vanity number. | Yes |
 
@@ -91,8 +91,9 @@ public function clearedBalance(): float
 /** What can actually be withdrawn right now. This is what the panel labels "Available". */
 public function withdrawableBalance(): float
 {
+    // Only `requested`: a `processing` withdrawal is already in the ledger.
     $open = (float) $this->withdrawals()
-        ->whereIn('status', ['requested', 'processing'])
+        ->where('status', 'requested')
         ->sum('amount');
 
     return $this->clearedBalance() - $open;
@@ -137,13 +138,15 @@ Terminal states are `paid` and `rejected`. Nothing moves backwards.
 
 ### Requesting
 
-Validated at request time:
+There is no publisher-initiated request. `withdrawals:request-monthly` opens one withdrawal per approved publisher on the 1st at 00:10, for the full withdrawable balance, on the Active payment method (§9). The rules it applies are the same ones the admin panel applies to a hand-opened request:
 
 1. Publisher is `approved`.
 2. `withdrawableBalance() ≥ max(publishers.min_payout, 20.00)`.
 3. Amount ≤ `withdrawableBalance()`.
-4. A verified payment method exists.
+4. A payment method exists and one is Active (`is_default`).
 5. No other withdrawal is currently `requested` or `processing`. **One open request at a time** — concurrent requests against the same balance are a double-spend waiting to happen.
+
+A publisher who fails a rule gets a skip mail, ops get one error mail for the run, and the reason is written on that month's statement so the Payments page says why nothing was requested.
 
 ```php
 DB::transaction(function () use ($publisher, $amount, $method) {
@@ -165,7 +168,7 @@ DB::transaction(function () use ($publisher, $amount, $method) {
 });
 ```
 
-**Payment details are snapshotted onto the withdrawal.** If the publisher edits their PayPal address after requesting, the request must still record where the money was meant to go at the time it was approved.
+**Payment details are snapshotted onto the withdrawal** (`encrypted:array` cast, read through `Withdrawal::destination()`). If the publisher edits their PayPal address after requesting, the request must still record where the money was meant to go at the time it was approved.
 
 ### No ledger entry at `requested`
 
@@ -173,15 +176,28 @@ The funds are not debited on request. If they were, a rejection would need a rev
 
 Open requests are subtracted in `withdrawableBalance()` instead — see §2. The `withdrawal` ledger entry is written when the admin moves it to `processing`, the point where the money genuinely leaves.
 
+### Chargebacks reduce an open request
+
+The amount is frozen when the request opens, but chargebacks keep debiting the ledger. A reversal landing afterwards would otherwise leave the request promising money the publisher no longer has.
+
+So, in the same transaction as the chargeback entry (`WithdrawalService::applyChargeback()`, called from both `ConversionProcessor::reverse()` and `forceReverse()`):
+
+- A `requested` withdrawal is reduced by the chargeback, never below `0.000000`. `processing` and `paid` are left alone — §5, no automatic clawback.
+- If the reduced amount falls under `max(publishers.min_payout, 20.00)` it is auto-rejected with an `admin_note`, keeping the amount as the record of what the chargebacks did to it. The statements it settled are unlinked, so the next monthly run re-settles them on a fresh request.
+- **No ledger entry for the reduction.** `requested` was never debited; the chargeback entry is the only movement.
+- `withdrawal.reduced_by_chargeback` is written to `audit_logs` with the amount before and after. Like every other entry in that table it needs an actor, so the automatic postback path records nothing — only an admin `forceReverse()` does.
+
+`approve()` refuses outright if the amount still exceeds the publisher's `clearedBalance()`. Defense in depth: whatever else drifts, we never pay out more than has cleared.
+
 ### Admin processing
 
 The admin queue shows, per request: publisher, amount, method, masked destination, account age, lifetime earnings, **fraud score**, reversal rate, and the last 30 days of conversions.
 
 - **Approve** → `processing`, writes the negative ledger entry, decrements the cached balance.
 - **Mark paid** → `paid` with an external `tx_reference`. Notifies the publisher.
-- **Reject** → `rejected` with a mandatory reason. No ledger entry. Balance untouched. Notifies the publisher with the reason.
+- **Reject** → `rejected` with a mandatory reason. From `requested`, no ledger entry and the balance is untouched. From `processing`, a compensating `adjustment` referenced to the withdrawal returns the amount. Notifies the publisher with the reason.
 
-Every transition writes to `audit_logs` with the actor.
+Every transition writes to `audit_logs` with the actor, and moves the statements the withdrawal settles (§9): paid → `paid`, rejected → back to `pending` and unlinked.
 
 ### Payments are manual in v1
 
@@ -265,3 +281,39 @@ Every money figure in either panel comes from one of two places: `ledger_entries
 - Ledger immutability: `update()` and `delete()` both throw.
 - Drift job detects a hand-corrupted cached balance and does not correct it.
 - Withdrawal snapshots payment details, and later editing the payment method does not change the withdrawal.
+- One statement per (publisher, period), keyed on `created_at` month; payout traffic excluded; a rerun leaves it unchanged and opens no second withdrawal.
+- A withdrawal settles every unlinked statement up to the previous month; `paid` flips them all; `reject` unlinks them and the next run relinks.
+- Below the minimum → `carried`, no withdrawal; the next run that clears the minimum settles both months.
+- The backfill is idempotent and `--dry-run` writes nothing.
+
+---
+
+## 9. Monthly Statements
+
+`payout_statements` is one row per publisher per calendar month — what the Payments page lists and what the credit note is issued for. A statement says what the month **earned**; the withdrawal it links to says what was **paid**. They are different rows on purpose.
+
+| Column | Meaning |
+|---|---|
+| `period` | First day of the month, UTC. Unique with `publisher_id`. |
+| `gross` | Σ `earning` (and `referral`) entries **created** in the month |
+| `chargebacks` | Σ `chargeback` entries created in the month (≤ 0) |
+| `adjustments` | Σ `adjustment` entries created in the month, excluding the compensating credit a rejected payout writes |
+| `net` | `gross + chargebacks + adjustments` |
+| `status` | `pending` · `carried` · `paid` |
+| `due_date` | Last day of the month after the period — **NET 30** as the panel states it |
+| `withdrawal_id` | The payout that settles it, once one exists |
+| `note` | Why nothing was requested: the blocked reason, "below the minimum", or a rejection |
+
+**Bucketed by `ledger_entries.created_at`, not `available_at`.** Chargebacks and adjustments have no `available_at`; the 2026-09-01 migration rewrote historical `available_at` values; and the credit note already buckets conversions by month of creation. One rule for every type, and the statement, the credit note and the "This month" card all agree. `withdrawal` entries are payout traffic, not activity, and are left out.
+
+**Frozen once written.** `PayoutStatementService::generate()` is `firstOrCreate` on the unique key and never recomputes. A late entry for a closed month lands on the balance (and the next payout) but does not move a document a publisher may already have reconciled.
+
+**Rollover is derived, not stored.** A month whose net is ≤ 0 or below the minimum is `carried` with no withdrawal. Nothing accumulates in the statement: the ledger already accumulates, and the next payout is the full cleared balance. When that payout opens, `settle()` links **every** unlinked statement up to the previous month, so a `carried` August and a `pending` September both point at October's withdrawal. The detail modal on the latest of them shows the part the linked statements do not explain — an entry that landed between midnight and the 00:10 run, or money credited back from a rejection — as "Carried from earlier periods". A statement's `net` therefore does not have to equal the withdrawal's `amount`; support should read that as designed, not as drift.
+
+**Status follows the withdrawal.** `markPaid()` flips every linked statement to `paid` inside the same transaction. `reject()` unlinks them, back to `pending`, with the reason in `note`; the next run settles them again. There is no `rejected` statement — rejection belongs to the payment attempt, not to the period.
+
+**Order on the 1st.** `withdrawals:request-monthly` writes last month's statements first, then opens withdrawals, then links. One command, so the order cannot be lost to two cron entries. `payouts:backfill-statements` is the one-time catch-up after the migration (docs/11 §4).
+
+**Nightly check.** `payouts:reconcile-statements` (03:05, after `ledger:reconcile`) asserts the structure: a `paid` statement has a paid withdrawal and a `paid_at`; a `pending` one linked to a withdrawal is not linked to a rejected or already-paid one; a `carried` one is not linked at all; `net` is `gross + chargebacks + adjustments`; `due_date` is the end of the following month; no statement is settled by a withdrawal requested before its month began (a request made inside the month is allowed only by the backfill's `--link-through`). A statement's net differing from the withdrawal's amount is **not** a failure — that is the carry. Failures raise `statements.drift` through `AdminAlert` and are never corrected automatically.
+
+The credit note for a withdrawal with statements covers `min(period)` to `max(period)` end of month and is due on `max(due_date)`; a withdrawal from before statements existed keeps the old "since the previous paid withdrawal, due in 30 days" derivation.

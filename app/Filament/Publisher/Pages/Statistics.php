@@ -5,6 +5,7 @@ namespace App\Filament\Publisher\Pages;
 use App\Filament\Publisher\Support\CurrentPublisher;
 use App\Models\App;
 use App\Models\DailyStat;
+use App\Services\Money\Money;
 use App\Services\Reporting\StatsQuery;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -13,7 +14,7 @@ use Filament\Pages\Page;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 use Locale;
 
@@ -28,9 +29,11 @@ class Statistics extends Page implements HasSchemas
 {
     use InteractsWithSchemas;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-chart-column';
 
-    protected static ?int $navigationSort = 4;
+    protected static string|\UnitEnum|null $navigationGroup = 'Overview';
+
+    protected static ?int $navigationSort = 2;
 
     protected string $view = 'filament.publisher.pages.statistics';
 
@@ -58,6 +61,8 @@ class Statistics extends Page implements HasSchemas
                 ->hiddenLabel()
                 ->placeholder('All countries')
                 ->options(fn (): array => $this->getCountryOptionsProperty())
+                // The flag is the option; the code and name are its caption.
+                ->allowHtml()
                 ->multiple()
                 ->searchable()
                 ->native(false)
@@ -81,7 +86,7 @@ class Statistics extends Page implements HasSchemas
             ->distinct()
             ->orderBy('country')
             ->pluck('country')
-            ->mapWithKeys(fn (string $code): array => [$code => self::countryLabel($code)])
+            ->mapWithKeys(fn (string $code): array => [$code => self::countryFlagLabel($code)])
             ->all();
     }
 
@@ -143,6 +148,18 @@ class Statistics extends Page implements HasSchemas
     }
 
     /**
+     * The flag beside the name, as markup — for the filter and the breakdown.
+     * The flag says which country, so the code is not repeated in the label.
+     */
+    public static function countryFlagLabel(string $code): string
+    {
+        return view('filament.publisher.country-flag-inline', [
+            'code' => $code,
+            'label' => Str::after(self::countryLabel($code), '— '),
+        ])->render();
+    }
+
+    /**
      * Breakdowns by app and country. "By offer" and "by device" are both
      * deliberately absent: `daily_stats` carries neither dimension — its
      * unique key is (date, publisher, app, network, country) — and reaching
@@ -158,7 +175,7 @@ class Statistics extends Page implements HasSchemas
 
         return [
             'By app' => $this->breakdown('app_id', fn (string $key): string => $apps[(int) $key] ?? "App {$key}"),
-            'By country' => $this->breakdown('country', self::countryLabel(...)),
+            'By country' => $this->breakdown('country', self::countryFlagLabel(...), html: true),
         ];
     }
 
@@ -166,20 +183,21 @@ class Statistics extends Page implements HasSchemas
      * @param  callable(string): string  $label
      * @return list<array<string, mixed>>
      */
-    private function breakdown(string $column, callable $label): array
+    private function breakdown(string $column, callable $label, bool $html = false): array
     {
         return $this->query()
             ->groupedBy($column, 25)
-            ->map(function (object $row) use ($label): array {
+            ->map(function (object $row) use ($label, $html): array {
                 $clicks = (int) $row->clicks;
                 $conversions = (int) $row->conversions;
 
                 return [
                     'label' => $label((string) $row->bucket),
+                    'html' => $html,
                     'clicks' => $clicks,
                     'conversions' => $conversions,
                     'cr' => $clicks === 0 ? '—' : number_format($conversions / $clicks * 100, 2).'%',
-                    'earnings' => number_format((float) $row->payout, 2),
+                    'earnings' => Money::display($row->payout),
                 ];
             })
             ->values()

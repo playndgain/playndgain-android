@@ -1,206 +1,1517 @@
 /* Filament panel theme — admin and publisher, one file. See design.md §10.
-   Everything brand-level comes from tokens.css; this file only maps it onto
-   Filament's own variables and dresses the auth pages. */
+
+   Ink & Amber, in Sora, with the site's shapes: the panels read as the
+   product the landing sells, not as a generic admin. Two things set them
+   apart from the stock Filament layout (and from anything they descend
+   from): there is no top bar — the brand, the search and the account live
+   in a sidebar that sits directly on the ink ground — and the page itself is
+   a raised sheet with a rounded edge, the way the landing's sections sit on
+   one another. Everything the chrome paints is pinned here in the site's
+   values; tokens.css is still imported because the wall's live preview
+   (wall-ui.css) and the shared type roles read it, and the preview must keep
+   looking like the wall. */
 
 @import '../../../vendor/filament/filament/resources/css/theme.css';
+@import '../../../vendor/leek/filament-header-filters/resources/css/filament-header-filters.css';
+@import '../fonts.css';
+@import '../site-fonts.css';
 @import '../tokens.css';
+@import '../brand-mark.css';
+@import '../site-intro.css';
 @import '../wall-ui.css';
 
 
 @source '../../../app/Filament';
 @source '../../views/filament';
+@source '../../views/vendor/announcements';
+@source '../../../vendor/bezhansalleh/filament-panel-switch/resources/views/**/*.blade.php';
+@source '../../../vendor/vitisstudio/filament-choosable-chips/resources/views';
+@source '../../../vendor/zpmlabs/filament-popup/resources/views/**/*';
+
+/* ── Names for the utilities the custom views use. `panel-*` are the chrome's
+      own surfaces; fog and amber are the site's ramps. The two radius names
+      the views carry are moved onto the site's scale (the wall never reads
+      them). ── */
+@theme {
+  --color-fog-50:  #F4F5FA;
+  --color-fog-300: #C3C7D6;
+  --color-fog-400: #A6ABBE;
+  --color-fog-500: #8B90A8;
+  --color-amber-300: #FFC554;
+  --color-amber-400: #FFB020;
+  --color-amber-500: #F28C1A;
+  --color-panel-ground: #0A0B14;
+  --color-panel-sheet:  #0F1120;
+  --color-panel-card:   #11131F;
+  --color-panel-tile:   #1A1D2E;
+  --color-panel-line:   #262A40;
+  --color-panel-line-strong: #343954;
+
+  --radius-control: 12px;
+  --radius-card: 20px;
+
+  /* Filament rounds through Tailwind's scale: chips 8, controls 12, inputs
+     and tiles 14, cards 20, the big containers 24. Pills are set by hand. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+}
 
 /* ── Surfaces. Filament reads its greys as CSS variables, so the ramp is
-      swapped rather than every component being restyled. Scoped to .dark: the
-      panels force dark mode, and an unscoped ramp would invert light mode into
-      an unreadable state if anyone ever unforces it. ── */
+      swapped rather than every component restyled: ink for the dark end, fog
+      for the light. Scoped to .dark — the panels force dark mode, and an
+      unscoped ramp would invert light mode into an unreadable state if
+      anyone ever unforces it. ── */
 :root.dark {
-  --gray-50:  #E9ECF1;
-  --gray-100: #DDE1E8;
-  --gray-200: #C7CDD6;
-  --gray-300: #A2ABB8;
-  --gray-400: #6E7784;
-  --gray-500: #363D47;
-  --gray-600: #262B33;
-  --gray-700: #1A1E24;
-  --gray-800: #14171B;
-  --gray-900: #0E1013;
-  --gray-950: #08090A;
+  --gray-50:  #F4F5FA;
+  --gray-100: #E4E6EF;
+  --gray-200: #C3C7D6;
+  --gray-300: #A6ABBE;
+  --gray-400: #8B90A8;
+  --gray-500: #5F6478;
+  --gray-600: #343954;
+  --gray-700: #262A40;
+  --gray-800: #1A1D2E;
+  --gray-900: #11131F;
+  --gray-950: #0A0B14;
 }
 
-/* Filament generates a primary ramp from one hex, normalising lightness on the
-   way — which moves the brand amber off its exact value. The two shades that
-   actually paint buttons and links are pinned back. */
+/* Filament generates a primary ramp from one hex, normalising lightness on
+   the way — which moves the amber off its exact value. The shades that
+   actually paint buttons, links and rings are pinned back. */
 :root {
-  --primary-400: #FFBE4D;
-  --primary-500: #F5A524;
-  --primary-600: #F5A524;
+  --primary-300: #FFC554;
+  --primary-400: #FFC554;
+  --primary-500: #FFB020;
+  --primary-600: #FFB020;
 }
 
-/* Money is money on every surface. Filament tables and badges get the same
-   tabular mono the landing page uses. */
+/* Filament's state ramps in the site's pigments: success is the credited
+   green, danger the reversed red, warning the brand's own amber, info the
+   fog. The semantics are Filament's; only the colours change. */
+:root {
+  --success-400: #6EE7A8;
+  --success-500: #16B364;
+  --success-600: #12995A;
+  --danger-400: #F49A9D;
+  --danger-500: #E5484D;
+  --danger-600: #C93A3F;
+  --warning-400: #FFC554;
+  --warning-500: #FFB020;
+  --warning-600: #F28C1A;
+  --info-400: #A6ABBE;
+  --info-500: #8B90A8;
+  --info-600: #7E839A;
+}
+
+/* ── Money direction. The panels register `gain` and `loss` as colours;
+      Filament normalises a ramp from the hex, so the shades that paint text
+      are pinned back to the exact tokens: a gain is the site's gold, a loss
+      its rose — "the only rose is a negative amount". ── */
+:root {
+  --gain-200: #FFC554;
+  --gain-300: #FFC554;
+  --gain-400: #FFB020;
+  --gain-500: #FFB020;
+  --gain-600: #F28C1A;
+  --loss-200: #F49A9D;
+  --loss-300: #F49A9D;
+  --loss-400: #F49A9D;
+  --loss-500: #E5484D;
+  --loss-600: #C93A3F;
+}
+
+/* A table cell or entry that asks for gain or loss gets it, over the mist
+   the rest of the table is set in. */
+.fi-ta-text-item.fi-color-gain,
+.fi-in-text-item.fi-color-gain {
+  color: #FFB020;
+}
+
+.fi-ta-text-item.fi-color-loss,
+.fi-in-text-item.fi-color-loss {
+  color: #F49A9D;
+}
+
+/* ── Base. One family: Sora, weight and colour carry the hierarchy. The wall
+      preview keeps its own faces (wall-ui.css sets them on .wall). The ground
+      is the site's ink with the hero's amber warmth rising from the bottom
+      left, fixed behind everything. ── */
+:root {
+  --font-panel: 'Sora Variable', 'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+:root.dark,
+.fi-body {
+  color-scheme: dark;
+}
+
+.fi-body {
+  position: relative;
+  background-color: #0A0B14;
+  color: #F4F5FA;
+  font-family: var(--font-panel);
+  -webkit-font-smoothing: antialiased;
+}
+
+.fi-body :is(input, button, select, textarea, .fi-btn, .fi-link, .fi-badge) {
+  font-family: inherit;
+}
+
+/* ── Type. Sora at 700, tight, for what is said; 600 for section heads;
+      figures tabular in the same face — a figure is not code. ── */
+.fi-header-heading,
+.fi-simple-header-heading,
+.fi-modal-heading,
+.fi-wi-stats-overview-stat-value,
+.fi-ta-header-heading,
+.fi-ta-empty-state-heading,
+.fi-section-header-heading {
+  font-family: var(--font-panel);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.fi-header-heading {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.fi-header-subheading {
+  color: #A6ABBE;
+}
+
+.fi-breadcrumbs {
+  font-size: 0.8125rem;
+}
+
+.fi-breadcrumbs-item-label {
+  color: #8B90A8;
+}
+
+.fi-section-header-heading,
+.fi-ta-header-heading {
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.fi-section-header-description {
+  color: #8B90A8;
+}
+
+.fi-wi-stats-overview-stat-value {
+  font-size: 2rem;
+  line-height: 1.05;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+.fi-wi-stats-overview-stat-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #A6ABBE;
+}
+
+.fi-wi-stats-overview-stat-description {
+  font-size: 0.8125rem;
+}
+
 .fi-ta-text-item-label:has(.fi-ta-text-item-label-money),
 .fi-in-text-item-label-money,
+.fi-ta-text-item.fi-font-mono,
 .num {
-  font-family: 'Geist Mono', ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
 }
 
-.fi-body { background-color: #08090A; }
+.fi-ta-text-item.fi-font-mono,
+.fi-in-text-item.fi-font-mono {
+  font-family: var(--font-panel);
+  letter-spacing: 0;
+  font-variant-numeric: lining-nums tabular-nums;
+}
 
-/* ── Auth shell: form left, the trace on the vault wall right — the same
-      composition as the marketing site, so signing in lands somewhere
-      familiar. The brand panel is injected by a render hook at
-      SIMPLE_LAYOUT_START, so it is first in the DOM and ordered to the right;
-      the form stays first for keyboard and screen-reader users. ── */
-.fi-auth-brand { display: none; }
+/* Table headers as the site's labels. */
+.fi-ta-header-cell-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8B90A8;
+}
 
-@media (min-width: 1024px) {
-  .fi-simple-layout:has(.fi-auth-brand) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-    align-items: stretch;
+/* ── The layout: no top bar. The sidebar is the ground itself — no fill, no
+      edge — and the page is a sheet raised off it with the site's 28px
+      corner and a hairline. Below `lg` the sidebar is Filament's overlay and
+      needs a solid ground; the sheet drops its margins and corners. ── */
+.dark .fi-sidebar,
+.fi-sidebar {
+  background-color: transparent;
+  --tw-ring-shadow: 0 0 #0000;
+  box-shadow: none;
+  border: 0;
+}
+
+/* The nav scrolls on its own when it must; the bar is a thin ink line. */
+.fi-sidebar-nav {
+  scrollbar-width: thin;
+  scrollbar-color: #262A40 transparent;
+}
+
+/* The shared type roles (tokens.css) set the serif; on a panel page they
+   are Sora like everything else — and so is the wall preview, since the
+   wall itself moved to Sora (2026-09-02, wall.css). */
+.fi-page :is(.display, .display-2, .numeral, .index) {
+  font-family: var(--font-panel);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.fi-page .wall {
+  --font-sans: var(--font-panel);
+  --font-display: var(--font-panel);
+  --font-brand: var(--font-panel);
+}
+
+.fi-page :is(.display, .display-2) em {
+  font-style: normal;
+  color: #FFC554;
+}
+
+.fi-page .index {
+  font-weight: 600;
+  color: #FFC554;
+}
+
+.fi-sidebar-nav {
+  padding-inline: 1rem;
+  padding-block: 0.5rem 1.5rem;
+}
+
+.fi-sidebar-nav-groups {
+  gap: 1.5rem;
+}
+
+.fi-sidebar-group-btn {
+  padding: 0 0.75rem 0.375rem;
+}
+
+.fi-sidebar-group-label,
+.dark .fi-sidebar-group-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #5F6478;
+}
+
+.fi-sidebar-group-collapse-btn .fi-icon {
+  color: #5F6478;
+}
+
+.fi-sidebar-item-btn {
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fi-sidebar-item-label,
+.dark .fi-sidebar-item-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #A6ABBE;
+}
+
+.fi-sidebar-item-btn > .fi-icon,
+.dark .fi-sidebar-item-btn > .fi-icon {
+  color: #8B90A8;
+  transition: color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A link that leaves the panel says so: the outward arrow after the label,
+   on any item Filament opens in a new tab, in either panel. */
+.fi-sidebar-item-btn[target="_blank"]::after {
+  content: "";
+  flex: none;
+  margin-inline-start: auto;
+  inline-size: 0.85rem;
+  block-size: 0.85rem;
+  background-color: #5F6478;
+  mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7h10v10'/%3E%3Cpath d='M7 17 17 7'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.dark .fi-sidebar-item-btn[target="_blank"]:hover::after {
+  background-color: #A6ABBE;
+}
+
+.dark .fi-sidebar-item-btn:hover,
+.dark .fi-sidebar-item-btn:focus-visible {
+  background-color: #1A1D2E;
+}
+
+.dark .fi-sidebar-item-btn:hover .fi-sidebar-item-label,
+.dark .fi-sidebar-item-btn:hover > .fi-icon {
+  color: #F4F5FA;
+}
+
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn:hover {
+  background-color: color-mix(in srgb, #FFB020 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #FFB020 22%, transparent);
+}
+
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn .fi-sidebar-item-label,
+.dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon {
+  color: #FFC554;
+}
+
+.fi-sidebar-item-badge-ctn .fi-badge {
+  border-radius: 999px;
+}
+
+/* ── Topbar (Header): Brand, Badge, Global Search & User Menu ─────────── */
+.dark .fi-topbar-ctn,
+.fi-topbar-ctn {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  overflow: visible;
+  background-color: #0A0B14;
+  border-bottom: 1px solid rgba(38, 42, 64, 0.75);
+}
+
+/* The topbar is a sibling of `.fi-layout`, not of the modal. Its z-30
+   stacking context therefore paints over every Filament drawer and dialog
+   (they live inside the page, so raising `.fi-modal-window-ctn` never
+   wins). Drop the bar under the overlay while one is open. */
+.fi-body:has(.fi-modal-open) .fi-topbar-ctn,
+.fi-body:has(.fi-modal-open) .fi-admin-rail {
+  z-index: 0;
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .dark .fi-topbar-ctn,
+  .fi-topbar-ctn {
+    background-color: rgba(10, 11, 20, 0.82);
+    -webkit-backdrop-filter: blur(16px) saturate(1.3);
+    backdrop-filter: blur(16px) saturate(1.3);
+  }
+}
+
+.dark .fi-topbar,
+.fi-topbar {
+  background-color: transparent;
+  --tw-ring-shadow: 0 0 #0000;
+  box-shadow: none;
+  border: 0;
+  min-height: 4.25rem;
+  /* The brand starts where the sidebar starts — the same 0.75rem the nav
+     column keeps from the edge — not a step further in. */
+  padding-inline: 0.75rem 1.5rem;
+}
+
+.fi-topbar-start {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* The lockup names the panel on its second line (components/brand-mark). */
+.fi-topbar .fi-logo {
+  display: flex;
+  align-items: center;
+}
+
+.fi-topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-inline-start: auto;
+}
+
+.fi-global-search .fi-input-wrp,
+.dark .fi-global-search .fi-input-wrp {
+  border-radius: 999px;
+  background-color: #11131F;
+  --tw-ring-color: #262A40;
+  min-width: 16rem;
+  box-shadow: inset 0 0 0 1px #262A40;
+}
+
+.fi-global-search .fi-input {
+  font-size: 0.875rem;
+}
+
+/* Filament's topbar uses overflow-x-clip. With this bar's sticky stack
+   and backdrop-filter that clip hides the results panel, especially in
+   Safari. The bar has no shadow here, so the clip is only costing the
+   dropdown. */
+.fi-global-search-results-ctn {
+  z-index: 40;
+  background-color: #151827;
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px #262A40;
+}
+
+.fi-global-search-result-group-header {
+  background-color: #11131F;
+  border-color: #262A40;
+  color: #A6ABBE;
+}
+
+.fi-global-search-result-heading {
+  color: #F4F5FA;
+}
+
+.fi-global-search-no-results-message,
+.fi-global-search-result-detail {
+  color: #8B90A8;
+}
+
+.fi-topbar .fi-user-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 2px;
+  transition: box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fi-topbar .fi-user-menu-trigger:hover,
+.fi-topbar .fi-user-menu-trigger:focus-visible {
+  box-shadow: 0 0 0 2px #FFB020;
+}
+
+/* The sheet. */
+.fi-main-ctn {
+  padding: 0.75rem 0.75rem 0.75rem 0;
+}
+
+.fi-body:not(.fi-body-has-topbar) .fi-main-ctn {
+  min-height: 100dvh;
+}
+
+.fi-main {
+  max-width: none;
+  border-radius: 28px;
+  background-color: #0F1120;
+  box-shadow: inset 0 0 0 1px #262A40, inset 0 1px 0 rgb(255 255 255 / 0.04);
+  padding: 2rem 2.5rem 3rem;
+}
+
+.fi-main > .fi-page,
+.fi-main > .fi-simple-page {
+  max-width: 1400px;
+  margin-inline: auto;
+}
+
+@media (max-width: 63.99rem) {
+  .dark .fi-sidebar,
+  .fi-sidebar {
+    background-color: #0A0B14;
+    box-shadow: inset -1px 0 0 #262A40;
   }
 
-  .fi-auth-brand {
-    display: block;
-    order: 2;
-    position: relative;
-    overflow: hidden;
-    border-inline-start: 1px solid #262B33;
+  .fi-main-ctn {
+    padding: 0;
   }
 
-  .fi-simple-layout:has(.fi-auth-brand) .fi-simple-main-ctn {
-    order: 1;
-    padding-inline: 4rem;
-  }
-
-  /* The form is not a card here — it sits on the page like the landing hero. */
-  .fi-simple-layout:has(.fi-auth-brand) .fi-simple-main {
-    background-color: transparent;
+  .fi-main {
+    border-radius: 0;
     box-shadow: none;
-    --tw-ring-shadow: 0 0 #0000;
-    padding-inline: 0;
-    max-width: 400px;
-  }
-
-  /* The register wizard needs the extra room its four-step rail asks for; the
-     login and reset forms stay at the prototype's narrower measure. */
-  .fi-simple-layout:has(.fi-sc-wizard) .fi-simple-main {
-    max-width: 540px;
-  }
-
-  /* Left-aligned, like the site. Filament centres its auth header, which reads
-     as a modal rather than a page once the composition is split in two. */
-  .fi-simple-layout:has(.fi-auth-brand) .fi-simple-header {
-    text-align: start;
-    align-items: flex-start;
+    padding: 1.25rem 1rem 2rem;
   }
 }
 
-.fi-simple-header-heading {
-  font-variation-settings: 'wdth' 125;
-  letter-spacing: -0.03em;
+/* The page arrives: a fade, once per load. A transform here becomes a
+   containing block for Filament's position:fixed slide-overs — fill-mode
+   `both` leaves an identity matrix on `.fi-page`, so the drawer pins to
+   the page box, sits off-screen, and opens scrolled to Close. Reduced
+   motion stops it (tokens.css). */
+@keyframes fi-page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
+
+.fi-main > .fi-page {
+  animation: fi-page-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Phone width ─────────────────────────────────────────────────────────────
+   The topbar: brand a step smaller, the search flexible instead of a fixed
+   16rem, so the account avatar is on screen rather than past the edge. The
+   stat cards: two to a row and tighter, so the dashboard is a screen or two
+   of figures rather than a dozen tall cards in a column. ── */
+@media (max-width: 640px) {
+  .dark .fi-topbar,
+  .fi-topbar {
+    gap: 0.5rem;
+    padding-inline: 0.75rem;
+  }
+
+  .fi-topbar-start {
+    flex: none;
+  }
+
+  .fi-topbar .brand-mark-tile {
+    width: 30px;
+    height: 30px;
+  }
+
+  .fi-topbar .brand-mark-word {
+    font-size: 17px !important;
+  }
+
+  .fi-topbar .brand-mark-label {
+    font-size: 9px;
+  }
+
+  .fi-topbar-end {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  /* The avatar never shrinks; the search gives way instead. */
+  .fi-topbar-end > .fi-dropdown,
+  .fi-topbar .fi-user-menu {
+    flex: none;
+  }
+
+  .fi-global-search-ctn,
+  .fi-global-search {
+    flex: 1 1 5rem;
+    min-width: 3rem;
+  }
+
+  .fi-global-search .fi-input-wrp,
+  .dark .fi-global-search .fi-input-wrp {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Too narrow for a word: the pill reads as its icon until you type. */
+  .fi-global-search .fi-input::placeholder {
+    color: transparent;
+  }
+
+  .fi-wi-stats-overview .fi-grid:has(.fi-wi-stats-overview-stat) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.6rem;
+  }
+
+  /* An odd last card takes the whole row rather than leaving a gap. */
+  .fi-wi-stats-overview .fi-grid:has(.fi-wi-stats-overview-stat) > .fi-grid-col:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .dark .fi-wi-stats-overview-stat,
+  .fi-wi-stats-overview-stat {
+    padding: 0.9rem 1rem 1rem;
+    border-radius: 14px;
+  }
+
+  .fi-wi-stats-overview-stat-value {
+    font-size: 1.5rem;
+  }
+
+  .fi-wi-stats-overview-stat-label,
+  .fi-wi-stats-overview-stat-description {
+    font-size: 0.75rem;
+  }
+}
+
+/* ── Hairlines. Filament separates dark surfaces with a 10% white ring; the
+      system separates them with a 1px line one step lighter than the
+      surface. Cards on the sheet are ink-900; tiles on a card are ink-800. ── */
+.dark .fi-section,
+.dark .fi-ta-ctn,
+.dark .fi-wi-stats-overview-stat,
+.dark .fi-wi-widget,
+.dark .fi-dropdown-panel,
+.dark .fi-modal-window,
+.dark .fi-fo-repeater-item,
+.dark .fi-sc-tabs,
+.dark .fi-fo-file-upload,
+.dark .fi-in-text-item,
+.dark .fi-tabs,
+.dark .fi-no-notification,
+.dark .fi-fieldset {
+  --tw-ring-color: #262A40;
+}
+
+.dark .fi-section,
+.dark .fi-ta-ctn,
+.dark .fi-wi-stats-overview-stat,
+.dark .fi-wi-widget,
+.dark .fi-modal-window,
+.dark .fi-no-notification {
+  background-color: #11131F;
+}
+
+.dark .fi-dropdown-panel {
+  background-color: #151827;
+  border-radius: 14px;
+}
+
+.fi-dropdown-list-item {
+  border-radius: 10px;
+}
+
+.dark .fi-modal-window {
+  border-radius: 24px;
+}
+
+.dark .fi-modal-slide-over > .fi-modal-window-ctn > .fi-modal-window {
+  border-radius: 0;
+}
+
+.dark .fi-ta-row:hover,
+.dark .fi-ta-row.fi-selected {
+  background-color: #151827;
+}
+
+.dark .fi-ta-header,
+.dark .fi-ta-header-toolbar {
+  border-color: #1F2336;
+}
+
+.dark .fi-ta-table > tbody > tr,
+.dark .fi-ta-table > thead > tr,
+.dark .fi-ta-table > tbody,
+.dark .fi-ta-table > thead {
+  border-color: #1F2336;
+}
+
+/* Inputs: the tile on the card, a control border, an amber ring. */
+.dark .fi-input-wrp,
+.dark .fi-fo-select .fi-select-input,
+.dark .fi-fo-rich-editor,
+.dark .fi-fo-markdown-editor {
+  background-color: #1A1D2E;
+  --tw-ring-color: #262A40;
+  border-radius: 12px;
+}
+
+.dark .fi-input-wrp:hover {
+  --tw-ring-color: #343954;
+}
+
+.dark .fi-input-wrp:focus-within {
+  --tw-ring-color: #FFB020;
+}
+
+.fi-checkbox-input {
+  border-radius: 6px;
+}
+
+.fi-fo-field-label {
+  font-weight: 600;
+}
+
+.dark .fi-fo-field-label-content {
+  color: #F4F5FA;
+}
+
+/* Buttons and badges: pills. The primary is the amber gradient with its glow,
+   and what reads on amber is the deep brown, not white. Grey buttons are the
+   tile with a hairline. */
+.fi-btn {
+  border-radius: 999px;
+  font-weight: 600;
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1), color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fi-btn.fi-size-md:not(.fi-icon-btn) {
+  padding-inline: 1.125rem;
+}
+
+/* Icon-only buttons (the row "⋯" menu, header icons) never get the gradient,
+   so they must keep Filament's amber text — ink on the dark tile is invisible. */
+.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):not(.fi-icon-btn),
+.dark .fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):not(.fi-icon-btn),
+.fi-dropdown-list-item.fi-color-primary.fi-selected {
+  --text: #1A1000;
+  --dark-text: #1A1000;
+  color: #1A1000;
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link),
+.dark .fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link) {
+  background: linear-gradient(135deg, #FFC554, #F28C1A);
+  box-shadow: 0 0 0 1px rgb(255 176 32 / 0.25), 0 16px 40px -20px rgb(255 176 32 / 0.5);
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):hover,
+.dark .fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):hover {
+  background: linear-gradient(135deg, #FFD077, #F59A2E);
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link) .fi-icon,
+.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link) .fi-btn-label {
+  color: #1A1000;
+}
+
+.dark .fi-btn.fi-color-gray:not(.fi-outlined):not(.fi-link) {
+  background-color: #1A1D2E;
+  --tw-ring-color: #262A40;
+  color: #F4F5FA;
+}
+
+.dark .fi-btn.fi-color-gray:not(.fi-outlined):not(.fi-link):hover {
+  background-color: #222639;
+  --tw-ring-color: #343954;
+}
+
+.fi-badge {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.fi-tabs {
+  border-radius: 999px;
+  padding: 0.25rem;
+}
+
+.fi-tabs-item {
+  border-radius: 999px;
+}
+
+.dark .fi-tabs-item.fi-active {
+  background-color: #1A1D2E;
+}
+
+.dark .fi-tabs-item.fi-active .fi-tabs-item-label {
+  color: #F4F5FA;
+}
+
+.fi-avatar {
+  box-shadow: 0 0 0 1px #262A40;
+}
+
+/* Focus rings match the site exactly — one visual language for "you are here". */
+.fi-body a:focus-visible,
+.fi-body button:focus-visible,
+.fi-body summary:focus-visible,
+.fi-simple-layout a:focus-visible,
+.fi-simple-layout button:focus-visible {
+  outline: 2px solid #FFB020;
+  outline-offset: 3px;
+}
+
+/* ── Auth shell (Ink & Amber): the brand panel on the left, the form in an
+      ink card on the right, one amber glow under both — the marketing site's
+      system, applied to the one part of the panels a visitor sees before
+      they belong to it. The panel is injected by a render hook at
+      SIMPLE_LAYOUT_START (resources/views/filament/auth-brand.blade.php); it
+      is decorative and aria-hidden, so its DOM position costs keyboard users
+      nothing. Sora is the panels' face too now (site-fonts.css). ── */
+.fi-simple-layout {
+  --font-brand: 'Sora Variable', 'Sora', system-ui, sans-serif;
+  --primary-400: #FFC554;
+  --primary-500: #FFB020;
+  --primary-600: #FFB020;
+  font-family: 'Sora Variable', 'Sora', system-ui, sans-serif;
+  color: #F4F5FA;
+  background:
+    radial-gradient(60% 50% at 20% 105%, rgb(255 176 32 / 0.26), transparent 70%),
+    radial-gradient(40% 45% at 100% -10%, rgb(42 33 112 / 0.6), transparent 70%),
+    #0A0B14;
+}
+
+.fi-simple-layout :is(input, button, select, textarea, .fi-btn, .fi-link) {
+  font-family: inherit;
+}
+
+/* The card floats on a phone too: Filament runs it edge to edge below `sm`. */
+.fi-simple-layout .fi-simple-main-ctn {
+  padding-inline: 1rem;
+}
+
+.fi-simple-layout .fi-simple-main,
+.dark .fi-simple-layout .fi-simple-main {
+  margin-block: 2rem;
+  padding: 2.25rem 1.5rem;
+  border-radius: 32px;
+  background-color: #11131F;
+  --tw-ring-shadow: 0 0 #0000;
+  box-shadow:
+    inset 0 0 0 1px #262A40,
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 40px 100px -40px rgb(0 0 0 / 0.8);
+}
+
+@media (min-width: 640px) {
+  .fi-simple-layout .fi-simple-main {
+    padding: 3rem;
+  }
+}
+
+/* Header: bold and tight, left-aligned like the site. */
+.fi-simple-layout .fi-simple-header {
+  align-items: flex-start;
+  text-align: start;
+}
+
+.fi-simple-layout .fi-simple-header-heading {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1.75rem;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+  color: #F4F5FA;
+}
+
+.fi-simple-layout .fi-simple-header-subheading {
+  color: #A6ABBE;
+}
+
+/* Labels, helper copy, errors. */
+.fi-simple-layout .fi-fo-field-label {
+  font-weight: 600;
+  color: #F4F5FA;
+}
+
+.fi-simple-layout .fi-sc-text {
+  color: #A6ABBE;
+}
+
+.fi-simple-layout .fi-fo-field-wrp-error-message {
+  color: #F49A9D;
+}
+
+/* Inputs: 14px corners, the ink tile, an amber ring when focused. */
+.fi-simple-layout .fi-input-wrp,
+.dark .fi-simple-layout .fi-input-wrp,
+.dark .fi-simple-layout .fi-fo-select .fi-select-input,
+.dark .fi-simple-layout .fi-fo-textarea {
+  border-radius: 14px;
+  background-color: #1A1D2E;
+  --tw-ring-color: #343954;
+}
+
+.dark .fi-simple-layout .fi-input-wrp:hover {
+  --tw-ring-color: #464C6A;
+}
+
+.dark .fi-simple-layout .fi-input-wrp:focus-within {
+  --tw-ring-color: #FFB020;
+}
+
+.fi-simple-layout .fi-checkbox-input {
+  border-radius: 6px;
+}
+
+/* The wizard's toggle buttons are labels, not buttons, so the primary-button
+   rule below would paint every option amber. Only the checked one is filled.
+   These selectors carry the same weight as that rule on purpose. */
+.fi-simple-layout .fi-fo-toggle-buttons label.fi-btn,
+.dark .fi-simple-layout .fi-fo-toggle-buttons label.fi-btn {
+  border-radius: 14px;
+}
+
+.fi-simple-layout .fi-fo-toggle-buttons label.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link),
+.dark .fi-simple-layout .fi-fo-toggle-buttons label.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link) {
+  background: #1A1D2E;
+  color: #A6ABBE;
+  box-shadow: none;
+  --tw-ring-color: #262A40;
+}
+
+.fi-simple-layout .fi-fo-toggle-buttons input:not(:checked) + label.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):hover,
+.dark .fi-simple-layout .fi-fo-toggle-buttons input:not(:checked) + label.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):hover {
+  background: #1A1D2E;
+  color: #C3C7D6;
+  --tw-ring-color: #464C6A;
+}
+
+.fi-simple-layout .fi-fo-toggle-buttons input:checked + label.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link),
+.dark .fi-simple-layout .fi-fo-toggle-buttons input:checked + label.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link),
+.fi-simple-layout .fi-fo-toggle-buttons input:checked + label.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):hover,
+.dark .fi-simple-layout .fi-fo-toggle-buttons input:checked + label.fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):hover {
+  color: #1A1000;
+  background: linear-gradient(135deg, #FFC554, #F28C1A);
+  box-shadow: 0 0 0 1px rgb(255 176 32 / 0.25), 0 24px 64px -24px rgb(255 176 32 / 0.45);
+}
+
+.fi-simple-layout .fi-fo-toggle-buttons input:focus-visible + label.fi-btn {
+  outline: 2px solid #FFB020;
+  outline-offset: 3px;
+}
+
+/* Buttons: pills. The primary is the amber gradient with its glow, and what
+   reads on amber is the deep brown, not white. */
+.fi-simple-layout .fi-btn {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.fi-simple-layout .fi-btn.fi-size-md:not(.fi-icon-btn) {
+  padding-block: 0.8rem;
+  padding-inline: 1.5rem;
+}
+
+.fi-simple-layout .fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link),
+.dark .fi-simple-layout .fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link) {
+  --text: #1A1000;
+  color: #1A1000;
+  background: linear-gradient(135deg, #FFC554, #F28C1A);
+  box-shadow: 0 0 0 1px rgb(255 176 32 / 0.25), 0 24px 64px -24px rgb(255 176 32 / 0.45);
+}
+
+.fi-simple-layout .fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):hover,
+.dark .fi-simple-layout .fi-btn.fi-color-primary:not(.fi-outlined):not(.fi-link):hover {
+  background: linear-gradient(135deg, #FFD077, #F59A2E);
+}
+
+.fi-simple-layout .fi-link,
+.dark .fi-simple-layout .fi-link {
+  color: #FFC554;
+}
+
+.fi-simple-layout .fi-link:hover,
+.dark .fi-simple-layout .fi-link:hover {
+  color: #FFB020;
+}
+
+/* Focus rings: amber, outside the element — the site's ring. */
+.fi-simple-layout a:focus-visible,
+.fi-simple-layout button:focus-visible {
+  outline: 2px solid #FFB020;
+  outline-offset: 3px;
+}
+
+/* The register wizard's step rail: a tile inside the card. */
+.fi-simple-layout .fi-sc-wizard.fi-contained .fi-sc-wizard-header,
+.dark .fi-simple-layout .fi-sc-wizard.fi-contained .fi-sc-wizard-header {
+  border-radius: 20px;
+  border-bottom: 0;
+  background-color: #0A0B14;
+  --tw-ring-color: #262A40;
+}
+
+.fi-simple-layout .fi-sc-wizard-header-step-number {
+  font-variant-numeric: tabular-nums;
+}
+
+
 
 /* Four steps at Filament's default spacing overflow a 480px auth column and
    turn the progress rail into a horizontal scroller — a rail you have to scroll
    has stopped telling you where you are. Only the step you are on keeps its
-   label, which is the same trade the prototype's rail makes on narrow screens. */
-.fi-sc-wizard-header {
+   label. */
+.fi-simple-layout .fi-sc-wizard-header {
   gap: 0.5rem;
   padding-inline: 0.75rem;
 }
 
-.fi-sc-wizard-header-step {
+.fi-simple-layout .fi-sc-wizard-header-step {
   gap: 0.5rem;
   font-size: 0.8125rem;
 }
 
-.fi-sc-wizard-header-step:not(.fi-active) .fi-sc-wizard-header-step-label {
+.fi-simple-layout .fi-sc-wizard-header-step:not(.fi-active) .fi-sc-wizard-header-step-label {
   display: none;
 }
 
-.fi-auth-brand-img {
-  position: absolute;
-  inset: 0;
-  background-image: url('/img/auth-vault.webp');
-  background-size: cover;
-  background-position: 58% 40%;
-  opacity: .55;
+/* ── App settings wizard (publisher panel). Not Filament's chevron rail:
+   a row of pills that wraps, one per step, the same shape as the sidebar
+   items and the wall's filter pills. Amber for the step you are on, a
+   check for the ones behind you, mist for the ones ahead. Every label
+   stays visible — a rail that names its steps is the map. ── */
+.fi-body .fi-sc-wizard-header,
+.dark .fi-body .fi-sc-wizard-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block-end: 1.5rem;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  --tw-ring-color: transparent;
 }
 
-/* Falls off to page colour so the copy never sits on texture. */
-.fi-auth-brand-veil {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(90% 70% at 70% 15%, transparent 0%, rgba(8,9,10,.55) 55%, rgba(8,9,10,.92) 85%),
-    linear-gradient(to top, #08090A 4%, rgba(8,9,10,.55) 45%, transparent 100%);
+.fi-body .fi-sc-wizard-header-step {
+  display: flex;
+  flex: none;
+  gap: 0;
 }
 
-/* Focus rings match the site exactly — one visual language for "you are here". */
-.fi-simple-layout a:focus-visible,
-.fi-simple-layout button:focus-visible,
-.fi-simple-layout input:focus-visible {
-  outline: 2px solid #F5A524;
-  outline-offset: 3px;
+.fi-body .fi-sc-wizard-header-step-separator {
+  display: none;
+}
+
+.fi-body .fi-sc-wizard-header-step-btn,
+.dark .fi-body .fi-sc-wizard-header-step-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.85rem 0.3rem 0.35rem;
+  border: 1px solid #262A40;
+  border-radius: 999px;
+  background-color: #0A0B14;
+  color: #8B90A8;
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms cubic-bezier(0.22, 1, 0.36, 1), color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fi-body .fi-sc-wizard-header-step-btn:not(:disabled):hover {
+  border-color: #464C6A;
+  color: #C3C7D6;
+}
+
+.fi-body .fi-sc-wizard-header-step-icon-ctn,
+.dark .fi-body .fi-sc-wizard-header-step-icon-ctn {
+  display: grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border: 0;
+  border-radius: 999px;
+  background-color: #151827;
+  color: #8B90A8;
+  box-shadow: none;
+}
+
+.fi-body .fi-sc-wizard-header-step-icon-ctn .fi-icon {
+  inline-size: 0.95rem;
+  block-size: 0.95rem;
+}
+
+.fi-body .fi-sc-wizard-header-step-text {
+  display: flex;
+  align-items: center;
+}
+
+.fi-body .fi-sc-wizard-header-step-label,
+.dark .fi-body .fi-sc-wizard-header-step-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: inherit;
+}
+
+.fi-body .fi-sc-wizard-header-step-description {
+  display: none;
+}
+
+/* Current step. */
+.fi-body .fi-sc-wizard-header-step.fi-active .fi-sc-wizard-header-step-btn,
+.dark .fi-body .fi-sc-wizard-header-step.fi-active .fi-sc-wizard-header-step-btn {
+  border-color: color-mix(in srgb, #FFB020 45%, transparent);
+  background-color: rgb(255 176 32 / 0.10);
+  color: #FFC554;
+}
+
+.fi-body .fi-sc-wizard-header-step.fi-active .fi-sc-wizard-header-step-icon-ctn,
+.dark .fi-body .fi-sc-wizard-header-step.fi-active .fi-sc-wizard-header-step-icon-ctn {
+  background-color: #FFB020;
+  color: #0A0B14;
+}
+
+/* Filament paints the active icon in the primary colour, which on the amber
+   disc is invisible; ink on amber is the pair the brand mark uses. */
+.fi-body .fi-sc-wizard-header-step.fi-active .fi-sc-wizard-header-step-icon-ctn .fi-icon,
+.dark .fi-body .fi-sc-wizard-header-step.fi-active .fi-sc-wizard-header-step-icon-ctn .fi-icon {
+  color: #0A0B14;
+}
+
+/* Steps behind you: a check on an ink disc, the label in the body tone. */
+.fi-body .fi-sc-wizard-header-step.fi-completed .fi-sc-wizard-header-step-btn,
+.dark .fi-body .fi-sc-wizard-header-step.fi-completed .fi-sc-wizard-header-step-btn {
+  color: #C3C7D6;
+}
+
+.fi-body .fi-sc-wizard-header-step.fi-completed .fi-sc-wizard-header-step-icon-ctn,
+.dark .fi-body .fi-sc-wizard-header-step.fi-completed .fi-sc-wizard-header-step-icon-ctn {
+  background-color: #1A1D2E;
+  color: #FFB020;
+}
+
+/* The step footer (Back / Next / Create): a hairline above, like a card foot. */
+.fi-body .fi-sc-wizard-footer {
+  margin-block-start: 1.5rem;
+  padding-block-start: 1.25rem;
+  border-block-start: 1px solid #262A40;
+}
+
+.fi-body .fi-sc-wizard-header-step-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.fi-body .fi-sc-wizard-header-step-description {
+  font-size: 0.75rem;
+  color: #8B90A8;
+}
+
+.fi-body .fi-sc-wizard-header-step-number {
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ── The brand panel: hidden on a phone (the card carries the mark), a full
+      column from `lg` with the claim, three proofs and the real wall on a
+      phone bleeding out of its foot — the landing hero, in short. ── */
+.fi-auth-brand {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .fi-simple-layout:has(.fi-auth-brand) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .fi-auth-brand {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 3rem 3rem 0;
+  }
+
+  .fi-simple-layout:has(.fi-auth-brand) .fi-simple-main-ctn {
+    padding: 3rem;
+  }
+
+  .fi-simple-layout:has(.fi-auth-brand) .fi-simple-main {
+    max-width: 480px;
+    margin-block: 0;
+  }
+
+  .fi-simple-layout:has(.fi-sc-wizard) .fi-simple-main {
+    max-width: 620px;
+  }
+
+  /* The panel carries the mark here; on a phone the card's header does. */
+  .fi-simple-layout:has(.fi-auth-brand) .fi-simple-header .fi-logo {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .fi-auth-brand {
+    padding: 4rem 4rem 0;
+  }
+
+  .fi-simple-layout:has(.fi-auth-brand) .fi-simple-main-ctn {
+    padding: 4rem;
+  }
+}
+
+.fi-auth-brand-body {
+  margin-top: 3rem;
+}
+
+.fi-auth-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 1.5rem;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background-color: #1A1D2E;
+  box-shadow: inset 0 0 0 1px #262A40;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: #C3C7D6;
+}
+
+.fi-auth-eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #FFB020;
+  box-shadow: 0 0 0 3px rgb(255 176 32 / 0.25);
+}
+
+.fi-auth-claim {
+  margin: 0;
+  max-width: 14ch;
+  font-size: clamp(2.25rem, 3vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  color: #F4F5FA;
+  text-wrap: balance;
+}
+
+.fi-auth-lede {
+  margin: 1.25rem 0 0;
+  max-width: 40ch;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: #A6ABBE;
+}
+
+.fi-auth-proofs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.5rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: #A6ABBE;
+}
+
+.fi-auth-proofs li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fi-auth-proofs li::before {
+  content: "✓";
+  font-weight: 700;
+  color: #FFB020;
+}
+
+/* The shot hangs into the panel's foot; the panel's overflow clips it. */
+.fi-auth-shot {
+  position: relative;
+  margin-top: auto;
+  padding-top: 2.5rem;
+  height: 340px;
+}
+
+.fi-auth-phone {
+  position: absolute;
+  left: 0;
+  top: 2.5rem;
+  width: 280px;
+  padding: 10px;
+  border-radius: 44px;
+  background-color: #0B0C16;
+  box-shadow: 0 40px 100px -40px rgb(0 0 0 / 0.8), inset 0 0 0 1px rgb(255 255 255 / 0.1);
+  transform: rotate(-6deg);
+  transform-origin: top left;
+}
+
+.fi-auth-phone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 34px;
+}
+
+.fi-auth-pill {
+  position: absolute;
+  left: 250px;
+  top: 5.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border-radius: 999px;
+  background-color: #FFFFFF;
+  color: #0C0D1A;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgb(12 13 26 / 0.06), 0 32px 80px -24px rgb(12 13 26 / 0.28);
+}
+
+.fi-auth-pill i {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFC554, #F28C1A);
+  color: #1A1000;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.fi-auth-pill small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: #5D6178;
+}
+
+/* ── Motion on the auth pages — the site's system, in the same four
+      beats. Nothing here runs under reduced motion or without JavaScript
+      (html.js is set by auth-intro.blade.php's gate), and none of it reaches
+      a dashboard: every rule is under .fi-simple-layout.
+
+      1. Arrival. The brand panel's pieces and the card rise in, in order; on
+         a first visit the intro (site-intro.css) holds them behind its
+         curtain and --intro-lag starts them a beat after it begins to lift.
+         A page that came in through a view transition (html.vt, auth.js)
+         has already crossfaded and keeps still.
+      2. Wizard steps. Filament swaps steps by toggling .fi-active; the step
+         that becomes active slides in from the side the visitor is moving
+         towards (data-dir from auth.js), and the rail's markers ease
+         between states instead of snapping.
+      3. Between pages. Login, register and reset opt into cross-document
+         view transitions (the at-rule is in auth-intro.blade.php): the
+         brand panel is named so it holds still, the card is named so it
+         morphs from one width to the next, and the rest crossfades. ── */
+@keyframes fi-auth-rise {
+  from { opacity: 0; transform: translate3d(0, 22px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fi-auth-step-next {
+  from { opacity: 0; transform: translate3d(28px, 0, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fi-auth-step-back {
+  from { opacity: 0; transform: translate3d(-28px, 0, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .js:not(.vt) .fi-simple-layout .fi-simple-main,
+  .js:not(.vt) .fi-auth-brand-mark,
+  .js:not(.vt) .fi-auth-brand-body > *,
+  .js:not(.vt) .fi-auth-shot {
+    animation: fi-auth-rise 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--intro-lag, 0ms) + var(--i, 0) * 90ms);
+  }
+
+  .fi-auth-brand-mark { --i: 0; }
+  .fi-auth-brand-body > :nth-child(1) { --i: 1; }
+  .fi-auth-brand-body > :nth-child(2) { --i: 2; }
+  .fi-auth-brand-body > :nth-child(3) { --i: 3; }
+  .fi-auth-brand-body > :nth-child(4) { --i: 4; }
+  .fi-auth-shot { --i: 5; }
+  .fi-simple-layout .fi-simple-main { --i: 2; }
+
+  /* Held behind the curtain; released a beat after it starts to lift. */
+  .js.intro .fi-simple-layout .fi-simple-main,
+  .js.intro .fi-auth-brand-mark,
+  .js.intro .fi-auth-brand-body > *,
+  .js.intro .fi-auth-shot {
+    animation: none;
+  }
+
+  .js.intro-out, .js.intro-done { --intro-lag: 260ms; }
+
+  /* The wizard. */
+  .fi-simple-layout .fi-sc-wizard[data-dir="next"] .fi-sc-wizard-step.fi-active {
+    animation: fi-auth-step-next 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .fi-simple-layout .fi-sc-wizard[data-dir="back"] .fi-sc-wizard-step.fi-active {
+    animation: fi-auth-step-back 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .fi-simple-layout .fi-sc-wizard-header-step-icon-ctn,
+  .fi-simple-layout .fi-sc-wizard-header-step-number,
+  .fi-simple-layout .fi-sc-wizard-header-step-label,
+  .fi-simple-layout .fi-sc-wizard-header-step-icon {
+    transition:
+      color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Between pages. */
+  .fi-simple-layout .fi-auth-brand { view-transition-name: fi-auth-brand; }
+  .fi-simple-layout .fi-simple-main { view-transition-name: fi-auth-card; }
+
+  ::view-transition-group(fi-auth-card) {
+    animation-duration: 380ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 260ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 /* ── Which panel am I in? ────────────────────────────────────────────────────
    Two dark dashboards on one domain, sharing a brand, a layout and a palette.
    One of them moves money and bans accounts. Telling them apart should not
-   require reading the URL.
-
-   The admin accent is a cool slate, deliberately not amber (the brand, worn by
-   the panel customers see) and deliberately not --gain or --loss, which
-   design.md §2 reserves for money direction and nothing else. ── */
-:root {
-  --admin-accent: #6E8FB5;
-  --admin-accent-dim: #3B4C61;
-}
-
+   require reading the URL: the admin panel carries a gold rail across the top
+   and names itself in amber under the wordmark; the publisher lockup's second
+   line is muted (components/brand-mark, brand-mark.css). ── */
 .fi-admin-rail {
   position: sticky;
   top: 0;
   z-index: 50;
-  height: 3px;
-  background: linear-gradient(90deg, var(--admin-accent-dim), var(--admin-accent) 45%, var(--admin-accent-dim));
+  height: 2px;
+  background: linear-gradient(90deg, #FFC554, #F28C1A);
 }
 
-/* Sits immediately after the logo, part of the same lockup. It used to lead
-   the bar, ahead of the logo, which put the panel name on screen twice and
-   pushed the whole thing off the grid. */
-.fi-panel-badge {
-  display: inline-flex;
+/* ── Banners: gold-tinted, never Filament's warning yellow. ── */
+.fi-brand-banner {
+  display: block;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid color-mix(in srgb, #FFB020 40%, transparent);
+  border-radius: 14px;
+  background-color: #2A1A05;
+  color: #F4F5FA;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.fi-brand-banner strong {
+  font-weight: 600;
+}
+
+.fi-brand-banner a {
+  color: #FFB020;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.fi-brand-banner-muted {
+  display: block;
+  padding-top: 0.25rem;
+  color: #C3C7D6;
+}
+
+/* Impersonation is the one banner that must be impossible to miss: solid
+   gold, ink text, full width. */
+.fi-impersonation-banner {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
-  margin-inline-start: 0.75rem;
-  padding: 0.15rem 0.55rem;
-  border: 1px solid #363D47;
-  border-radius: 999px;
-  font-family: 'Geist Mono', ui-monospace, monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #A2ABB8;
-  white-space: nowrap;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  background-color: #FFB020;
+  color: #0A0B14;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-.fi-panel-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: #F5A524;
+.fi-impersonation-banner a {
+  padding: 0.25rem 0.5rem;
+  border-radius: 10px;
+  background-color: rgb(10 16 32 / 0.12);
+  color: #0A0B14;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.fi-panel-badge-admin {
-  border-color: var(--admin-accent-dim);
-  color: var(--admin-accent);
-}
-
-.fi-panel-badge-admin .fi-panel-badge-dot {
-  background: var(--admin-accent);
+.fi-impersonation-banner a:hover {
+  background-color: rgb(10 16 32 / 0.22);
 }
 
 /* ── Admin viewing the publisher panel as themselves ── */
@@ -215,15 +1526,15 @@
   margin-top: 1rem;
   margin-bottom: 1.5rem;
   padding: 0.9rem 1.1rem;
-  border: 1px solid var(--admin-accent-dim);
-  border-radius: 10px;
-  background: rgba(110, 143, 181, 0.08);
+  border: 1px solid color-mix(in srgb, #FFB020 40%, transparent);
+  border-radius: 14px;
+  background: #2A1A05;
 }
 
 .fi-admin-context-banner-title {
   font-size: 14px;
   font-weight: 600;
-  color: #E9ECF1;
+  color: #F4F5FA;
 }
 
 .fi-admin-context-banner-body {
@@ -231,39 +1542,363 @@
   max-width: 78ch;
   font-size: 13px;
   line-height: 1.6;
-  color: #A2ABB8;
+  color: #C3C7D6;
 }
 
 .fi-admin-context-banner-action {
   flex-shrink: 0;
   padding: 0.4rem 0.8rem;
-  border: 1px solid var(--admin-accent-dim);
-  border-radius: 8px;
+  border: 1px solid #FFB020;
+  border-radius: 10px;
   font-size: 13px;
-  font-weight: 500;
-  color: var(--admin-accent);
+  font-weight: 600;
+  color: #FFB020;
 }
 
 .fi-admin-context-banner-action:hover {
-  background: rgba(110, 143, 181, 0.12);
+  background: rgb(223 192 138 / 0.1);
+}
+
+/* ── Publisher dashboard header ──────────────────────────────────────────────
+   One card, two rows. The greeting row: the name in the display
+   weight, the clock in the publisher's own timezone and the Live pill at the
+   end of the line. No tile, no glow, no motion — the header is type on the
+   sheet like every other page title. The selector row: "Viewing" and the app
+   pill, at the start of the line where reading begins. ── */
+.pg-dash-head {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  border-radius: 20px;
+  background-color: #11131F;
+  box-shadow: 0 0 0 1px #262A40;
+}
+
+.pg-dash-hello {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.375rem 1.5rem 1.25rem;
+  border-block-end: 1px solid #262A40;
+}
+
+.pg-dash-hello__text {
+  min-inline-size: 0;
+  flex: 1 1 auto;
+}
+
+.pg-dash-hello__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #F4F5FA;
+}
+
+.pg-dash-hello__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.6rem;
+  margin-block-start: 0.4rem;
+  font-size: 0.875rem;
+  color: #8B90A8;
+}
+
+.pg-dash-hello__clock {
+  color: #C3C7D6;
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-dash-hello__tz::before {
+  content: "·";
+  margin-inline-end: 0.6rem;
+  color: #464C6A;
+}
+
+.pg-dash-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+  margin-block-start: 0.15rem;
+  padding: 0.3rem 0.75rem 0.3rem 0.6rem;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px #262A40;
+  color: #A6ABBE;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.pg-dash-live__dot {
+  display: inline-block;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 999px;
+  background-color: #FFB020;
+}
+
+/* The selector row. Filament's inline-label field wrapper puts the label and
+   the field side by side; here the label is the eyebrow style and the field
+   is a pill that hugs its content instead of stretching across the card. */
+.pg-dash-head .fi-sc-embedded-schema,
+.pg-dash-head form,
+.pg-dash-head .fi-sc {
+  display: block;
+}
+
+.pg-dash-head .fi-fo-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.9rem 1.5rem 1rem;
+  border-top: 1px solid #1F2336;
+}
+
+.pg-dash-head .fi-fo-field-label-ctn,
+.pg-dash-head .fi-fo-field-label-col {
+  flex: none;
+  padding: 0;
+}
+
+.pg-dash-head .fi-fo-field-label {
+  margin: 0;
+}
+
+.pg-dash-head .fi-fo-field-label-content {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8B90A8;
+}
+
+.pg-dash-head .fi-fo-field-content-col,
+.pg-dash-head .fi-fo-field-content-ctn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.pg-dash-head .fi-fo-field-content {
+  flex: none;
+}
+
+.pg-dash-head .fi-fo-field-helper-text,
+.pg-dash-head .fi-sc-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #8B90A8;
+}
+
+.dark .pg-dash-head .fi-fo-select.fi-input-wrp {
+  inline-size: auto;
+  min-inline-size: 15rem;
+  border-radius: 999px;
+  background-color: #1A1D2E;
+  --tw-ring-color: #343954;
+  transition: box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1), background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark .pg-dash-head .fi-fo-select.fi-input-wrp:hover {
+  background-color: #1F2336;
+  --tw-ring-color: #464C6A;
+}
+
+/* One amber ring at a time — design.md §8. A keyboard user already gets the
+   2px amber outline every focusable thing in the panel gets, so the pill's
+   own ring stays neutral then and goes amber only when the list is open
+   (a mouse user's only signal, since they never see :focus-visible). */
+.dark .pg-dash-head .fi-fo-select.fi-input-wrp:focus-within {
+  --tw-ring-color: #464C6A;
+}
+
+.dark .pg-dash-head .fi-fo-select.fi-input-wrp:has(.fi-select-input-btn[aria-expanded="true"]):not(:has(.fi-select-input-btn:focus-visible)) {
+  --tw-ring-color: #FFB020;
+}
+
+/* Filament paints the field's own ground on an inner div at its default
+   radius. Left at 12px inside a 999px wrapper, its corners cut square
+   shoulders through the pill's rounded ends. Every box in this stack has to
+   be the same shape. */
+.pg-dash-head .fi-fo-select .fi-select-input,
+.pg-dash-head .fi-fo-select .fi-input-wrp-content-ctn,
+.pg-dash-head .fi-fo-select .fi-select-input-ctn {
+  border-radius: 999px;
+}
+
+/* The phone glyph and the chevron are both painted on the button, so the
+   dropdown (which Filament anchors to the button, not the wrapper) opens
+   flush with the pill's edge instead of a prefix-width to the right. */
+.pg-dash-head .fi-fo-select .fi-select-input-btn {
+  /* The wrapper is the pill and carries the ring; without this the button's
+     own 14px corners sit inside it and the ring stops tracing the fill. */
+  border-radius: 999px;
+  padding-inline-start: 2.6rem;
+  padding-inline-end: 2.4rem;
+  font-weight: 600;
+  color: #F4F5FA;
+  background-image:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FFB020' stroke-width='1.6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23FFB020' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-position: left 0.9rem center, right 0.7rem center;
+  background-size: 1.1rem 1.1rem, 1.25rem 1.25rem;
+  background-repeat: no-repeat;
+}
+
+.pg-dash-head .fi-fo-select .fi-select-input-placeholder {
+  color: #F4F5FA;
+}
+
+/* The list: roomier rows, a check on the one in force, the hover in the
+   tile colour rather than Filament's white wash. */
+/* Attached to the pill it opens from, and ringed in the pill's own idle
+   colour: Filament's default ring is invisible on ink, which left the list
+   reading as a hole in the page rather than a surface over it. */
+.pg-dash-head .fi-dropdown-panel {
+  margin-block-start: 0.5rem;
+  padding: 0.375rem;
+  border-radius: 14px;
+  min-inline-size: 15rem;
+  box-shadow:
+    inset 0 0 0 1px #343954,
+    0 18px 40px -12px rgb(0 0 0 / 0.55);
+}
+
+.pg-dash-head .fi-select-input-message {
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: #8B90A8;
+}
+
+.pg-dash-head .fi-dropdown-list-item {
+  padding: 0.55rem 0.75rem 0.55rem 2.1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #C3C7D6;
+  position: relative;
+}
+
+.dark .pg-dash-head .fi-dropdown-list-item:hover,
+.dark .pg-dash-head .fi-dropdown-list-item.fi-select-input-option-highlighted {
+  background-color: #1F2336;
+  color: #F4F5FA;
+}
+
+/* The row in force is marked, not flooded: a light amber wash inside its own
+   ring, so the check and the label stay the loudest thing in the list. */
+.dark .pg-dash-head .fi-dropdown-list-item[aria-selected="true"],
+.dark .pg-dash-head .fi-dropdown-list-item.fi-selected {
+  background-color: rgb(255 176 32 / 0.06);
+  box-shadow: inset 0 0 0 1px rgb(255 176 32 / 0.30);
+  color: #FFC554;
+}
+
+.pg-dash-head .fi-dropdown-list-item[aria-selected="true"]::before,
+.pg-dash-head .fi-dropdown-list-item.fi-selected::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0.8rem;
+  inset-block-start: 50%;
+  inline-size: 0.45rem;
+  block-size: 0.75rem;
+  translate: 0 -60%;
+  rotate: 45deg;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+}
+
+/* No apps yet: the selector would open on nothing, so the row offers the
+   one thing that makes it useful instead. */
+.pg-dash-noapps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.9rem 1.5rem 1rem;
+  border-top: 1px solid #1F2336;
+}
+
+.pg-dash-noapps__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8B90A8;
+}
+
+.pg-dash-noapps__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem 0.5rem 0.85rem;
+  border-radius: 999px;
+  background-color: rgb(255 176 32 / 0.10);
+  box-shadow: inset 0 0 0 1px rgb(255 176 32 / 0.35);
+  color: #FFC554;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 150ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pg-dash-noapps__cta:hover {
+  background-color: rgb(255 176 32 / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(255 176 32 / 0.6);
+}
+
+.pg-dash-noapps__hint {
+  font-size: 0.8125rem;
+  color: #8B90A8;
+}
+
+@media (max-width: 640px) {
+  .pg-dash-noapps {
+    padding-inline: 1.1rem;
+  }
+
+  .pg-dash-hello {
+    flex-direction: column;
+    padding: 1rem 1.1rem;
+  }
+
+  .pg-dash-hello__title {
+    font-size: 1.3rem;
+  }
+
+  .pg-dash-live {
+    margin-block-start: 0;
+  }
+
+  .pg-dash-head .fi-fo-field {
+    padding-inline: 1.1rem;
+  }
+
+  .dark .pg-dash-head .fi-fo-select.fi-input-wrp {
+    inline-size: 100%;
+  }
 }
 
 /* ── Filter bars on the custom pages ─────────────────────────────────────────
    Statistics, Offers and Profit history hand-roll their filters rather than
    going through a Filament schema, so they need their own field chrome.
 
-   `color-scheme` is the line that matters. A native <select> renders its popup
-   through the OS, and without this Chrome draws the light list — white panel,
-   blue highlight — over a near-black page whatever the trigger looks like. It
-   also fixes native scrollbars, date pickers and autofill in one go.
-
-   Native selects are kept on purpose: real keyboard behaviour, a real wheel
-   picker on phones, and no JavaScript on a page that is mostly numbers. ── */
-:root.dark,
-.fi-body {
-  color-scheme: dark;
-}
-
+   `color-scheme` (set on the body above) is the line that matters: a native
+   <select> renders its popup through the OS, and without it Chrome draws the
+   light list over a dark page whatever the trigger looks like. Native selects
+   are kept on purpose: real keyboard behaviour, a real wheel picker on phones,
+   and no JavaScript on a page that is mostly numbers. ── */
 .fi-filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -275,32 +1910,32 @@
 .fi-filter-label {
   display: block;
   margin-bottom: 0.35rem;
-  font-size: 12px;
-  /* --steel-400 is the documented label colour, but at 12px on a near-black
-     page it sits under the 4.5:1 floor docs/09 §7 treats as non-negotiable. */
-  color: #A2ABB8;
+  font-size: 11.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #A6ABBE;
 }
 
 .fi-filter-field {
   height: 2.25rem;
   padding-inline: 0.7rem;
-  border: 1px solid #262B33;
-  border-radius: 8px;
-  background-color: #14171B;
-  color: #E9ECF1;
+  border: 1px solid #2C3148;
+  border-radius: 10px;
+  background-color: #151827;
+  color: #F4F5FA;
   font-size: 13px;
   line-height: 1;
   transition: border-color .15s, background-color .15s;
 }
 
 .fi-filter-field:hover {
-  border-color: #363D47;
+  border-color: #464C6A;
 }
 
 .fi-filter-field:focus {
   outline: none;
-  border-color: #F5A524;
-  box-shadow: 0 0 0 1px #F5A524;
+  border-color: #FFB020;
+  box-shadow: 0 0 0 1px #FFB020;
 }
 
 /* The chevron is drawn rather than left to the platform, so the trigger looks
@@ -308,7 +1943,7 @@
 select.fi-filter-field {
   appearance: none;
   padding-inline-end: 2rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236E7784' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%237D8CA6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.6rem center;
   background-size: 1rem;
@@ -320,12 +1955,256 @@ select.fi-filter-field {
 
 /* Country is a Filament multi-select rather than a hand-rolled field: chips,
    search and keyboard handling are not worth re-implementing. It brings its own
-   chrome, so all this wrapper does is stop it collapsing to its content width.
-   No margin reset needed — .fi-fo-field is a grid whose gap collapses once
-   hiddenLabel() hides the label. */
+   chrome, so all this wrapper does is stop it collapsing to its content width. */
 .fi-filter-select {
   flex: 1 1 16rem;
   max-width: 24rem;
+}
+
+/* Hand-rolled tables on the custom pages share the ledger table's material. */
+.fi-plain-table {
+  overflow-x: auto;
+  border: 1px solid #262A40;
+  border-radius: 14px;
+  background-color: #11131F;
+}
+
+.fi-plain-table table {
+  width: 100%;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fi-plain-table thead th {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #262A40;
+  background-color: #151827;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-align: start;
+  color: #8B90A8;
+  white-space: nowrap;
+}
+
+.fi-plain-table thead th.is-num {
+  text-align: end;
+}
+
+.fi-plain-table tbody td {
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid #1F2336;
+  color: #F4F5FA;
+}
+
+.fi-plain-table tbody td.is-num {
+  text-align: end;
+}
+
+.fi-plain-table tbody td.is-dim,
+.fi-plain-table tbody td.is-empty {
+  color: #8B90A8;
+}
+
+.fi-plain-table tbody td.is-empty {
+  padding-block: 2rem;
+  text-align: center;
+}
+
+.fi-plain-table tbody td.is-gain {
+  color: #FFB020;
+  font-weight: 600;
+}
+
+.fi-plain-table tbody td.is-loss {
+  color: #F49A9D;
+}
+
+.fi-plain-table tbody tr:first-child td {
+  border-top: 0;
+}
+
+.fi-plain-table-title {
+  margin: 0;
+  padding: 0.75rem 0.75rem 0.5rem;
+  font-family: var(--font-panel);
+  font-size: 1rem;
+  font-weight: 500;
+  color: #F4F5FA;
+}
+
+/* Small stat tiles on the custom pages. */
+.fi-stat-tile {
+  padding: 1rem 1.1rem;
+  border: 1px solid #262A40;
+  border-radius: 14px;
+  background-color: #11131F;
+}
+
+.fi-stat-tile-label {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #8B90A8;
+}
+
+.fi-stat-tile-value {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-panel);
+  font-size: 1.75rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums tabular-nums;
+  color: #F4F5FA;
+}
+
+.fi-stat-tile-value.is-gain {
+  color: #FFB020;
+}
+
+/* Health and provider cards: a hairline card, a dot that is gold when the
+   check passes and rose when it does not. Text says which; the dot only agrees. */
+.fi-check-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid #262A40;
+  border-radius: 14px;
+  background-color: #11131F;
+}
+
+.fi-check-card.is-down {
+  border-color: color-mix(in srgb, #F49A9D 55%, transparent);
+}
+
+.fi-check-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: #C3C7D6;
+}
+
+.fi-check-card-dot {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background-color: #FFB020;
+}
+
+.fi-check-card.is-down .fi-check-card-dot {
+  background-color: #F49A9D;
+}
+
+.fi-check-card-value {
+  margin: 0.35rem 0 0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: #F4F5FA;
+  overflow-wrap: anywhere;
+}
+
+.fi-check-card-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #F49A9D;
+}
+
+/* ── Risk score distribution — the Protection page's §4.5 histogram.
+
+   Ten bands of ten. Bars are amber because that is the panel's one accent, and
+   the bands the threshold refuses take the danger rose the rest of the system
+   already uses for a refusal. Every value below is one already in this file for
+   the same purpose: the card ink, the hairline, the fog ramp, #FFB020 and
+   #F49A9D.
+
+   Heights are a percentage of the tallest band rather than of the total: real
+   score distributions are heavily bottom-weighted, and against the total every
+   band but one would round to a hairline — including the tail the threshold
+   actually sits in, which is the only part worth looking at. */
+.fi-score-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #262A40;
+  border-radius: 14px;
+  background-color: #11131F;
+}
+
+.fi-score-col {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+/* A fixed track so every bar shares a baseline and the bars stay comparable. */
+.fi-score-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  height: 7rem;
+}
+
+.fi-score-bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 14px;
+  background-color: #FFB020;
+}
+
+.fi-score-bar.is-refused {
+  background-color: #F49A9D;
+}
+
+.fi-score-count,
+.fi-score-label {
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  color: #8B90A8;
+  white-space: nowrap;
+}
+
+.fi-score-count {
+  color: #C3C7D6;
+  min-height: 1rem;
+}
+
+.fi-score-summary {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  color: #F4F5FA;
+}
+
+.fi-score-windows {
+  display: flex;
+  gap: 0.35rem;
+}
+
+/* Pill, like every other control in the panels. */
+.fi-score-window {
+  padding: 0.25rem 0.7rem;
+  border: 1px solid #262A40;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: #C3C7D6;
+  background-color: transparent;
+}
+
+.fi-score-window.is-on {
+  border-color: #FFB020;
+  color: #FFB020;
+}
+
+.fi-score-window:focus-visible {
+  outline: 2px solid #FFB020;
+  outline-offset: 3px;
 }
 
 /* Stacked geo / device markers — offers tables in both panels.
@@ -338,24 +2217,22 @@ select.fi-filter-field {
   align-items: center;
   /* Filament puts `p-0` on the cell itself and lets each column type pad its
      own content — every built-in one applies px-3 py-4. A ViewColumn brings
-     none, so its content sat flush against the neighbouring cell and geo ran
-     straight into devices. Vault tables tighten that to 0.85rem so these
-     two line up with identity cells and the rest of the row. */
+     none, so its content sat flush against the neighbouring cell. Ledger
+     tables tighten that to 0.85rem so these two line up with identity cells
+     and the rest of the row. */
   padding: 0.85rem 0.75rem;
 }
 
 /* Geo and devices are the only two picture columns in the table and they sit
    next to each other, so the standard 12px each side leaves the last flag and
-   the first device reading as one run of images. Devices gets a wider gutter —
-   on its leading edge only, so the column itself stays aligned with the header
-   above it. */
+   the first device reading as one run of images. */
 .fi-ta-cell-devices .ad-stack {
   padding-inline-start: 2rem;
 }
 
 .ad-stack > * {
   margin-inline-start: -0.3rem;
-  border-radius: 3px;
+  border-radius: 10px;
   box-shadow: 0 0 0 1.5px var(--gray-700);
 }
 
@@ -366,8 +2243,7 @@ select.fi-filter-field {
 /* Flags are <img> tags rather than flag-icons' CSS classes on purpose: that
    package names a class after every ISO code, and Filament prefixes its own
    classes `fi-` too — `.fi-no` is the notifications overlay, `.fi-ta` the
-   table wrapper. Importing it painted Norway across the whole viewport.
-   `npm run flags` copies the SVGs into public/flags. */
+   table wrapper. `npm run flags` copies the SVGs into public/flags. */
 .ad-stack .ad-flag {
   width: 1.35rem;
   height: 1rem;
@@ -396,16 +2272,16 @@ select.fi-filter-field {
   height: 0.8rem;
 }
 
-/* ── Vault tables ──────────────────────────────────────────────────────────
+/* ── Ledger tables ──────────────────────────────────────────────────────────
    Filament's table is a SaaS card: a white/5 wash, a soft shadow, sentence-case
-   headers. Ours is a ledger — steel surface, hairline, mono labels. Elevation
-   is the border (design.md §4). Hover lifts the row toward the light, not a
-   drop shadow. Branded here so every table in both panels inherits it. ── */
+   headers. Ours is a ledger — ink surface, hairline, spaced-capital labels.
+   Elevation is the border (design.md §4). Hover lifts the row one surface step,
+   not a drop shadow. Branded here so every table in both panels inherits it. ── */
 
 .fi-ta-ctn {
-  background-color: #14171B;
-  border-radius: 10px;
-  box-shadow: 0 0 0 1px #262B33;
+  background-color: #11131F;
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px #262A40;
   --tw-ring-shadow: 0 0 #0000;
   --tw-shadow: 0 0 #0000;
 }
@@ -417,7 +2293,59 @@ select.fi-filter-field {
 .fi-ta-ctn .fi-ta-selection-indicator,
 .fi-ta-ctn .fi-ta-reorder-indicator,
 .fi-ta-ctn .fi-pagination {
-  border-color: #262B33;
+  border-color: #262A40;
+}
+
+/* Table filters sit on the ledger, same chrome as `.fi-filter-bar`: uppercase
+   labels, ink tiles, amber focus. The heading is an eyebrow, not a title. */
+.fi-ta-ctn .fi-ta-filters-above-content-ctn {
+  padding: 0.85rem 1.25rem 1rem;
+  background-color: #11131F;
+}
+
+.fi-ta-filters-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.fi-ta-filters-heading {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #A6ABBE;
+}
+
+.fi-ta-filters .fi-fo-field-label,
+.fi-ta-filters .fi-fo-field-label-content,
+.fi-ta-filters .fi-fo-field-wrp-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #A6ABBE;
+}
+
+.fi-ta-filters .fi-input-wrp,
+.fi-ta-filters .fi-fo-select .fi-select-input {
+  border-radius: 10px;
+  background-color: #151827;
+}
+
+.fi-ta-filters .fi-input-wrp:hover {
+  --tw-ring-color: #464C6A;
+}
+
+.fi-ta-filters .fi-input-wrp:focus-within {
+  --tw-ring-color: #FFB020;
+}
+
+.fi-ta-filters-actions-ctn {
+  margin-top: 0.75rem;
 }
 
 .fi-ta-ctn .fi-ta-header {
@@ -425,49 +2353,46 @@ select.fi-filter-field {
 }
 
 .fi-ta-ctn .fi-ta-header-heading {
-  font-variation-settings: 'wdth' 112;
-  letter-spacing: -0.02em;
-  color: #E9ECF1;
+  color: #F4F5FA;
 }
 
 .fi-ta-ctn .fi-ta-header-description {
-  color: #A2ABB8;
+  color: #A6ABBE;
 }
 
 .fi-ta-ctn .fi-ta-header-toolbar {
   padding-block: 0.65rem;
-  background-color: #14171B;
+  background-color: #11131F;
 }
 
 .fi-ta-table,
 .fi-ta-table > thead,
 .fi-ta-table > tbody,
 .fi-ta-table > tfoot {
-  --tw-divide-color: #262B33;
-  border-color: #262B33;
+  --tw-divide-color: #262A40;
+  border-color: #262A40;
 }
 
 .fi-ta-table > * > tr {
-  border-color: #262B33;
+  border-color: #262A40;
 }
 
 .fi-ta-table > thead > tr {
-  background-color: #1A1E24;
+  background-color: #151827;
 }
 
 .fi-ta-table > tfoot {
-  background-color: #14171B;
+  background-color: #11131F;
 }
 
 .fi-ta-header-cell,
 .fi-ta-header-group-cell {
   padding-block: 0.6rem;
-  font-family: 'Geist Mono', ui-monospace, monospace;
   font-size: 11px;
-  font-weight: 550;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #6E7784;
+  color: #8B90A8;
 }
 
 .fi-ta-header-cell .fi-ta-header-cell-sort-btn {
@@ -478,35 +2403,35 @@ select.fi-filter-field {
 }
 
 .fi-ta-header-cell .fi-ta-header-cell-sort-btn:focus-visible {
-  outline: 2px solid #F5A524;
+  outline: 2px solid #FFB020;
   outline-offset: 3px;
   box-shadow: none;
   --tw-ring-shadow: 0 0 #0000;
 }
 
 .fi-ta-header-cell.fi-ta-header-cell-sorted {
-  color: #A2ABB8;
+  color: #A6ABBE;
 }
 
 .fi-ta-row {
   background-color: transparent;
-  transition: background-color 120ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: background-color 120ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (hover: hover) {
   .fi-ta-row:hover {
-    background-color: #1A1E24;
+    background-color: #151827;
   }
 }
 
 .fi-ta-row.fi-selected,
 .fi-ta-row.fi-selected:hover {
-  background-color: #1A1E24;
+  background-color: #151827;
 }
 
-/* Selected rail is brand amber — attention, not money. */
+/* Selected rail is gold — attention, not money. */
 .fi-ta-row.fi-selected > *:first-child::before {
-  background-color: #F5A524;
+  background-color: #FFB020;
 }
 
 @media (min-width: 640px) {
@@ -522,33 +2447,23 @@ select.fi-filter-field {
 }
 
 .fi-ta-text-item {
-  color: #E9ECF1;
+  color: #F4F5FA;
   font-size: 13.5px;
   letter-spacing: -0.01em;
 }
 
-.fi-ta-text-item.fi-font-mono {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-}
-
 .fi-ta-text > .fi-ta-text-description {
   font-size: 12px;
-  color: #6E7784;
+  color: #8B90A8;
 }
 
 .fi-ta-empty-state:not(.fi-ta-ctn-with-content-layout .fi-ta-empty-state) {
-  border-color: #262B33;
-}
-
-.fi-ta-empty-state-heading {
-  font-variation-settings: 'wdth' 112;
-  letter-spacing: -0.02em;
+  border-color: #262A40;
 }
 
 .fi-ta-empty-state-icon-bg {
-  background-color: #1A1E24;
-  border: 1px solid #262B33;
+  background-color: #151827;
+  border: 1px solid #262A40;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -574,20 +2489,26 @@ select.fi-filter-field {
   min-width: 13.5rem;
 }
 
+/* The serif initial on an ink tile — the wall's own letter tile, at table size. */
 .ad-user__mark {
   display: grid;
   place-items: center;
   flex-shrink: 0;
   width: 2rem;
   height: 2rem;
-  border: 1px solid #262B33;
-  border-radius: 6px;
-  background: #1A1E24;
-  color: #A2ABB8;
-  font-family: 'Geist Mono', ui-monospace, monospace;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  border: 1px solid #262A40;
+  border-radius: 10px;
+  /* The same amber chip as the account avatar and the offer/network icon
+     fallbacks (App\Filament\Support\InitialsChip), so the panels have one
+     letter-mark rather than two. `on-amber` on `amber-400` is 12:1 —
+     design.md §8. The 10px radius stays: a circle is the signed-in person,
+     a squircle is a row's own entity, and an app icon that fills this box
+     wants the squircle either way. */
+  background: #FFB020;
+  color: #1A1000;
+  font-family: var(--font-panel);
+  font-size: 0.95rem;
+  font-weight: 600;
   line-height: 1;
   overflow: hidden;
 }
@@ -605,7 +2526,7 @@ select.fi-filter-field {
 }
 
 .ad-user__name {
-  color: #E9ECF1;
+  color: #F4F5FA;
   font-size: 13.5px;
   font-weight: 600;
   line-height: 1.25;
@@ -623,24 +2544,24 @@ select.fi-filter-field {
 }
 
 .ad-user__email {
-  color: #A2ABB8;
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  color: #A6ABBE;
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 
 .ad-user__email:hover,
 .ad-user__email[data-copied='true'] {
-  color: #F5A524;
+  color: #FFB020;
 }
 
 .ad-user__email:focus-visible {
-  outline: 2px solid #F5A524;
+  outline: 2px solid #FFB020;
   outline-offset: 3px;
-  border-radius: 2px;
+  border-radius: 6px;
 }
 
 .ad-user__meta {
-  color: #6E7784;
+  color: #8B90A8;
 }
 
 .ad-user__line {
@@ -651,7 +2572,7 @@ select.fi-filter-field {
 
 .ad-user__sep {
   flex-shrink: 0;
-  color: #363D47;
+  color: #464C6A;
 }
 
 .ad-user__host {
@@ -669,9 +2590,24 @@ select.fi-filter-field {
 .ad-flag--solo {
   width: 1.55rem;
   height: 1.15rem;
-  border-radius: 3px;
+  border-radius: 10px;
   object-fit: cover;
-  box-shadow: 0 0 0 1.5px #262B33;
+  box-shadow: 0 0 0 1.5px #262A40;
+}
+
+/* Flag beside a country name: statistics breakdown rows and the country
+   filter's options. */
+.pg-country {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.pg-country .ad-flag--solo,
+.pg-country .ad-flag-fallback {
+  flex: none;
 }
 
 .ad-flag-fallback {
@@ -681,28 +2617,31 @@ select.fi-filter-field {
   min-width: 1.55rem;
   height: 1.15rem;
   padding-inline: 0.3rem;
-  border: 1px solid #262B33;
-  border-radius: 3px;
-  background: #1A1E24;
-  color: #A2ABB8;
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  border: 1px solid #262A40;
+  border-radius: 10px;
+  background: #151827;
+  color: #A6ABBE;
   font-size: 10px;
   font-weight: 650;
   letter-spacing: 0.04em;
 }
 
+/* Status as a mark and a label. The word carries the meaning; the tone
+   agrees with it: green for anything settled or live, amber for anything
+   waiting on someone, rose for anything refused, mist for the rest. The
+   tones are the panel's success / warning / danger ramps — the same three
+   Filament's own badges use, so a pill and a badge never disagree. */
 .ad-status {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   padding: 0.18rem 0.5rem 0.18rem 0.22rem;
-  border: 1px solid #262B33;
+  border: 1px solid #262A40;
   border-radius: 999px;
-  background: #0E1013;
-  color: #A2ABB8;
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  background: #0A0B14;
+  color: #A6ABBE;
   font-size: 11px;
-  font-weight: 550;
+  font-weight: 600;
   letter-spacing: 0.04em;
   line-height: 1;
   white-space: nowrap;
@@ -714,7 +2653,7 @@ select.fi-filter-field {
   width: 1.05rem;
   height: 1.05rem;
   border-radius: 999px;
-  background: #1A1E24;
+  background: #151827;
 }
 
 .ad-status__mark .fi-icon {
@@ -722,76 +2661,62 @@ select.fi-filter-field {
   height: 0.8rem;
 }
 
-.ad-status--pending {
-  border-color: #2A1C05;
-  color: #FFBE4D;
+.ad-status--pending,
+.ad-status--suspended,
+.ad-status--hit {
+  border-color: color-mix(in srgb, #FFB020 40%, transparent);
+  color: #FFB020;
 }
 
-.ad-status--pending .ad-status__mark {
-  background: #2A1C05;
-  color: #F5A524;
+.ad-status--pending .ad-status__mark,
+.ad-status--suspended .ad-status__mark,
+.ad-status--hit .ad-status__mark {
+  background: #2A1A05;
+  color: #FFB020;
 }
 
-.ad-status--approved {
-  color: #8AA4C4;
+.ad-status--approved,
+.ad-status--active,
+.ad-status--paid {
+  border-color: color-mix(in srgb, #16B364 40%, transparent);
+  color: #6EE7A8;
 }
 
-.ad-status--approved .ad-status__mark {
-  color: #6E8FB5;
+.ad-status--approved .ad-status__mark,
+.ad-status--active .ad-status__mark,
+.ad-status--paid .ad-status__mark {
+  background: color-mix(in srgb, #16B364 18%, #0A0B14);
+  color: #6EE7A8;
 }
 
-.ad-status--suspended {
-  border-color: #2A1C05;
-  color: #FFBE4D;
+.ad-status--carried {
+  color: #8B90A8;
 }
 
-.ad-status--suspended .ad-status__mark {
-  background: #2A1C05;
-  color: #F5A524;
+.ad-status--carried .ad-status__mark {
+  color: #8B90A8;
 }
 
 .ad-status--banned,
 .ad-status--rejected {
-  color: #C7CDD6;
+  border-color: color-mix(in srgb, #E5484D 40%, transparent);
+  color: #F49A9D;
 }
 
 .ad-status--banned .ad-status__mark,
 .ad-status--rejected .ad-status__mark {
-  color: #A2ABB8;
+  background: color-mix(in srgb, #E5484D 18%, #0A0B14);
+  color: #F49A9D;
 }
 
-.ad-status--active {
-  color: #8AA4C4;
-}
-
-.ad-status--active .ad-status__mark {
-  color: #6E8FB5;
-}
-
-.ad-status--paused {
-  color: #A2ABB8;
-}
-
-.ad-status--paused .ad-status__mark {
-  color: #6E7784;
-}
-
+.ad-status--paused,
 .ad-status--clear {
-  color: #6E7784;
+  color: #8B90A8;
 }
 
+.ad-status--paused .ad-status__mark,
 .ad-status--clear .ad-status__mark {
-  color: #6E7784;
-}
-
-.ad-status--hit {
-  border-color: #2A1C05;
-  color: #FFBE4D;
-}
-
-.ad-status--hit .ad-status__mark {
-  background: #2A1C05;
-  color: #F5A524;
+  color: #8B90A8;
 }
 
 .ad-postback {
@@ -799,15 +2724,44 @@ select.fi-filter-field {
   align-items: center;
   gap: 0.4rem;
   padding: 0.18rem 0.5rem;
-  border: 1px solid #262B33;
+  border: 1px solid #262A40;
   border-radius: 999px;
-  background: #0E1013;
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  background: #0A0B14;
   font-size: 11px;
-  font-weight: 550;
+  font-weight: 600;
   letter-spacing: 0.04em;
   line-height: 1;
   white-space: nowrap;
+}
+
+/* Platform: the postback pill's shape, carrying the mark and its name. The
+   mark alone was 13px of #A2ABB8 on ink — technically present, effectively
+   an empty cell. Neutral tone throughout: a platform is a fact about the
+   app, not a state to react to. */
+.ad-platform {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.18rem 0.55rem 0.18rem 0.4rem;
+  border: 1px solid #262A40;
+  border-radius: 999px;
+  background: #0A0B14;
+  color: #C3C7D6;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ad-platform__marks {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ad-platform__marks img {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .ad-postback__dot {
@@ -818,40 +2772,228 @@ select.fi-filter-field {
 }
 
 .ad-postback--on {
-  color: #8AA4C4;
+  color: #FFB020;
 }
 
 .ad-postback--off {
-  color: #6E7784;
-}
-
-.ad-stack--platform {
-  justify-content: center;
+  color: #8B90A8;
 }
 
 .fi-ta-row.ad-row--pending > .fi-ta-cell:first-child {
-  box-shadow: inset 2px 0 0 #F5A524;
+  box-shadow: inset 2px 0 0 #FFB020;
 }
 
 .fi-ta-row.ad-row--suspended > .fi-ta-cell:first-child,
 .fi-ta-row.ad-row--paused > .fi-ta-cell:first-child {
-  box-shadow: inset 2px 0 0 #6E7784;
+  box-shadow: inset 2px 0 0 #8B90A8;
 }
 
 .fi-ta-row.ad-row--banned > .fi-ta-cell:first-child,
 .fi-ta-row.ad-row--rejected > .fi-ta-cell:first-child {
-  box-shadow: inset 2px 0 0 #363D47;
+  box-shadow: inset 2px 0 0 #464C6A;
 }
 
 .fi-ta-row.ad-row--banned,
 .fi-ta-row.ad-row--rejected {
-  color: #A2ABB8;
+  color: #A6ABBE;
+}
+
+/* ── Payments: one card per payout destination ───────────────────────────────
+   The Active card carries a gold hairline — state that wants noticing, the
+   same tone the status pill uses for it. The note beside it is a quiet tile. ── */
+/* The payout destinations: one row each, the details behind the modal the
+   row opens. Same ink sheet and ring as a section, at list scale. */
+.ad-methods {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.ad-method {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 0.9rem 1.1rem;
+  border-radius: 14px;
+  background: #0F1120;
+  box-shadow: inset 0 0 0 1px #262A40;
+  text-align: start;
+  transition: box-shadow var(--motion-fast, 150ms) var(--ease-out, ease),
+    background var(--motion-fast, 150ms) var(--ease-out, ease);
+}
+
+.ad-method:hover {
+  background: #131629;
+  box-shadow: inset 0 0 0 1px #343954;
+}
+
+.ad-method:focus-visible {
+  outline: 2px solid #FFB020;
+  outline-offset: 3px;
+}
+
+.ad-method--active {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #FFB020 55%, transparent);
+}
+
+/* Nothing is paid, and nothing else on the page can be acted on, until this
+   row is filled in — so it carries the amber of the pill inside it. */
+.ad-method--required {
+  background: color-mix(in srgb, #FFB020 6%, #0F1120);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #FFB020 45%, transparent);
+}
+
+.ad-method--required:hover {
+  background: color-mix(in srgb, #FFB020 10%, #0F1120);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #FFB020 60%, transparent);
+}
+
+.ad-method--required .ad-method__icon {
+  background: #2A1A05;
+  color: #FFB020;
+}
+
+.ad-method--required .ad-method__summary {
+  color: #FFC554;
+}
+
+/* The payment method, until billing is done: present, legible, and inert. */
+.ad-method--locked {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ad-method--locked:hover {
+  background: #0F1120;
+  box-shadow: inset 0 0 0 1px #262A40;
+}
+
+.ad-method__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 14px;
+  background: #171A2C;
+  color: #A6ABBE;
+}
+
+.ad-method__icon .fi-icon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.ad-method--active .ad-method__icon {
+  color: #FFB020;
+}
+
+.ad-method__body {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ad-method__name {
+  font-family: var(--font-panel);
+  font-weight: 600;
+  color: #F4F5FA;
+}
+
+.ad-method__summary {
+  overflow: hidden;
+  color: #8B90A8;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-method__chevron {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: #565C7A;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ad-method {
+    transition: none;
+  }
+}
+
+.ad-method-card {
+  --ring: #262A40;
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+/* The strip above the method cards: where the next payout goes. Same ink
+   sheet as a card, tinted by the state its pill already carries. */
+.ad-payout-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 14px;
+  background: #0F1120;
+  box-shadow: inset 0 0 0 1px #262A40;
+}
+
+.ad-payout-state:has(.ad-status--active) {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #16B364 35%, transparent);
+}
+
+.ad-payout-state:has(.ad-status--pending) {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #FFB020 40%, transparent);
+}
+
+.ad-payout-state p {
+  color: #A6ABBE;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.ad-payout-state strong {
+  color: #F4F5FA;
+  font-weight: 600;
+}
+
+/* The alert states what is missing; the button is how it gets fixed. */
+.ad-payout-state__cta {
+  margin-inline-start: auto;
+}
+
+.ad-method-card--note {
+  padding: 1.25rem 1.5rem;
+  border-radius: 20px;
+  background: #0F1120;
+  color: #A6ABBE;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.ad-method-card--note h3 {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-panel);
+  font-weight: 600;
+  color: #F4F5FA;
+}
+
+.ad-method-card--note p + p {
+  margin-top: 0.6rem;
+}
+
+/* The status pill inside a detail-modal tile sits on the tile's baseline. */
+.fi-in-entry .ad-status {
+  margin-top: 0.15rem;
 }
 
 /* ── Offerwall chrome, for the publisher live preview ───────────────────────
-   wall-ui.css is imported at the top of this file. The rules below only
-   contain the preview so a 400px column on a wide dashboard still paints
-   the mobile wall a publisher actually embeds. */
+   wall-ui.css is imported at the top of this file and owns the preview's
+   containment (`.wall-preview__stage` and friends) for the panel and the
+   landing alike. What remains here is the panel-specific plumbing: the
+   tab strip, the macro list, and the sticky pane. */
 
 /* Six app-form tabs overflow a 2/3 column and Filament's default `overflow-x:
    auto` paints a native scrollbar through the tab card. Hidden scrollbars keep
@@ -883,16 +3025,16 @@ select.fi-filter-field {
 }
 
 .app-macros dt {
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
-  color: #ffbe4d;
+  color: #FFB020;
 }
 
 .app-macros dd {
   margin: 0;
   font-size: 12px;
   line-height: 1.45;
-  color: #a2abb8;
+  color: #C3C7D6;
 }
 
 /* Phone-width frame. The wall's breakpoints are viewport media queries, so a
@@ -919,148 +3061,9 @@ select.fi-filter-field {
   }
 }
 
-.wall-preview {
-  min-width: 0;
-}
-
-.wall.wall-preview__stage {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  min-block-size: 0;
-  min-height: 0;
-  height: auto;
-  max-block-size: min(36rem, calc(100dvh - 9rem));
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--wall-line);
-  border-radius: 20px;
-}
-
-.wall-preview__scroll {
-  flex: 0 1 auto;
-  min-block-size: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--wall-text) 22%, transparent) transparent;
-}
-
-.wall-preview__scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.wall-preview__scroll::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--wall-text) 22%, transparent);
-  border-radius: 999px;
-}
-
-.wall.wall-preview__stage::before {
-  position: absolute;
-  inset: 0;
-  block-size: auto;
-}
-
-.wall-preview__stage .wall-grid,
-.wall-preview__stage .wall-skeleton {
-  grid-template-columns: 1fr;
-}
-
-.wall-preview__stage .wall-tabs,
-.wall-preview__stage .wall-menu-button {
-  display: none;
-}
-
-.wall-preview__stage .wall-header {
-  flex: none;
-  position: relative;
-  inset-block-start: auto;
-  padding-block: 10px 8px;
-  background: var(--wall-bg);
-  border-start-start-radius: 0;
-  border-start-end-radius: 0;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-.wall-preview__stage .wall-chips {
-  margin-block-start: 6px;
-}
-
-.wall-preview__stage .wall-main {
-  padding-block: 8px 10px;
-}
-
-.wall-preview__stage .wall-rail {
-  margin-block-end: 12px;
-}
-
-.wall-preview__stage .wall-rail__h {
-  margin-block-end: 6px;
-}
-
-.wall-preview__stage .wall-rail__track {
-  align-items: start;
-  padding-block-end: 6px;
-}
-
-/* `76vw` is the viewport, not this pane — on a dashboard it made rail
-   tiles the size of the real phone card sitting in a half-empty column. */
-.wall-preview__stage .wall-rail__track > li {
-  inline-size: min(9.25rem, 46%);
-}
-
-.wall-preview__stage .wall-card--rail {
-  block-size: auto;
-}
-
-.wall-preview__stage .wall-nav {
-  display: flex;
-  flex: none;
-  position: relative;
-  inset: auto;
-  z-index: 6;
-  border-block-start: 1px solid var(--wall-line);
-  background: var(--wall-bg);
-}
-
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .wall-preview__stage .wall-nav {
-    background: color-mix(in srgb, var(--wall-bg) 86%, transparent);
-    -webkit-backdrop-filter: blur(16px) saturate(1.3);
-    backdrop-filter: blur(16px) saturate(1.3);
-  }
-}
-
-.wall-preview__stage .wall-tools {
-  flex: 1 1 100%;
-  justify-content: space-between;
-}
-
-.wall-preview__stage .wall-search {
-  flex: 1 1 100%;
-  max-inline-size: none;
-}
-
-.wall-preview__stage .wall-catalogue {
-  margin-block-end: 8px;
-}
-
-.wall-preview__stage .wall-footer {
-  padding-block: 4px 12px;
-}
-
-.wall-preview__note {
-  margin: 0.7rem 0 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #6e7784;
-}
-
 /* Offer events slide-over — the same numbered rail the wall uses, on panel
-   tokens. Green is money (design.md §2); the step index is amber because it
-   is order, not a credit. */ 
+   tokens. The step index is gold because it is order; the amount is gold
+   because it is money credited. */
 .offer-events {
   display: grid;
   gap: 1.25rem;
@@ -1079,17 +3082,17 @@ select.fi-filter-field {
   place-items: center;
   inline-size: 48px;
   block-size: 48px;
-  border-radius: 10px;
-  background: #1a1e24;
-  border: 1px solid #262b33;
+  border-radius: 14px;
+  background: #1A1D2E;
+  border: 1px solid #262A40;
   overflow: hidden;
 }
 
 .offer-events__letter {
-  font-size: 1.125rem;
-  font-weight: 650;
-  color: #a2abb8;
-  text-transform: uppercase;
+  font-family: var(--font-panel);
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: #FFB020;
 }
 
 .offer-events__icon {
@@ -1103,9 +3106,9 @@ select.fi-filter-field {
 .offer-events__kicker {
   margin: 0;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .offer-events__type {
@@ -1116,7 +3119,7 @@ select.fi-filter-field {
   margin: 0.4rem 0 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #a2abb8;
+  color: #C3C7D6;
   max-inline-size: 42rem;
 }
 
@@ -1133,8 +3136,8 @@ select.fi-filter-field {
   position: absolute;
   inset-inline-start: 13px;
   inset-block: 22px;
-  inline-size: 2px;
-  background: #262b33;
+  inline-size: 1px;
+  background: #2C3148;
 }
 
 .offer-events__row {
@@ -1154,8 +3157,8 @@ select.fi-filter-field {
   inline-size: 26px;
   block-size: 26px;
   border-radius: 999px;
-  background: #f5a524;
-  color: #08090a;
+  background: #FFB020;
+  color: #0A0B14;
   font-size: 11.5px;
   font-weight: 700;
 }
@@ -1163,7 +3166,7 @@ select.fi-filter-field {
 .offer-events__name {
   font-size: 14px;
   line-height: 1.35;
-  color: #e9ecf1;
+  color: #F4F5FA;
 }
 
 .offer-events__pay {
@@ -1172,36 +3175,36 @@ select.fi-filter-field {
   gap: 2px;
   font-size: 13px;
   font-weight: 700;
-  color: #2fbf71;
+  color: #FFB020;
 }
 
 .offer-events__points {
   font-size: 11px;
   font-weight: 600;
-  color: #a2abb8;
+  color: #C3C7D6;
 }
 
 .offer-events__note {
   margin: 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .offer-events__how {
   margin: 0;
   padding: 1rem;
-  border: 1px solid #262b33;
-  border-radius: 10px;
-  background: #14171b;
+  border: 1px solid #262A40;
+  border-radius: 14px;
+  background: #151827;
 }
 
 .offer-events__how h3 {
   margin: 0 0 0.5rem;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .offer-events__how ul {
@@ -1211,28 +3214,29 @@ select.fi-filter-field {
   gap: 0.35rem;
   font-size: 13.5px;
   line-height: 1.5;
-  color: #a2abb8;
+  color: #C3C7D6;
 }
 
 /* Audit log — activity rail, actor tiles, and before/after chips.
    Family colour lives on the row, not on every cell: one stripe is enough
-   to scan money vs access without painting the whole table. */
+   to scan money against access without painting the whole table. Money is
+   gold; everything else is a step of the line ramp. */
 
 .fi-ta-row.ad-audit-row--money {
-  box-shadow: inset 2px 0 0 #2fbf71;
+  box-shadow: inset 2px 0 0 #FFB020;
 }
 
 .fi-ta-row.ad-audit-row--access {
-  box-shadow: inset 2px 0 0 #f5a524;
+  box-shadow: inset 2px 0 0 #A6ABBE;
 }
 
 .fi-ta-row.ad-audit-row--status {
-  box-shadow: inset 2px 0 0 #5b8def;
+  box-shadow: inset 2px 0 0 #8B90A8;
 }
 
 .fi-ta-row.ad-audit-row--settings,
 .fi-ta-row.ad-audit-row--catalog {
-  box-shadow: inset 2px 0 0 #363d47;
+  box-shadow: inset 2px 0 0 #464C6A;
 }
 
 .ad-audit-change {
@@ -1251,7 +3255,7 @@ select.fi-filter-field {
 .ad-audit-diff__more {
   margin: 0;
   font-size: 0.75rem;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .ad-audit-diff__row {
@@ -1262,9 +3266,9 @@ select.fi-filter-field {
 }
 
 .ad-audit-diff__key {
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .ad-audit-diff__pair {
@@ -1277,24 +3281,25 @@ select.fi-filter-field {
 
 .ad-audit-diff__before,
 .ad-audit-diff__after {
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   line-height: 1.3;
   overflow-wrap: anywhere;
 }
 
+/* The value that was removed is the rose; the value that stands is plain. */
 .ad-audit-diff__before {
-  color: #c47a7a;
+  color: #F49A9D;
   text-decoration: line-through;
   text-decoration-thickness: 1px;
 }
 
 .ad-audit-diff__after {
-  color: #7dcea0;
+  color: #F4F5FA;
 }
 
 .ad-audit-diff__arrow {
-  color: #6e7784;
+  color: #8B90A8;
   font-size: 0.6875rem;
 }
 
@@ -1306,40 +3311,42 @@ select.fi-filter-field {
 
 .ad-audit-inspect__head {
   padding-inline-start: 0.85rem;
-  border-inline-start: 2px solid #363d47;
+  border-inline-start: 2px solid #464C6A;
 }
 
 .ad-audit-inspect--money .ad-audit-inspect__head {
-  border-inline-start-color: #2fbf71;
+  border-inline-start-color: #FFB020;
 }
 
 .ad-audit-inspect--access .ad-audit-inspect__head {
-  border-inline-start-color: #f5a524;
+  border-inline-start-color: #A6ABBE;
 }
 
 .ad-audit-inspect--status .ad-audit-inspect__head {
-  border-inline-start-color: #5b8def;
+  border-inline-start-color: #8B90A8;
 }
 
 .ad-audit-inspect__family {
   margin: 0;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .ad-audit-inspect__title {
   margin: 0.3rem 0 0;
-  font-size: 1.15rem;
-  font-weight: 650;
-  color: #e9ecf1;
+  font-family: var(--font-panel);
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #F4F5FA;
 }
 
 .ad-audit-inspect__lede {
   margin: 0.35rem 0 0;
   font-size: 13px;
-  color: #a2abb8;
+  color: #C3C7D6;
 }
 
 .ad-audit-inspect__facts {
@@ -1351,19 +3358,19 @@ select.fi-filter-field {
 
 .ad-audit-inspect__facts dt {
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .ad-audit-inspect__facts dd {
   margin: 0.25rem 0 0;
   font-size: 14px;
-  color: #e9ecf1;
+  color: #F4F5FA;
 }
 
 .ad-audit-inspect__facts a {
-  color: #f5a524;
+  color: #FFB020;
   text-decoration: none;
 }
 
@@ -1375,34 +3382,34 @@ select.fi-filter-field {
   display: block;
   margin-top: 0.15rem;
   font-size: 12px;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .ad-audit-inspect__code {
-  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
-  color: #c7cdd6;
+  color: #C3C7D6;
 }
 
 .ad-audit-inspect__change {
   padding: 1rem;
-  border: 1px solid #262b33;
-  border-radius: 10px;
-  background: #14171b;
+  border: 1px solid #262A40;
+  border-radius: 14px;
+  background: #151827;
 }
 
 .ad-audit-inspect__change h4 {
   margin: 0 0 0.75rem;
   font-size: 11px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #6e7784;
+  color: #8B90A8;
 }
 
 .ad-audit-inspect .ad-audit-diff__row {
   grid-template-columns: minmax(6.5rem, 8rem) minmax(0, 1fr);
   padding-block: 0.35rem;
-  border-bottom: 1px solid #1a1e24;
+  border-bottom: 1px solid #1F2336;
 }
 
 .ad-audit-inspect .ad-audit-diff__row:last-child {
@@ -1412,5 +3419,246 @@ select.fi-filter-field {
 @media (max-width: 640px) {
   .ad-audit-inspect__facts {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ── Plugins. Third-party chrome repainted in the panel's own values — the
+      surfaces, hairlines, radii and type the rest of the theme uses. The
+      behaviour stays the vendor's; only what it paints changes. ── */
+
+/* Right-click menu (leek/filament-right-click): the dropdown panel, in
+   place. The vendor sheet is zinc and 8px; this is the theme's dropdown. */
+.fi-right-click-menu,
+.dark .fi-right-click-menu {
+  background: #151827;
+  border-color: #262A40;
+  border-radius: 14px;
+  padding: 0.375rem;
+  color: #C3C7D6;
+  box-shadow: 0 2px 4px rgb(12 13 26 / 0.06), 0 32px 80px -24px rgb(12 13 26 / 0.28);
+}
+
+.fi-right-click-menu-item {
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.fi-right-click-menu-item:hover,
+.fi-right-click-menu-item.fi-active,
+.fi-right-click-menu-item.fi-submenu-open,
+.dark .fi-right-click-menu-item:hover,
+.dark .fi-right-click-menu-item.fi-active,
+.dark .fi-right-click-menu-item.fi-submenu-open {
+  background: #1F2336;
+  color: #F4F5FA;
+}
+
+.fi-right-click-menu-item:focus-visible {
+  outline: 2px solid #FFB020;
+  outline-offset: 3px;
+}
+
+.fi-right-click-menu-item-icon-ctn,
+.dark .fi-right-click-menu-item-icon-ctn {
+  color: #8B90A8;
+}
+
+.fi-right-click-menu-separator,
+.dark .fi-right-click-menu-separator {
+  background: #262A40;
+}
+
+.fi-right-click-menu-section-label,
+.dark .fi-right-click-menu-section-label {
+  color: #8B90A8;
+  font-size: 11px;
+  letter-spacing: 0.09em;
+}
+
+/* Rose for a refusal and nothing else; there is no blue state. */
+.fi-right-click-menu-item.fi-color-danger,
+.fi-right-click-menu-item.fi-color-danger .fi-right-click-menu-item-icon-ctn,
+.dark .fi-right-click-menu-item.fi-color-danger,
+.dark .fi-right-click-menu-item.fi-color-danger .fi-right-click-menu-item-icon-ctn {
+  color: #F49A9D;
+}
+
+.fi-right-click-menu-item.fi-color-warning {
+  color: #FFC554;
+}
+
+.fi-right-click-menu-item.fi-color-success {
+  color: #6EE7A8;
+}
+
+.fi-right-click-menu-item.fi-color-info {
+  color: #C3C7D6;
+}
+
+/* Cell popup (zpmlabs/filament-popup): a dropdown panel anchored to the
+   cell. The vendor paints it white; the panel has no white surface. */
+[data-filament-popup-panel] > div {
+  background-color: #151827;
+  border-color: #262A40;
+  border-radius: 14px;
+  color: #C3C7D6;
+  --tw-ring-color: #262A40;
+  box-shadow: 0 2px 4px rgb(12 13 26 / 0.06), 0 32px 80px -24px rgb(12 13 26 / 0.28);
+}
+
+/* Dashboard widgets (laboiteacode): the vendor card becomes the theme's
+   widget — same ground, same hairline, same 20px card radius the sections
+   use, and the vendor's hover lift is removed (nothing moves on hover). */
+.fi-fdw-card,
+.dark .fi-fdw-card {
+  background-color: #11131F;
+  border-color: #262A40;
+  border-radius: 20px;
+  box-shadow: none;
+}
+
+.fi-fdw-card--interactive:hover,
+.dark .fi-fdw-card--interactive:hover {
+  border-color: #343954;
+  box-shadow: none;
+  transform: none;
+}
+
+.fi-fdw-heading__title,
+.dark .fi-fdw-heading__title,
+.fi-fdw-breakdown__value,
+.dark .fi-fdw-breakdown__value,
+.fi-fdw-strong,
+.dark .fi-fdw-strong {
+  color: #F4F5FA;
+}
+
+.fi-fdw-heading__description,
+.fi-fdw-muted,
+.fi-fdw-breakdown__percentage,
+.dark .fi-fdw-breakdown__percentage {
+  color: #8B90A8;
+}
+
+.fi-fdw-breakdown__label,
+.dark .fi-fdw-breakdown__label,
+.fi-fdw-label,
+.dark .fi-fdw-label {
+  color: #C3C7D6;
+}
+
+.fi-fdw-bar,
+.dark .fi-fdw-bar {
+  background-color: #1F2336;
+  border-radius: 999px;
+}
+
+.fi-fdw-bar__fill {
+  border-radius: 999px;
+}
+
+a.fi-fdw-breakdown__item:focus-visible {
+  outline: 2px solid #FFB020;
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+/* Announcements (marcelodelgado): the published view in
+   resources/views/vendor/announcements. One row per notice, a 3px tone bar
+   on the leading edge, the icon in the same tone, body in the fog ramp. */
+.fi-wi-announcements-empty {
+  display: none;
+}
+
+.pg-ann-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pg-ann {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem 0.875rem 1.125rem;
+  border-radius: 20px;
+  background-color: #11131F;
+  box-shadow: inset 0 0 0 1px #262A40, inset 3px 0 0 0 var(--pg-ann-tone, #8B90A8);
+}
+
+.pg-ann-danger {
+  --pg-ann-tone: #E5484D;
+}
+
+.pg-ann-warning {
+  --pg-ann-tone: #FFB020;
+}
+
+.pg-ann-success {
+  --pg-ann-tone: #16B364;
+}
+
+.pg-ann-neutral {
+  --pg-ann-tone: #8B90A8;
+}
+
+.pg-ann-icon {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0.0625rem;
+  color: var(--pg-ann-tone, #8B90A8);
+}
+
+.pg-ann-body {
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+.pg-ann-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #F4F5FA;
+}
+
+.pg-ann-text {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #C3C7D6;
+  white-space: pre-wrap;
+}
+
+.pg-ann-dismiss {
+  flex: none;
+  margin-inline-start: auto;
+}
+
+/* Panel switch (bezhansalleh): the simple dropdown's trigger in the topbar.
+   The vendor tints it with the primary ramp at 20%; here it is the same
+   ring-on-hover the user-menu trigger beside it uses. */
+.fi-topbar .fi-dropdown-trigger .fi-icon-btn {
+  background-color: transparent;
+  box-shadow: inset 0 0 0 1px #262A40;
+  transition: box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fi-topbar .fi-dropdown-trigger .fi-icon-btn:hover,
+.fi-topbar .fi-dropdown-trigger .fi-icon-btn:focus-visible {
+  box-shadow: 0 0 0 2px #FFB020;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fi-right-click-menu-item,
+  .fi-fdw-card--interactive,
+  .fi-topbar .fi-dropdown-trigger .fi-icon-btn {
+    transition: none;
   }
 }

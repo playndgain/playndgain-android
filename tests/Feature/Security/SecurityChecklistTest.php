@@ -180,23 +180,80 @@ it('ships nginx blocks that frame-protect everything except the wall', function 
     // header is nginx's, per docs/11 §2. So the asymmetry §10 demands is
     // asserted where it is actually configured, in the files this repository
     // hands the server.
-    $headers = deployFile('nginx/snippets/advault-security-headers.conf');
+    $headers = deployFile('nginx/snippets/playndgain-security-headers.conf');
 
     expect($headers)->toContain('X-Frame-Options "SAMEORIGIN"')
         ->and($headers)->toContain('Strict-Transport-Security');
 
-    foreach (['nginx/advault.io.conf', 'nginx/api.advault.io.conf'] as $path) {
-        expect(deployFile($path))->toContain('snippets/advault-security-headers.conf');
+    foreach (['nginx/playndgain.com.conf', 'nginx/api.playndgain.com.conf'] as $path) {
+        expect(deployFile($path))->toContain('snippets/playndgain-security-headers.conf');
     }
 
-    $wall = deployFile('nginx/wall.advault.io.conf');
+    $wall = deployFile('nginx/wall.playndgain.com.conf');
 
     expect($wall)->toContain('add_header X-Frame-Options "" always;')
         ->and($wall)->toContain('frame-ancestors *')
         // HSTS is for the panels only (§10). On the wall it would be set for
         // every publisher whose page embeds us.
         ->and($wall)->not->toContain('Strict-Transport-Security')
-        ->and($wall)->not->toContain('snippets/advault-security-headers.conf');
+        ->and($wall)->not->toContain('snippets/playndgain-security-headers.conf');
+});
+
+/**
+ * The same asymmetry, in the container image.
+ *
+ * docs/13-dokploy.md ships this application as three containers behind
+ * Dokploy's Traefik, and the server blocks there are rendered from
+ * docker/nginx/templates rather than installed from deploy/nginx. Two copies of
+ * a rule is how a rule drifts, so the test that guards the rule guards both —
+ * and the snippets, which carry the actual header lines, are not copied at all:
+ * the image installs the files above verbatim, which is what the Dockerfile
+ * assertion below pins.
+ */
+it('keeps the container nginx blocks in step with the deployed ones', function () {
+    $container = function (string $path): string {
+        $full = base_path($path);
+
+        expect(is_file($full))->toBeTrue();
+
+        return (string) file_get_contents($full);
+    };
+
+    // One source for the header lines themselves. If this COPY ever becomes a
+    // second copy under docker/, the wall's rule can change in one place and
+    // not the other.
+    expect($container('Dockerfile'))->toContain('deploy/nginx/snippets/');
+
+    $wall = $container('docker/nginx/templates/20-wall.conf.template');
+
+    expect($wall)->toContain('add_header X-Frame-Options "" always;')
+        ->and($wall)->toContain('frame-ancestors *')
+        ->and($wall)->toContain('fastcgi_hide_header X-Frame-Options;')
+        ->and($wall)->not->toContain('Strict-Transport-Security')
+        ->and($wall)->not->toContain('snippets/playndgain-security-headers.conf');
+
+    foreach (['10-site', '30-api'] as $name) {
+        expect($container("docker/nginx/templates/{$name}.conf.template"))
+            ->toContain('snippets/playndgain-security-headers.conf');
+    }
+
+    // An unmatched Host — a preview domain, a probe by IP — must land on the
+    // site block, whose headers are the strict ones. Default-serving the wall
+    // instead would hand framing-off to any name nobody configured.
+    expect($container('docker/nginx/templates/10-site.conf.template'))->toContain('listen 80 default_server;')
+        ->and($wall)->not->toContain('listen 80 default_server;');
+
+    foreach (['10-site', '20-wall', '30-api'] as $name) {
+        expect($container("docker/nginx/templates/{$name}.conf.template"))
+            ->toContain('root /var/www/html/public;');
+    }
+
+    // Behind a proxy the wall's `limit_req` keys on the proxy unless nginx is
+    // told where the client address really is — one key for every visitor, and
+    // the 60r/m budget spent by the first busy second. The fraud engine reads
+    // the same address.
+    expect($container('docker/nginx/nginx.conf'))->toContain('real_ip_header    X-Forwarded-For;')
+        ->and($container('docker/nginx/nginx.conf'))->toContain('real_ip_recursive on;');
 });
 
 it('keeps APP_DEBUG off in production', function () {
@@ -219,12 +276,12 @@ it('keeps APP_DEBUG off in production', function () {
 });
 
 it('requires admin 2FA by default', function () {
-    expect(config('advault.require_admin_2fa'))->toBeTrue();
+    expect(config('playndgain.require_admin_2fa'))->toBeTrue();
 
     // phpunit.xml pins the variable to true, so the line above is a check on
     // the pin. The default is what a production box gets when nobody sets it.
-    expect(file_get_contents(config_path('advault.php')))
-        ->toContain("env('ADVAULT_REQUIRE_ADMIN_2FA', true)");
+    expect(file_get_contents(config_path('playndgain.php')))
+        ->toContain("env('PLAYNDGAIN_REQUIRE_ADMIN_2FA', true)");
 });
 
 it('issues UUIDv4 click ids', function () {
@@ -261,8 +318,8 @@ it('keeps storage and bootstrap/cache outside the web root', function () {
 
     // And the document root the servers are given is public/, not the project
     // root — the other way this row goes wrong.
-    foreach (['nginx/advault.io.conf', 'nginx/wall.advault.io.conf', 'nginx/api.advault.io.conf'] as $path) {
-        expect(deployFile($path))->toContain('root /var/www/advault/public;');
+    foreach (['nginx/playndgain.com.conf', 'nginx/wall.playndgain.com.conf', 'nginx/api.playndgain.com.conf'] as $path) {
+        expect(deployFile($path))->toContain('root /var/www/playndgain/public;');
     }
 });
 

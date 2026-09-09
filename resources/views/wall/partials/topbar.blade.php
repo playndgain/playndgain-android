@@ -12,14 +12,18 @@
         : $context->balance;
 @endphp
 
-{{-- The app bar: the platform lockup on the start edge, section pills and
-     the balance on the end. `x-data` with no expression: the menu trigger
-     is hidden with x-cloak until Alpine can wire it. The click wiring
-     itself is plain JS on the shell — no Alpine magic in an attribute,
-     which the wall's no-`$` test forbids. --}}
+{{-- The app bar: the app's own name on the start edge, the currency line
+     under it, the section tabs and the balance on the end. `x-data` with no
+     expression: the menu trigger is hidden with x-cloak until Alpine can
+     wire it. The click wiring itself is plain JS on the shell — no Alpine
+     magic in an attribute, which the wall's no-`$` test forbids. --}}
 <div class="wall-topbar" x-data>
     <span class="wall-topbar__brand">
-        <x-brand-mark :size="26" />
+        <span class="wall-topbar__mark" aria-hidden="true">{{ mb_substr($context->app->name, 0, 1) }}</span>
+        <span class="wall-topbar__lockup">
+            <span class="wall-topbar__name">{{ $context->app->name }}</span>
+            <span class="wall-topbar__title">{{ __('wall.earn', ['currency' => $context->app->currency_name]) }}</span>
+        </span>
     </span>
 
     <span class="wall-topbar__end">
@@ -30,7 +34,6 @@
                 {{-- Rendered only when the publisher sends it: an app that never
                      passes `balance` gets no pill, exactly as before. --}}
                 <span class="wall-balance" title="{{ $context->app->currency_name }}">
-                    <svg class="wall-balance__icon" aria-hidden="true"><use href="#ic-coin"/></svg>
                     <span class="num" dir="ltr">{{ $balance }}</span>
                     <span class="wall-sr">{{ $context->app->currency_name }}</span>
                 </span>

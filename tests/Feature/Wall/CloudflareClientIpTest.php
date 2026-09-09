@@ -15,7 +15,6 @@ require_once __DIR__.'/WallFixtures.php';
  * `CF-Connecting-IP`, WallGate asks ProxyCheck about the edge hop — which
  * answers "Cloudflare, Inc., not a VPN" — and the render gate never fires.
  */
-
 function cloudflareVpnRule(): void
 {
     FraudRule::query()->create([

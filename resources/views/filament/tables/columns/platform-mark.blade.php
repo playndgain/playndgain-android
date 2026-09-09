@@ -1,5 +1,8 @@
-{{-- Platform as the same device marks the offers table uses. "All" stacks
-     the three; a single platform is one glyph. The name is the tooltip. --}}
+{{-- Platform as a labelled pill, shaped like the postback pill one column
+     over. The bare device mark it replaced was a 13px monochrome glyph on
+     ink and read as an empty cell. One platform shows its mark; "All
+     platforms" shows the words alone, since three 13px glyphs overlapping
+     is the same illegibility this pill exists to fix. --}}
 @php
     use App\Enums\AppPlatform;
 
@@ -13,18 +16,18 @@
     $label = $platform instanceof AppPlatform ? $platform->getLabel() : '';
 @endphp
 
-@if ($marks === [])
-    <p class="fi-ta-placeholder ad-flag-cell">—</p>
-@else
-    <div class="ad-stack ad-stack--platform"
-         x-tooltip="{ content: @js($label), theme: $store.theme }"
-         aria-label="{{ $label }}">
-        @foreach ($marks as $mark)
-            <span class="ad-device">
-                <img src="{{ asset('img/devices/'.$mark.'.svg') }}"
-                     alt="{{ $mark }}"
-                     loading="lazy">
-            </span>
-        @endforeach
-    </div>
-@endif
+<div class="ad-status-cell">
+    @if ($marks === [])
+        <p class="fi-ta-placeholder">—</p>
+    @else
+        <span class="ad-platform" aria-label="{{ $label }}">
+            @if (count($marks) === 1)
+                <span class="ad-platform__marks" aria-hidden="true">
+                    <img src="{{ asset('img/devices/'.$marks[0].'.svg') }}" alt="">
+                </span>
+            @endif
+
+            {{ $label }}
+        </span>
+    @endif
+</div>

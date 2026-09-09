@@ -159,7 +159,7 @@ That is also why blocking at render is a different refusal from blocking at clic
 | Proxy type, usage type, threat | IP2Proxy LITE PX11 | `IP2PROXY-LITE-PX11.BIN` | `geoip:update`, weekly |
 
 The files are licensed downloads, not repository content. `geoip:update` fetches
-them into `ADVAULT_GEOIP_PATH` (default `storage/app/geoip`) using two free-tier
+them into `PLAYNDGAIN_GEOIP_PATH` (default `storage/app/geoip`) using two free-tier
 credentials, `MAXMIND_LICENSE_KEY` and `IP2LOCATION_DOWNLOAD_TOKEN`. Each source
 is independent: an unset credential is a warning, a failed download fails only
 its own database, and a download that does not open under the production reader

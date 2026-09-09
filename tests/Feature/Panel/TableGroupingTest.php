@@ -28,7 +28,7 @@ use Livewire\Attributes\Url;
  * worth holding down.
  */
 beforeEach(function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     Filament::setCurrentPanel('admin');
 
     $this->actingAs(User::factory()->admin()->create([

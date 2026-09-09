@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ContactController;
 use App\Mail\ContactMessage;
+use App\Support\Identity;
 use Illuminate\Support\Facades\Mail;
 
 it('renders a form that submits without JavaScript', function () {
@@ -98,7 +99,7 @@ it('sends the message and redirects with a status', function () {
     Mail::assertSent(ContactMessage::class, function (ContactMessage $mail): bool {
         $envelope = $mail->envelope();
 
-        return $mail->hasTo((string) config('mail.from.address'))
+        return $mail->hasTo(Identity::supportEmail())
             && $envelope->replyTo[0]->address === 'dana@example.com'
             && $mail->topic === ContactController::topics()['supply']
             && str_contains($mail->body, 'subid macro');
@@ -130,4 +131,65 @@ it('offers a real option for every topic the site deep-links to', function () {
     expect(ContactController::topics())
         ->toHaveKey('supply')
         ->toHaveKey('technical');
+});
+
+it('sends to the support mailbox, not to the no-reply it sends from', function () {
+    // Two different addresses on purpose: mail leaves from a no-reply nobody
+    // watches, so a contact form delivered there is a form nobody answers.
+    config([
+        'mail.from.address' => 'no-reply@playndgain.test',
+        'playndgain.support_email' => 'support@playndgain.test',
+    ]);
+
+    Mail::fake();
+
+    $this->post('/contact', [
+        'name' => 'Dana Okonkwo',
+        'email' => 'dana@example.com',
+        'topic' => 'payouts',
+        'message' => 'A question about the hold that is comfortably over the floor.',
+    ]);
+
+    Mail::assertSent(ContactMessage::class, fn (ContactMessage $mail): bool => $mail->hasTo('support@playndgain.test')
+        && ! $mail->hasTo('no-reply@playndgain.test'));
+});
+
+it('does not lose the message or throw a 500 when the transport is down', function () {
+    config(['playndgain.support_email' => 'support@playndgain.test']);
+
+    // A mailer that raises rather than one that records.
+    Mail::shouldReceive('to')->once()->andThrow(new RuntimeException('smtp: connection refused'));
+
+    $this->from('/contact')
+        ->post('/contact', [
+            'name' => 'Dana Okonkwo',
+            'email' => 'dana@example.com',
+            'topic' => 'technical',
+            'message' => 'A postback that returns 200 but never credits the user.',
+        ])
+        ->assertRedirect('/contact')
+        ->assertSessionMissing('status')
+        // The sender is told, and told where to write instead.
+        ->assertSessionHas('delivery_failed', fn (string $message): bool => str_contains($message, 'support@playndgain.test'));
+});
+
+it('hands back what the sender typed when the transport is down', function () {
+    config(['playndgain.support_email' => 'support@playndgain.test']);
+
+    Mail::shouldReceive('to')->once()->andThrow(new RuntimeException('smtp: connection refused'));
+
+    $this->from('/contact')->post('/contact', [
+        'name' => 'Dana Okonkwo',
+        'email' => 'dana@example.com',
+        'topic' => 'technical',
+        'message' => 'A postback that returns 200 but never credits the user.',
+    ]);
+
+    // Nobody should have to retype a message because our mail server was out.
+    $html = $this->get('/contact')->assertOk()->getContent();
+
+    expect($html)
+        ->toContain('value="Dana Okonkwo"')
+        ->toContain('never credits the user')
+        ->toContain('role="alert"');
 });

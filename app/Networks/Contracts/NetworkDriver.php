@@ -41,6 +41,14 @@ interface NetworkDriver
      */
     public static function postbackQuery(): array;
 
+    /**
+     * Absolute URL an admin copies into the network dashboard — the postback
+     * route for this driver with its macro query string. The admin panel calls
+     * it on the driver class, so it is part of the contract rather than an
+     * implementation detail of AbstractDriver.
+     */
+    public static function postbackUrl(): string;
+
     /** Cheap auth check for the admin "Test connection" button. */
     public function testConnection(): ConnectionResult;
 

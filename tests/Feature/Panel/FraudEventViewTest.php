@@ -7,16 +7,17 @@ use App\Filament\Admin\Resources\FraudEvents\FraudEventResource;
 use App\Filament\Admin\Resources\FraudEvents\Pages\ListFraudEvents;
 use App\Models\App;
 use App\Models\FraudEvent;
-use App\Models\OfferClick;
 use App\Models\Publisher;
 use App\Models\User;
+use Database\Factories\OfferClickFactory;
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Config;
 use Livewire\Livewire;
 
 beforeEach(function () {
     Filament::setCurrentPanel('admin');
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
 });
@@ -24,7 +25,7 @@ beforeEach(function () {
 it('opens a fraud event view with the full recorded context', function () {
     $publisher = Publisher::factory()->create();
     $app = App::factory()->for($publisher)->create();
-    $click = OfferClick::factory()->for($app)->create();
+    $click = OfferClickFactory::new()->for($app)->create();
 
     $event = FraudEvent::query()->create([
         'rule_key' => 'ip_risk_score',
@@ -45,13 +46,22 @@ it('opens a fraud event view with the full recorded context', function () {
         'created_at' => now(),
     ]);
 
-    Livewire::test(ListFraudEvents::class)
-        ->callTableAction('view', $event)
+    // The slide-over is rendered client-side once the action is mounted, so
+    // the component HTML never carries it: the assertion is on the schema the
+    // modal is built from — mounted for this record, with every recorded input
+    // and the reason first.
+    $component = Livewire::test(ListFraudEvents::class)
+        ->mountAction(TestAction::make('view')->table($event))
         ->assertSuccessful()
-        ->assertSee('third-party risk score over threshold')
-        ->assertSee('203.0.113.10')
-        ->assertSee('92')
-        ->assertSee('ipqualityscore');
+        ->assertActionMounted(TestAction::make('view')->table($event));
+
+    $component->assertSchemaComponentStateSet('context_pairs', [
+        'reason' => 'third-party risk score over threshold',
+        'ip' => '203.0.113.10',
+        'score' => '92',
+        'threshold' => '85',
+        'source' => 'ipqualityscore',
+    ], $component->instance()->getMountedActionSchemaName());
 });
 
 it('orders context pairs with reason first', function () {

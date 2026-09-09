@@ -9,9 +9,12 @@ use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Str;
+use Leek\FilamentHeaderFilters\Concerns\HasHeaderFilters;
 
 class ListOffers extends ListRecords
 {
+    use HasHeaderFilters;
+
     protected static string $resource = OfferResource::class;
 
     /**

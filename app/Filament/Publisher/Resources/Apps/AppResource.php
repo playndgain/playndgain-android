@@ -3,6 +3,7 @@
 namespace App\Filament\Publisher\Resources\Apps;
 
 use App\Enums\AppPlatform;
+use App\Enums\AppStatus;
 use App\Enums\PostbackMethod;
 use App\Enums\PublisherStatus;
 use App\Filament\Publisher\Resources\Apps\Pages\CreateApp;
@@ -19,6 +20,8 @@ use App\Support\Contrast;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\CreateAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
@@ -28,15 +31,17 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Html;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Components\Wizard;
+use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
@@ -53,13 +58,28 @@ class AppResource extends PublisherScopedResource
 {
     protected static ?string $model = App::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDevicePhoneMobile;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-smartphone';
 
-    protected static ?int $navigationSort = 2;
+    protected static string|\UnitEnum|null $navigationGroup = 'Monetize';
+
+    protected static ?int $navigationSort = 10;
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    /**
+     * Editing: every step is open, and the page's own Save button sits under
+     * the form, so a name change is one click and not a walk to the last
+     * step. Creation (CreateApp) wires the same steps into a linear wizard.
+     */
     public static function form(Schema $schema): Schema
+    {
+        return self::wizardForm($schema, Wizard::make(self::steps())
+            ->skippable()
+            ->contained(false));
+    }
+
+    /** The steps beside the live preview — the layout both pages share. */
+    public static function wizardForm(Schema $schema, Component $wizard): Schema
     {
         return $schema
             ->columns(1)
@@ -67,7 +87,7 @@ class AppResource extends PublisherScopedResource
                 Grid::make(['default' => 1, 'xl' => 12])
                     ->columnSpanFull()
                     ->schema([
-                        self::tabs()->columnSpan(['default' => 12, 'xl' => 7]),
+                        $wizard->columnSpan(['default' => 12, 'xl' => 7]),
                         self::previewPane()->columnSpan(['default' => 12, 'xl' => 5]),
                     ]),
             ]);
@@ -96,131 +116,148 @@ class AppResource extends PublisherScopedResource
         ])->extraAttributes(['class' => 'wall-preview-pane']);
     }
 
-    private static function tabs(): Tabs
+    /**
+     * In the order a publisher sets an app up: what it is, what its coins are
+     * worth, where to tell it about conversions, how the wall looks, what to
+     * keep out — and last the keys and snippet, which only exist once saved.
+     *
+     * @return list<Step>
+     */
+    public static function steps(): array
     {
-        return Tabs::make()
-            ->scrollable(false)
-            ->tabs([
-                Tab::make('Details')->columns(2)->schema([
-                    TextInput::make('name')->required()->maxLength(191)->live(onBlur: true),
-                    TextInput::make('url')->label('Website or store URL')->url()->maxLength(191),
-                    Select::make('platform')->options(AppPlatform::class)->required()->default(AppPlatform::Web),
-                    FileUpload::make('icon_path')->label('Icon')->image()->directory('app-icons')->imageEditor(),
-                ]),
+        return [
+            Step::make('Details')->icon('lucide-app-window')->columns(2)->schema([
+                TextInput::make('name')->required()->maxLength(191)->live(onBlur: true),
+                TextInput::make('url')->label('Website or store URL')->url()->maxLength(191),
+                Select::make('platform')->options(AppPlatform::class)->required()->default(AppPlatform::Web),
+                FileUpload::make('icon_path')->label('Icon')->image()->directory('app-icons')->imageEditor(),
+            ]),
 
-                Tab::make('Integration')->columns(2)->schema([
-                    TextInput::make('app_id')
-                        ->label('App ID')
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->copyable()
-                        ->placeholder('assigned when you save'),
-                    TextInput::make('secret_display')
-                        ->label('Secret key')
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->copyable()
-                        // Shown in full once, on the screen that created it.
-                        // After that it is masked and regenerating is the only
-                        // way back — a secret you can read forever is a secret
-                        // that ends up in a support thread.
-                        ->formatStateUsing(fn (?App $record): string => $record === null
-                            ? 'generated when you save'
-                            : session()->pull("app-secret.{$record->id}", Str::mask((string) $record->secret_key, '*', 4))),
-                    Textarea::make('snippet')
-                        ->label('Embed this')
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->rows(3)
-                        ->columnSpanFull()
-                        ->formatStateUsing(fn (?App $record): string => self::snippet($record)),
-                    Toggle::make('require_signed_wall')
-                        ->label('Require signed wall URLs')
-                        ->helperText('When on, the iframe URL must carry a HMAC signature. Stops anyone loading your wall with someone else\'s user ID.')
-                        ->live(),
-                    Text::make(fn (Get $get): HtmlString => new HtmlString(
-                        $get('require_signed_wall')
-                            ? '<code>sig = hash_hmac(\'sha256\', appid . userid, secret_key)</code>'
-                            : '<span class="text-gray-400">Signing is off. Anyone who learns your app ID can render your wall.</span>'
-                    ))->columnSpanFull(),
-                ]),
+            Step::make('Currency')->icon('lucide-coins')->columns(2)->schema([
+                TextInput::make('currency_name')->required()->maxLength(64)->default('Coins')->live(onBlur: true),
+                TextInput::make('currency_rate')
+                    ->label('Units per $1')
+                    ->numeric()
+                    ->required()
+                    ->minValue(0.0001)
+                    ->default(1000)
+                    ->live(onBlur: true),
+                // The single line that prevents the most common integration
+                // error on the platform — docs/08 §4.
+                Text::make(fn (Get $get): HtmlString => new HtmlString(self::currencyExample($get)))
+                    ->columnSpanFull(),
+            ]),
 
-                Tab::make('Currency')->columns(2)->schema([
-                    TextInput::make('currency_name')->required()->maxLength(64)->default('Coins')->live(onBlur: true),
-                    TextInput::make('currency_rate')
-                        ->label('Units per $1')
-                        ->numeric()
-                        ->required()
-                        ->minValue(0.0001)
-                        ->default(1000)
-                        ->live(onBlur: true),
-                    // The single line that prevents the most common integration
-                    // error on the platform — docs/08 §4.
-                    Text::make(fn (Get $get): HtmlString => new HtmlString(self::currencyExample($get)))
-                        ->columnSpanFull(),
-                ]),
+            Step::make('Postback')->icon('lucide-webhook')->columns(1)->schema([
+                TextInput::make('postback_url')
+                    ->label('Callback URL')
+                    ->maxLength(2048)
+                    // Not `->url()`: the template holds `{user_id}` and the rest
+                    // of the macros listed below, and Laravel's url rule rejects
+                    // the braces. Same reason the partner wall URL is https-only.
+                    // Trim: a trailing space from a mobile paste is the other
+                    // way this field used to fail a URL that was otherwise fine.
+                    ->dehydrateStateUsing(fn (mixed $state): ?string => filled($state) ? trim((string) $state) : null)
+                    ->rules([
+                        fn (): Closure => MacroResolver::validateCallbackUrl(...),
+                    ])
+                    ->helperText('Leave blank to poll the dashboard instead. We never retry into a URL you did not give us.'),
+                Select::make('postback_method')->options(PostbackMethod::class)->default(PostbackMethod::GET),
+                Text::make(new HtmlString(self::macroReference()))->columnSpanFull(),
+            ]),
 
-                Tab::make('Postback')->columns(1)->schema([
-                    TextInput::make('postback_url')
-                        ->label('Callback URL')
-                        ->maxLength(2048)
-                        // Not `->url()`: the template holds `{user_id}` and the rest
-                        // of the macros listed below, and Laravel's url rule rejects
-                        // the braces. Same reason the partner wall URL is https-only.
-                        // Trim: a trailing space from a mobile paste is the other
-                        // way this field used to fail a URL that was otherwise fine.
-                        ->dehydrateStateUsing(fn (mixed $state): ?string => filled($state) ? trim((string) $state) : null)
-                        ->rules([
-                            fn (): Closure => MacroResolver::validateCallbackUrl(...),
-                        ])
-                        ->helperText('Leave blank to poll the dashboard instead. We never retry into a URL you did not give us.'),
-                    Select::make('postback_method')->options(PostbackMethod::class)->default(PostbackMethod::GET),
-                    Text::make(new HtmlString(self::macroReference()))->columnSpanFull(),
-                ]),
+            Step::make('Appearance')->icon('lucide-palette')->columns(2)->schema([
+                ColorPicker::make('theme.primary')->label('Primary')->default(WallContext::DEFAULT_THEME['primary'])->live(),
+                ColorPicker::make('theme.background')->label('Background')->default(WallContext::DEFAULT_THEME['background'])->live(),
+                ColorPicker::make('theme.text')->label('Text')->default(WallContext::DEFAULT_THEME['text'])->live(),
+                // Stored with its unit, because WallContext::sanitiseTheme
+                // whitelists `12px` and drops a bare `12` — which is what
+                // this field used to save, so the control moved a number
+                // that never reached the wall.
+                TextInput::make('theme.radius')
+                    ->label('Corner radius (px)')
+                    ->numeric()
+                    ->default(4)
+                    ->minValue(0)
+                    ->maxValue(40)
+                    ->live(onBlur: true)
+                    ->formatStateUsing(fn (mixed $state): ?int => is_scalar($state) ? (int) $state : null)
+                    ->dehydrateStateUsing(fn (mixed $state): ?string => filled($state) ? ((int) $state).'px' : null),
+                // The switch moves the surfaces with it: a "light" wall on an
+                // ink background is no wall anyone asked for. The primary is
+                // the publisher's and stays.
+                Toggle::make('theme.dark')
+                    ->label('Dark wall')
+                    ->default(true)
+                    ->live()
+                    ->afterStateUpdated(function (Set $set, mixed $state): void {
+                        $surfaces = $state ? WallContext::DEFAULT_THEME : WallContext::LIGHT_SURFACES;
 
-                Tab::make('Appearance')->columns(2)->schema([
-                    ColorPicker::make('theme.primary')->label('Primary')->default('#F5A524')->live(),
-                    ColorPicker::make('theme.background')->label('Background')->default('#0B0D10')->live(),
-                    ColorPicker::make('theme.text')->label('Text')->default('#F5F7FA')->live(),
-                    // Stored with its unit, because WallContext::sanitiseTheme
-                    // whitelists `12px` and drops a bare `12` — which is what
-                    // this field used to save, so the control moved a number
-                    // that never reached the wall.
-                    TextInput::make('theme.radius')
-                        ->label('Corner radius (px)')
-                        ->numeric()
-                        ->default(12)
-                        ->minValue(0)
-                        ->maxValue(40)
-                        ->live(onBlur: true)
-                        ->formatStateUsing(fn (mixed $state): ?int => is_scalar($state) ? (int) $state : null)
-                        ->dehydrateStateUsing(fn (mixed $state): ?string => filled($state) ? ((int) $state).'px' : null),
-                    Toggle::make('theme.dark')->label('Dark wall')->default(true)->live(),
-                    // Publishers pick unreadable pairs constantly. Warning them
-                    // here is cheaper than the support thread afterwards.
-                    Text::make(fn (Get $get): HtmlString => new HtmlString(Contrast::verdict(
-                        (string) $get('theme.text'),
-                        (string) $get('theme.background'),
-                    )))->columnSpanFull(),
-                ]),
+                        $set('theme.background', $surfaces['background']);
+                        $set('theme.text', $surfaces['text']);
+                    }),
+                // Publishers pick unreadable pairs constantly. Warning them
+                // here is cheaper than the support thread afterwards.
+                Text::make(fn (Get $get): HtmlString => new HtmlString(Contrast::verdict(
+                    (string) $get('theme.text'),
+                    (string) $get('theme.background'),
+                )))->columnSpanFull(),
+            ]),
 
-                Tab::make('Restrictions')->columns(2)->schema([
-                    TagsInput::make('blocked_countries')
-                        ->label('Blocked countries')
-                        ->helperText('ISO-2 codes. Offers are hidden from users in these countries.'),
-                    TextInput::make('daily_conversion_cap')
-                        ->label('Daily conversion cap')
-                        ->numeric()
-                        ->minValue(1)
-                        ->helperText('Blank means uncapped.'),
-                    Toggle::make('anonymize_ip')
-                        ->label('Anonymise IPs')
-                        ->helperText('Zeroes the last octet before storage. Applies to your own click log too.'),
-                    Toggle::make('test_mode')
-                        ->label('Test mode')
-                        ->helperText('Adds `&country=XX` to your wall URL so you can preview any geo, and pins a $0.01 test offer that runs the real conversion pipeline. Turn it off before you ship — while it is on, anyone with your wall URL can pick their own country.'),
-                ]),
-            ]);
+            Step::make('Restrictions')->icon('lucide-shield-check')->columns(2)->schema([
+                TagsInput::make('blocked_countries')
+                    ->label('Blocked countries')
+                    ->helperText('ISO-2 codes. Offers are hidden from users in these countries.'),
+                TextInput::make('daily_conversion_cap')
+                    ->label('Daily conversion cap')
+                    ->numeric()
+                    ->minValue(1)
+                    ->helperText('Blank means uncapped.'),
+                Toggle::make('anonymize_ip')
+                    ->label('Anonymise IPs')
+                    ->helperText('Zeroes the last octet before storage. Applies to your own click log too.'),
+                Toggle::make('test_mode')
+                    ->label('Test mode')
+                    ->helperText('Adds `&country=XX` to your wall URL so you can preview any geo, and pins a $0.01 test offer that runs the real conversion pipeline. Turn it off before you ship — while it is on, anyone with your wall URL can pick their own country.'),
+            ]),
+
+            Step::make('Integration')->icon('lucide-plug')->columns(2)->schema([
+                TextInput::make('app_id')
+                    ->label('App ID')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->copyable()
+                    ->placeholder('assigned when you save'),
+                TextInput::make('secret_display')
+                    ->label('Secret key')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->copyable()
+                    // Shown in full once, on the screen that created it.
+                    // After that it is masked and regenerating is the only
+                    // way back — a secret you can read forever is a secret
+                    // that ends up in a support thread.
+                    ->formatStateUsing(fn (?App $record): string => $record === null
+                        ? 'generated when you save'
+                        : session()->pull("app-secret.{$record->id}", Str::mask((string) $record->secret_key, '*', 4))),
+                Textarea::make('snippet')
+                    ->label('Embed this')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->rows(3)
+                    ->columnSpanFull()
+                    ->formatStateUsing(fn (?App $record): string => self::snippet($record)),
+                Toggle::make('require_signed_wall')
+                    ->label('Require signed wall URLs')
+                    ->helperText('When on, the iframe URL must carry a HMAC signature. Stops anyone loading your wall with someone else\'s user ID.')
+                    ->live(),
+                Text::make(fn (Get $get): HtmlString => new HtmlString(
+                    $get('require_signed_wall')
+                        ? '<code>sig = hash_hmac(\'sha256\', appid . userid, secret_key)</code>'
+                        : '<span class="text-gray-400">Signing is off. Anyone who learns your app ID can render your wall.</span>'
+                ))->columnSpanFull(),
+            ]),
+        ];
     }
 
     public static function table(Table $table): Table
@@ -239,19 +276,42 @@ class AppResource extends PublisherScopedResource
                 AppColumns::postback(),
                 ...AppColumns::activity('earnings_7d', 'Earnings'),
             ])
+            ->filters([
+                SelectFilter::make('status')->options(AppStatus::class),
+                SelectFilter::make('platform')->options(AppPlatform::class),
+            ])
             ->recordClasses(AppColumns::recordClasses(...))
+            // "Settings" stays a visible button — it is the one action every
+            // app needs regularly. The two integration tools sit behind the
+            // ellipsis so a row does not read as three equal calls to action.
             ->recordActions([
-                EditAction::make(),
-                PublisherTestPostbackAction::make(),
-                Action::make('copy_snippet')
-                    ->label('Embed code')
-                    ->icon(Heroicon::OutlinedCodeBracket)
-                    ->modalSubmitAction(false)
-                    ->modalContent(fn (App $record) => view('filament.publisher.snippet', ['snippet' => self::snippet($record)]))
-                    ->action(fn () => Notification::make()->title('Copied from the modal')->send()),
+                EditAction::make()
+                    ->label('Settings')
+                    ->icon('lucide-settings-2'),
+                ActionGroup::make([
+                    Action::make('copy_snippet')
+                        ->label('Embed code')
+                        ->icon('lucide-code')
+                        ->modalHeading('Embed code')
+                        ->modalSubmitAction(false)
+                        ->modalContent(fn (App $record) => view('filament.publisher.snippet', ['snippet' => self::snippet($record)]))
+                        ->action(fn () => Notification::make()->title('Copied from the modal')->send()),
+                    PublisherTestPostbackAction::make(),
+                ])
+                    ->label('Integration')
+                    ->icon('lucide-ellipsis')
+                    ->tooltip('Integration tools'),
             ])
             ->emptyStateHeading('No apps yet')
-            ->emptyStateDescription('Create one to get an app ID, a secret and an embed snippet.');
+            ->emptyStateDescription('Create one to get an app ID, a secret and an embed snippet.')
+            ->emptyStateIcon('lucide-smartphone')
+            // The heading promised a create step and gave nothing to press;
+            // the header's CreateAction is the same one, repeated where the
+            // reader already is.
+            ->emptyStateActions([CreateAction::make()])
+            // The only one of the three tables without a default order — rows
+            // were arriving in primary-key order.
+            ->defaultSort('created_at', 'desc');
     }
 
     public static function getPages(): array
@@ -261,6 +321,12 @@ class AppResource extends PublisherScopedResource
             'create' => CreateApp::route('/create'),
             'edit' => EditApp::route('/{record}/edit'),
         ];
+    }
+
+    /** @return array<int, string> */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'app_id'];
     }
 
     /** Suspended accounts are read-only — docs/08 §1. Pending accounts are not. */
@@ -339,27 +405,30 @@ class AppResource extends PublisherScopedResource
     }
 
     /**
-     * "A $0.50 offer at 70% pays your user 350 Coins." — recalculated as they
-     * type, at their own rev share.
+     * "A conversion that pays you $0.35 credits your player 350 Coins." —
+     * recalculated as they type.
+     *
+     * The illustration is anchored on the publisher's own payout rather than
+     * on an offer's gross, so it states the only arithmetic they implement
+     * and discloses nothing about what sits upstream of it.
      */
+    private const EXAMPLE_PAYOUT = 0.35;
+
     private static function currencyExample(Get $get): string
     {
         $rate = (float) $get('currency_rate');
         $name = (string) ($get('currency_name') ?: 'units');
-        $publisher = CurrentPublisher::get();
-        $revShare = $publisher === null ? 70.0 : (float) $publisher->rev_share;
 
         if ($rate <= 0) {
             return '<span class="text-danger-400">Set a rate above zero — at zero your users are paid nothing.</span>';
         }
 
-        $payout = 0.50 * $revShare / 100;
-        $reward = $payout * $rate;
+        $reward = self::EXAMPLE_PAYOUT * $rate;
 
         return sprintf(
-            '<span class="text-gray-300">A <strong>$0.50</strong> offer at <strong>%s%%</strong> pays your user '
+            '<span class="text-gray-300">A conversion that pays you <strong>$%s</strong> credits your player '
             .'<strong class="text-primary-400">%s %s</strong>.</span>',
-            rtrim(rtrim(number_format($revShare, 2), '0'), '.'),
+            number_format(self::EXAMPLE_PAYOUT, 2),
             number_format($reward, $reward < 10 ? 2 : 0),
             e($name),
         );

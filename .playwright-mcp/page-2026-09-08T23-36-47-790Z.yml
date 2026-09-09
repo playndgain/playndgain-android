@@ -1,0 +1,54 @@
+- generic [ref=f6e2]:
+  - banner [ref=f6e3]:
+    - link "All offers" [ref=f6e5] [cursor=pointer]:
+      - /url: https://playndgain.test/wall?appid=10000&userid=PREVIEW&lang=en&country=US&theme=dark
+  - main [ref=f6e8]:
+    - article [ref=f6e10]:
+      - generic [ref=f6e11]:
+        - generic [aria-hidden] [ref=f6e13]: C
+        - generic [ref=f6e14]:
+          - heading "Coin Master" [level=1] [ref=f6e15]
+          - paragraph [ref=f6e16]: Games
+          - paragraph [ref=f6e17]:
+            - generic [ref=f6e18]: "448"
+            - generic [ref=f6e19]: Coins
+          - generic [ref=f6e21]:
+            - generic [ref=f6e22]: Any device
+            - generic [ref=f6e30]:
+              - text: ·
+              - generic [ref=f6e33]: people
+              - generic [ref=f6e34]: "+486"
+      - generic [ref=f6e35]:
+        - heading "What you have to do" [level=2] [ref=f6e36]
+        - list [ref=f6e37]:
+          - listitem [ref=f6e38]:
+            - generic [aria-hidden] [ref=f6e39]: "1"
+            - generic [ref=f6e40]: Complete the offer
+            - generic [ref=f6e41]: "+448"
+      - generic [ref=f6e42]:
+        - heading "Before you start" [level=2] [ref=f6e43]
+        - list [ref=f6e44]:
+          - listitem [ref=f6e45]: Reach village level 10
+      - generic [ref=f6e46]:
+        - heading "Who this is for" [level=2] [ref=f6e47]
+        - generic [ref=f6e48]:
+          - generic [ref=f6e49]:
+            - term [ref=f6e50]: Devices
+            - definition [ref=f6e51]: Any device
+          - generic [ref=f6e52]:
+            - term [ref=f6e53]: Countries
+            - definition [ref=f6e54]: Worldwide
+      - complementary [ref=f6e55]:
+        - heading "Important" [level=2] [ref=f6e56]
+        - list [ref=f6e57]:
+          - listitem [ref=f6e58]: Turn off any VPN or proxy. Offers completed through one are not credited.
+          - listitem [ref=f6e59]: Finish on the same device you started on.
+          - listitem [ref=f6e60]: Most offers pay for first-time completions only.
+          - listitem [ref=f6e61]: Rewards usually arrive within 24–48 hours.
+      - generic [ref=f6e62]:
+        - link "Start this offer" [ref=f6e63] [cursor=pointer]:
+          - /url: https://playndgain.test/click/1?appid=10000&userid=PREVIEW&lang=en&country=US&theme=dark
+        - paragraph [ref=f6e64]: Opens in a new tab. Rewards are credited after the partner confirms your progress.
+  - contentinfo [ref=f6e65]:
+    - generic [ref=f6e66]: Powered by
+    - generic [ref=f6e67]: PLAYNDGAIN

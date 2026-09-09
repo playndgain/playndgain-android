@@ -5,6 +5,7 @@ use App\Enums\FraudStage;
 use App\Enums\ProxyType;
 use App\Fraud\ChainedIpIntelligence;
 use App\Fraud\Contracts\IpIntelligence;
+use App\Fraud\IpScoreHistogram;
 use App\Fraud\IpVerdict;
 use App\Fraud\Providers\IpProviderRegistry;
 use App\Fraud\Providers\ProxyCheckProvider;
@@ -332,4 +333,42 @@ it('keeps the test-mode override rather than leaking the escalated verdict\'s re
     $escalated = app(WallGate::class)->escalate($context);
 
     expect($escalated->country)->toBe('US');
+});
+
+/**
+ * The sample point — design spec §4.5.
+ *
+ * The histogram exists to tell an operator what a threshold costs, and it can
+ * only do that if it sees both sides of the threshold. A refused render writes
+ * no `offer_clicks` row and a passing rule writes no `fraud_event`, so sampling
+ * at either of those points would produce a chart that is empty on exactly the
+ * half being asked about. `WallGate::context()` runs before the gate decides.
+ */
+it('counts a score for a render it went on to refuse', function () {
+    [$app] = wallFixture();
+    gateVerdict(new IpVerdict(country: 'US', isProxy: true, proxyType: ProxyType::Vpn, riskScore: 90));
+    gateRule('vpn_proxy_ip');
+
+    wallGet($app)->assertForbidden();
+
+    expect(IpScoreHistogram::scores(1)[90])->toBe(1);
+});
+
+it('counts a score for a render it served', function () {
+    [$app] = wallFixture();
+    gateVerdict(new IpVerdict(country: 'US', riskScore: 12));
+
+    wallGet($app)->assertOk();
+
+    expect(IpScoreHistogram::scores(1)[12])->toBe(1);
+});
+
+/** The local databases carry no fraud score, so this stays free until a provider is on. */
+it('counts nothing when no provider scored the address', function () {
+    [$app] = wallFixture();
+    gateVerdict(new IpVerdict(country: 'US'));
+
+    wallGet($app)->assertOk();
+
+    expect(IpScoreHistogram::total(IpScoreHistogram::scores(1)))->toBe(0);
 });

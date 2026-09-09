@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Queue;
 require_once __DIR__.'/MoneyFixtures.php';
 
 it('deletes log rows past their window and keeps everything inside it', function () {
-    config(['advault.log_retention' => ['offer_clicks' => 180]]);
+    config(['playndgain.log_retention' => ['offer_clicks' => 180]]);
 
     $old = OfferClickFactory::new()->create(['created_at' => now()->subDays(181)]);
     $fresh = OfferClickFactory::new()->create(['created_at' => now()->subDays(179)]);
@@ -25,9 +25,9 @@ it('walks the whole backlog rather than one batch of it', function () {
     // and stopped would leave three, and the table would grow forever at a rate
     // the operator could not see.
     config([
-        'advault.log_retention' => ['offer_clicks' => 30],
-        'advault.log_prune_batch' => 1,
-        'advault.log_prune_pause_ms' => 0,
+        'playndgain.log_retention' => ['offer_clicks' => 30],
+        'playndgain.log_prune_batch' => 1,
+        'playndgain.log_prune_pause_ms' => 0,
     ]);
 
     OfferClickFactory::new()->count(4)->create(['created_at' => now()->subDays(60)]);
@@ -38,7 +38,7 @@ it('walks the whole backlog rather than one batch of it', function () {
 });
 
 it('reports without deleting on a dry run', function () {
-    config(['advault.log_retention' => ['offer_clicks' => 30]]);
+    config(['playndgain.log_retention' => ['offer_clicks' => 30]]);
 
     OfferClickFactory::new()->create(['created_at' => now()->subDays(60)]);
 
@@ -69,7 +69,7 @@ it('never touches a money table, however old the rows are', function () {
 it('keeps the money tables out of the retention map', function () {
     // The guard against deleting money history is that these table names are
     // not in the config. There is no second guard, so the config is the test.
-    expect(array_keys(config('advault.log_retention')))
+    expect(array_keys(config('playndgain.log_retention')))
         ->not->toContain('conversions')
         ->not->toContain('ledger_entries')
         ->not->toContain('daily_stats');

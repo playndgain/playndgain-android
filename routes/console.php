@@ -18,6 +18,10 @@ Schedule::command('networks:sync')->everyFifteenMinutes()->withoutOverlapping();
 
 Schedule::command('ledger:reconcile')->dailyAt('03:00');
 
+// Statements are documents derived from the ledger; this proves each one still
+// agrees with the withdrawal it points at — docs/06 §9. Reports, never fixes.
+Schedule::command('payouts:reconcile-statements')->dailyAt('03:05');
+
 // The other half of the same question. `ledger:reconcile` proves a balance
 // equals its entries; this proves the entries are the right amount — a
 // conversion credited at the wrong rev-share reconciles against its own wrong
@@ -53,9 +57,10 @@ Schedule::command('backup:monitor')->dailyAt('06:00');
 // Thresholds from docs/04 §6 and docs/11 §7. Fifteen minutes because that is
 // the window the postback failure rate is measured over — each run looks at
 // roughly the period since the last one.
-// Previous calendar month's cleared earnings, requested on the default
-// payment method. Publishers who fail the payout rules get an error mail
-// rather than a silent skip — see MonthlyWithdrawalService.
+// Previous calendar month's statement is written, then its cleared earnings
+// are requested on the default payment method. Publishers who fail the payout
+// rules get an error mail rather than a silent skip — see
+// MonthlyWithdrawalService. One command, so the order is guaranteed.
 Schedule::command('withdrawals:request-monthly')->monthlyOn(1, '00:10')->withoutOverlapping();
 
 Schedule::command('alerts:check')->everyFifteenMinutes()->withoutOverlapping();

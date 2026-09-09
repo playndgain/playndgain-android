@@ -52,8 +52,8 @@ class CheckAlertThresholdsCommand extends Command
      */
     private function postbackFailureRate(): void
     {
-        $window = now()->subMinutes((int) config('advault.alerts.postback_window_minutes'));
-        $threshold = (float) Setting::get('alert_postback_failure_rate', config('advault.alerts.postback_failure_rate'));
+        $window = now()->subMinutes((int) config('playndgain.alerts.postback_window_minutes'));
+        $threshold = (float) Setting::get('alert_postback_failure_rate', config('playndgain.alerts.postback_failure_rate'));
 
         $total = OutgoingPostback::query()->where('created_at', '>=', $window)->count();
 
@@ -79,7 +79,7 @@ class CheckAlertThresholdsCommand extends Command
             'threshold' => $threshold,
             'failed' => $failed,
             'total' => $total,
-            'window_minutes' => (int) config('advault.alerts.postback_window_minutes'),
+            'window_minutes' => (int) config('playndgain.alerts.postback_window_minutes'),
         ]);
     }
 
@@ -91,8 +91,8 @@ class CheckAlertThresholdsCommand extends Command
      */
     private function queueDepth(): void
     {
-        $queue = (string) config('advault.alerts.queue_depth_queue');
-        $threshold = (int) Setting::get('alert_queue_depth', config('advault.alerts.queue_depth'));
+        $queue = (string) config('playndgain.alerts.queue_depth_queue');
+        $threshold = (int) Setting::get('alert_queue_depth', config('playndgain.alerts.queue_depth'));
 
         $depth = Queue::size($queue);
 
@@ -123,13 +123,13 @@ class CheckAlertThresholdsCommand extends Command
     private function silentConversions(): void
     {
         $hour = (int) now()->format('G');
-        [$from, $until] = config('advault.alerts.active_hours');
+        [$from, $until] = config('playndgain.alerts.active_hours');
 
         if ($hour < (int) $from || $hour > (int) $until) {
             return;
         }
 
-        $hours = (int) Setting::get('alert_conversion_silence_hours', config('advault.alerts.conversion_silence_hours'));
+        $hours = (int) Setting::get('alert_conversion_silence_hours', config('playndgain.alerts.conversion_silence_hours'));
 
         if ($hours <= 0) {
             return;
@@ -187,7 +187,7 @@ class CheckAlertThresholdsCommand extends Command
             'missing' => implode(', ', $missing),
             // Named because it is almost always the answer, and because the
             // operator reading the email should not have to go and find it.
-            'credentials' => filled(config('advault.geoip_maxmind_license_key'))
+            'credentials' => filled(config('playndgain.geoip_maxmind_license_key'))
                 ? 'set'
                 : 'MAXMIND_LICENSE_KEY is empty',
         ]);

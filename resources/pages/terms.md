@@ -1,18 +1,18 @@
 ---
 title: Terms of service
-description: The terms for using the AdVault site, documentation and platform.
+description: The terms for using the PLAYNDGAIN site, documentation and platform.
 note: Drafted from the product specification to describe what the system actually does. It has not been reviewed by counsel. Before launch a lawyer must review it and add the operating entity, its registered address, the governing law and the venue for disputes — none of which are invented here.
 ---
 
-Last updated: 2026-08-16
+Last updated: 2026-09-01
 
-These terms cover this website, the developer documentation, and the AdVault platform. Using any of them means accepting them.
+These terms cover this website, the developer documentation, and the PLAYNDGAIN platform. Using any of them means accepting them.
 
-If you hold a publisher account, the [publisher agreement](/legal/publisher-agreement) also applies and governs the commercial relationship — revenue share, payouts, traffic quality. Where the two disagree about money or traffic, the publisher agreement wins.
+If you hold a publisher account, the [publisher agreement](/legal/publisher-agreement) also applies and governs the commercial relationship: what you are paid, payouts, traffic quality. Where the two disagree about money or traffic, the publisher agreement wins.
 
 ## What the service is
 
-AdVault is an **offerwall aggregator**. We do not create advertising demand and we do not sell campaigns. We pull offer catalogues from partner advertising networks, normalise them into one shape, serve them on a hosted offerwall that publishers embed by iframe, receive conversion postbacks from those networks, and pass a share of the revenue to the publisher along with a signed callback so they can credit their own user.
+PLAYNDGAIN is an **offerwall aggregator**. We do not create advertising demand and we do not sell campaigns. We pull offer catalogues from partner advertising networks, normalise them into one shape, serve them on a hosted offerwall that publishers embed by iframe, receive conversion postbacks from those networks, and pay the publisher the payout each conversion earned along with a signed callback so they can credit their own user.
 
 Two consequences follow, and both are terms rather than caveats:
 
@@ -31,7 +31,7 @@ Two-factor authentication is available on publisher accounts and is required on 
 
 Do not attempt to defeat the fraud engine, the signature scheme, or the rate limits. Do not scrape the offer catalogue, resell it, or expose it through your own API — the offerwall is delivered as a hosted iframe and that is the only delivery method offered.
 
-Traffic obligations are separate and more detailed. They are set out in [prohibited traffic](/docs/prohibited-traffic) and [traffic quality](/docs/traffic-quality), both of which form part of these terms.
+Traffic obligations are separate and more detailed. They are set out in [traffic rules](/docs/traffic-quality), which forms part of these terms.
 
 ## The documentation and the site
 
@@ -49,7 +49,7 @@ The callback pipeline retries a failed delivery at 1 minute, 5 minutes, 30 minut
 
 You may close your account at any time. Cleared earnings above the minimum can be withdrawn first; the mechanics are in the publisher agreement.
 
-We may suspend an app or an account immediately where there is evidence of prohibited traffic, fraud, a security compromise, or a legal obligation to do so. Suspension pauses serving; it does not by itself forfeit a balance. Termination for deliberate fraud does, and that consequence is stated in [prohibited traffic](/docs/prohibited-traffic) rather than hidden here.
+We may suspend an app or an account immediately where there is evidence of prohibited traffic, fraud, a security compromise, or a legal obligation to do so. Suspension pauses serving; it does not by itself forfeit a balance. Termination for deliberate fraud does, and that consequence is stated in [traffic rules](/docs/traffic-quality) rather than hidden here.
 
 Every suspension, ban and money-affecting decision is written to an audit log with who did it and what changed. Nothing blocks silently: if a click or a conversion was rejected, the reason exists and can be given to you.
 

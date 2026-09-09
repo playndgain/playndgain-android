@@ -31,6 +31,15 @@ final class DateRangeFilter
     public static function make(string $column = 'created_at', string $name = 'created'): Filter
     {
         return Filter::make($name)
+            ->columns([
+                'default' => 1,
+                'sm' => 3,
+            ])
+            ->columnSpan([
+                'default' => 1,
+                'lg' => 2,
+                'xl' => 3,
+            ])
             ->schema([
                 Select::make('preset')
                     ->label('Period')

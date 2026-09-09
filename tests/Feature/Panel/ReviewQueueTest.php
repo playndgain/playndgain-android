@@ -30,7 +30,7 @@ require_once __DIR__.'/../Fraud/FraudFixtures.php';
  * pending conversion proves the panel works on data the platform never makes.
  */
 beforeEach(function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     Filament::setCurrentPanel('admin');
 
     fraudBoot();

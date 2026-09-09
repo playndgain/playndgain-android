@@ -1,25 +1,25 @@
 ---
-title: How postbacks work
-description: The lifecycle of one conversion, from the advertiser to your database.
+title: How the callback works
+description: One conversion, from the advertiser's confirmation to the row in your database.
 ---
 
-A postback is an HTTP request we make to a URL you configure. It is the only way you learn that a user earned something.
+A callback is an HTTP request we make to a URL you configure. It is the only way you learn that a player earned something.
 
-## The lifecycle
+## The path one conversion takes
 
 ```txt
-Advertiser confirms the conversion
+Advertiser confirms the action
         │
         ▼
-Network  ──►  POST /postback/{driver}          inbound, ours
+Demand partner  ──►  POST /postback/{driver}        inbound, ours
         │
         │  1. log the raw request, before anything can fail
-        │  2. verify the network's IP and signature
-        │  3. resolve the click → app, publisher, end user
+        │  2. verify the partner's IP and signature
+        │  3. resolve the click into app, publisher, end user
         │  4. run post-conversion fraud rules
-        │  5. write the conversion + ledger entry
+        │  5. write the conversion and its ledger entry
         ▼
-AdVault  ──►  GET https://yoursite.com/…       outbound, yours
+PLAYNDGAIN  ──►  GET https://yoursite.com/…         outbound, yours
         │
         │  6. resolve macros against the conversion
         │  7. sign, send, log the attempt and your response
@@ -27,7 +27,7 @@ AdVault  ──►  GET https://yoursite.com/…       outbound, yours
 Your server  ──►  2xx
 ```
 
-Steps 1–5 usually take under a second from the network's call. Step 6 is queued: outbound delivery runs on its own worker pool so a slow endpoint of yours never blocks another publisher's conversion.
+Steps 1 to 5 usually finish inside a second. Step 6 is queued: outbound delivery runs on its own workers, so one slow endpoint never delays another publisher's money.
 
 ## Configure it
 
@@ -38,14 +38,14 @@ Steps 1–5 usually take under a second from the network's call. Step 6 is queue
 | Callback URL | any `https://` URL | Macros in `{braces}` are substituted at send time |
 | Method | `GET` or `POST` | `POST` sends the same macros as a form body |
 
-Leaving the callback URL blank is a valid configuration. No job is queued and no error is raised — you are polling the dashboard instead of being pushed to.
+Leaving the URL blank is a valid configuration. No job is queued and no error is raised. You are choosing to read the dashboard instead of being pushed to.
 
 ## What arrives
 
-One request per conversion event. A conversion that is credited and later reversed produces **two** requests: a credit, then a reversal carrying the same `trans_id` and a negative amount.
+One request per conversion **event**, not per conversion. A conversion that is credited and later reversed produces **two**: a credit, then a reversal carrying the same `trans_id` and a negative amount.
 
 ```txt
-GET https://yoursite.com/advault/callback
+GET https://yoursite.com/playndgain/callback
   ?user_id=USER_123
   &trans_id=OFFER19624243-Gw2CpY
   &payout=0.091000
@@ -55,28 +55,33 @@ GET https://yoursite.com/advault/callback
   &sig=a3f9…
 ```
 
-Every available macro is listed in the [macro reference](/docs/macro-reference).
+Every macro is in the [macro reference](/docs/macro-reference).
 
-## What we expect back
+## What we need back
 
-**A 2xx status code.** Nothing else counts.
+**A 2xx.** Nothing else counts as success.
 
-- A `3xx` is a failure. We do not follow redirects.
-- A `4xx` or `5xx` is a failure and we retry on the schedule in [Retries & failure](/docs/retries-and-failure).
-- A body is optional. We store the first 2 KB of it and show it to you in Postback Reports, which makes it the cheapest debugging channel you have — echo your own error text and read it in the dashboard.
+| Response | Result |
+|---|---|
+| `200`, `201`, `204` | Success |
+| `301`, `302` | Failure. We do not follow redirects |
+| `4xx`, `5xx` | Failure |
+| No response within 15 seconds | Failure |
 
-Timeout is 15 seconds. An endpoint that takes longer is treated as a failure, so do the work asynchronously if crediting a user is slow on your side.
+A body is optional. We store the first 2KB of it and show it in Postback Reports, which makes it the cheapest debugging channel you have. Echo your own error text and read it in the dashboard.
+
+If crediting a player is slow on your side, answer `200` first and do the work asynchronously. Do not hold the request open.
 
 ## The three rules
 
-1. **Verify the signature before you trust anything.** [Signature verification](/docs/signature-verification).
-2. **Deduplicate on `trans_id`.** We retry. You will see the same transaction more than once. [Idempotency](/docs/idempotency).
-3. **Handle negative amounts.** [Chargebacks & reversals](/docs/chargebacks-reversals).
+1. **Verify the signature before you trust a single value.** [Verifying the signature](/docs/signature-verification)
+2. **Refuse to act twice on the same transaction.** We retry, so you will see it twice. [Retries and duplicates](/docs/retries-and-failure)
+3. **Handle a negative amount.** [Reversals](/docs/chargebacks-reversals)
 
 ## Every attempt is logged
 
-**Postback Reports** shows one row per attempt: the URL we called, the HTTP status, the response body, the duration, and which attempt number it was.
+**Postback Reports** keeps one row per attempt: the URL we called, the status, your response body, the duration, and which attempt it was.
 
-The stored URL has the `{signature}` value and any `secret` or `key` parameter masked. Logs are visible to you and to our admins, and an unredacted log is a credential leak between accounts.
+The stored URL has the signature and any `secret` or `key` parameter masked. Those logs are visible to you and to our support staff, and an unredacted one would be a credential leak between accounts.
 
-You can re-send any attempt from that screen. It re-resolves macros against current data, writes a fresh attempt row and sends. Limited to 10 re-sends per minute per app.
+Any attempt can be re-sent from that screen. It re-resolves the macros against current data, writes a fresh attempt row and sends. Limited to 10 re-sends per minute per app.

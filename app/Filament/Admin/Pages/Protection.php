@@ -6,6 +6,7 @@ use App\Enums\FraudAction;
 use App\Enums\FraudStage;
 use App\Filament\Admin\Resources\FraudRules\FraudRuleResource;
 use App\Fraud\Contracts\RenderGateRule;
+use App\Fraud\IpScoreHistogram;
 use App\Fraud\IpVerdict;
 use App\Fraud\MaxMindIpIntelligence;
 use App\Fraud\Providers\IpProviderRegistry;
@@ -58,6 +59,14 @@ class Protection extends Page
 
     /** @var array<string, mixed> */
     public array $data = [];
+
+    /** Days of risk-score history the distribution section is showing. */
+    public int $scoreWindow = 7;
+
+    public function setScoreWindow(int $days): void
+    {
+        $this->scoreWindow = in_array($days, IpScoreHistogram::WINDOWS, true) ? $days : 7;
+    }
 
     public string $testIp = '';
 
@@ -443,6 +452,53 @@ class Protection extends Page
      *
      * @return list<array<string, mixed>>
      */
+    /**
+     * What the risk threshold is actually costing — the design spec's §4.5.
+     *
+     * `ip_risk_score` refuses a whole wall render at or above its threshold, and
+     * that threshold sits well under the score its vendor calls suspicious. This
+     * section is the only thing on the platform that can say what share of real
+     * traffic that catches, so it belongs next to the rule rather than in a
+     * report nobody opens.
+     *
+     * `refused` is counted from the threshold inclusive, matching
+     * `IpRiskScoreRule`'s own `>=` comparison — a different boundary here would
+     * misreport the exact number an operator is trying to place.
+     *
+     * @return array<string, mixed>
+     */
+    public function getScoreDistributionProperty(): array
+    {
+        $rule = FraudRule::query()->where('key', 'ip_risk_score')->first();
+        $threshold = is_numeric($rule?->config['threshold'] ?? null)
+            ? (int) $rule->config['threshold']
+            : null;
+
+        $scores = IpScoreHistogram::scores($this->scoreWindow);
+        $total = IpScoreHistogram::total($scores);
+        $bands = IpScoreHistogram::bands($scores);
+        $peak = max(array_column($bands, 'count') ?: [0]);
+        $refused = $threshold === null ? 0 : IpScoreHistogram::atOrAbove($scores, $threshold);
+
+        return [
+            'threshold' => $threshold,
+            'blocking' => $rule?->enabled === true && $rule->action === FraudAction::Block,
+            'total' => $total,
+            'refused' => $refused,
+            'share' => $total === 0 ? null : round($refused / $total * 100, 1),
+            'window' => $this->scoreWindow,
+            'windows' => IpScoreHistogram::WINDOWS,
+            'bands' => array_map(fn (array $band): array => $band + [
+                // Bars are drawn against the tallest band, not the total: with
+                // one band holding most of the traffic every other bar would
+                // otherwise round to nothing and the tail — which is the part
+                // the threshold sits in — would be invisible.
+                'height' => $peak === 0 ? 0 : (int) round($band['count'] / $peak * 100),
+                'refused' => $threshold !== null && $band['ceiling'] >= $threshold,
+            ], $bands),
+        ];
+    }
+
     public function getRulesProperty(): array
     {
         $registry = app(RuleRegistry::class);

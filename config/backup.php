@@ -260,8 +260,16 @@ return [
              * The same recipients every other alert goes to — docs/11 §7. A
              * backup that fails quietly into a second inbox nobody reads is a
              * backup that fails quietly.
+             *
+             * Parsed from the env here rather than read from
+             * config('playndgain.alerts.recipients'): config files load in
+             * alphabetical order and playndgain.php comes after this one, so
+             * that lookup is null at load time and the package rejects it.
              */
-            'to' => config('advault.alerts.recipients'),
+            'to' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('PLAYNDGAIN_ALERT_EMAILS', ''))
+            ))),
 
             'from' => [
                 'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),

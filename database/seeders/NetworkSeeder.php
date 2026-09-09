@@ -190,7 +190,7 @@ class NetworkSeeder extends Seeder
      * ourselves — typed into the admin form by hand — still needs a network row
      * to belong to. This is that row, and it is named for what it is rather
      * than sitting in the partner list as a fictional supplier called "Direct".
-     * It carries the AdVault mark, has no website, and its driver reports
+     * It carries the PLAYNDGAIN mark, has no website, and its driver reports
      * `syncsCatalogue() === false`, so no sweep can ever deactivate the offers
      * an admin entered by hand.
      *
@@ -198,7 +198,7 @@ class NetworkSeeder extends Seeder
      */
     private const HOUSE = [
         'driver' => 'direct',
-        'name' => 'AdVault (house)',
+        'name' => 'PLAYNDGAIN (house)',
         'website' => null,
         'logo' => 'house.svg',
     ];

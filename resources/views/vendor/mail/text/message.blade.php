@@ -6,6 +6,11 @@
 </x-mail::header>
 </x-slot:header>
 
+{{-- Hero, when a mail passes one: eyebrow and headline as a text line. --}}
+@isset($hero)
+{{ $hero }}
+@endisset
+
 {{-- Body --}}
 {{ $slot }}
 

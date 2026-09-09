@@ -9,9 +9,9 @@ require_once __DIR__.'/WallFixtures.php';
 
 it('returns 429 once the per-ip wall limit is exceeded', function () {
     // The limiter reads config per request, so pin the spec default here: the
-    // local .env raises ADVAULT_LIMIT_WALL_IP for the docs/12 load test, and
+    // local .env raises PLAYNDGAIN_LIMIT_WALL_IP for the docs/12 load test, and
     // this test must not need 600 requests to trip because of it.
-    config()->set('advault.rate_limits.wall_per_ip', 60);
+    config()->set('playndgain.rate_limits.wall_per_ip', 60);
 
     // The limiter runs before the controller, so an unresolvable app id is the
     // cheapest way to spend the budget.

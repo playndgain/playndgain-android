@@ -27,7 +27,8 @@ $panel
 
 ```
 Overview
-  └── Statistics                 (dashboard)
+  ├── Statistics                 (dashboard — today and work waiting)
+  └── Analytics                  (filtered money, supply, chargebacks, fraud)
 Supply
   ├── Networks
   ├── Offers
@@ -62,6 +63,8 @@ System
 
 ## 3. Statistics (Dashboard)
 
+The home dashboard is the morning check. Investigation (a date range, a publisher, a leaking offer) lives on **Analytics** (`/admin/analytics`). See `docs/superpowers/specs/2026-09-09-admin-analytics-design.md`.
+
 Widgets, top to bottom.
 
 **Row 1 — today, each with a sparkline and a vs-yesterday delta:**
@@ -75,7 +78,7 @@ Revenue vs payout, 30 days, dual-line · Conversions by network, stacked area, 7
 
 **Row 4:** Latest 10 conversions · Latest 10 signups
 
-All figures read `daily_stats` and `ledger_entries`. Never an ad-hoc `SUM` over `conversions` in a widget — see [06-ledger-payouts.md](06-ledger-payouts.md) §7.
+All money figures on this page read `daily_stats` and `ledger_entries`. Never an ad-hoc `SUM` over `conversions` in a widget — see [06-ledger-payouts.md](06-ledger-payouts.md) §7. Analytics may count reversed conversions and sum their payout only under the Chargebacks label.
 
 ---
 
@@ -90,7 +93,7 @@ All figures read `daily_stats` and `ledger_entries`. Never an ad-hoc `SUM` over 
 **Form:**
 - Name, logo upload, website, priority, sync interval
 - **Credentials** — fields rendered dynamically from `driver::credentialSchema()`. Secret fields are password inputs, masked after save, with a *Reveal* action that writes to the audit log.
-- Postback IP allowlist (repeater), with the network's postback URL displayed and copyable: `https://api.advault.io/postback/{driver}`. Empty list rejects. **Allow any source IP** is the explicit opt-out when a partner will not publish addresses.
+- Postback IP allowlist (repeater), with the network's postback URL displayed and copyable: `https://api.playndgain.com/postback/{driver}`. Empty list rejects. **Allow any source IP** is the explicit opt-out when a partner will not publish addresses.
 - Last sync error shown read-only when present
 
 **Test connection** calls `driver->testConnection()` and shows the returned offer count. Saving credentials without testing them is the most common way a network silently never syncs.
@@ -184,6 +187,8 @@ Per-day and per-month: revenue · payout · profit · margin % · conversions ·
 
 ---
 
+**Statements.** Each withdrawal settles one or more monthly statements ([06-ledger-payouts.md](06-ledger-payouts.md) §9). *Mark paid* flips them to Paid on the publisher's Payments page in the same transaction; *Reject* hands them back to Pending with the reason. The admin never edits a statement directly.
+
 ## 7. Risk
 
 ### Review Queue
@@ -255,6 +260,8 @@ Grouped form: platform (name, support email, logo) · defaults (rev share, hold 
 ### Admin Users
 
 Create and manage admins. 2FA status per user, shown and enforced. Last login IP and time.
+
+An admin cannot change their own email from Profile or from this table. Another admin changes it here.
 
 ### Health
 

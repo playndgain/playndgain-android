@@ -7,8 +7,6 @@ use App\Models\Network;
 use App\Services\Wall\EmbedClick;
 use App\Services\Wall\PartnerWall;
 use App\Services\Wall\WallGate;
-use App\Support\AppNetworks;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -74,13 +72,7 @@ class PartnerWallController extends Controller
             return $this->notice('banned', $context);
         }
 
-        $blocked = AppNetworks::blockedIds($app);
-
-        /** @var Collection<int, Network> $partners */
-        $partners = Network::query()->embeddable()->get()
-            ->filter(PartnerWall::isEmbeddable(...))
-            ->reject(fn (Network $partner): bool => in_array($partner->id, $blocked, true))
-            ->values();
+        $partners = PartnerWall::catalogue($app);
 
         // The route-bound network still has to be one of them: `embeddable()`
         // is a query, and a hand-typed ID is not.
@@ -89,9 +81,10 @@ class PartnerWallController extends Controller
             : $partners->firstWhere('id', $network->id);
 
         if ($partner === null) {
-            // The tab is always on the strip. A named partner that does not
-            // qualify is still a 404; the tab itself is an empty, the way
-            // History is when the user has not started anything.
+            // The tab is hidden when the catalogue is empty. A named partner
+            // that does not qualify is still a 404; a direct visit to the
+            // empty tab is an empty, the way History is when nothing has
+            // started.
             abort_if($network !== null, Response::HTTP_NOT_FOUND);
 
             return $this->page('partner', [

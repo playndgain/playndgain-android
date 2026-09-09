@@ -1,21 +1,41 @@
 <?php
 
 /**
- * Renders the brand mark into the raster favicon set.
+ * Renders the brand mark into the favicon set and the house-network logo.
  *
  * Kept as a script rather than run once and deleted: the mark is one component
- * now, and the next time it is nudged these files have to be nudged with it.
- * `php scripts/make-favicons.php` regenerates all of them.
+ * (resources/views/components/brand-mark.blade.php), and the next time it is
+ * nudged these files have to be nudged with it. `php scripts/make-favicons.php`
+ * regenerates all of them.
  *
- * GD has no SVG support, so the mark is drawn with primitives at 1024px and
- * downscaled — imagecopyresampled is the anti-aliasing here, because GD's
- * imageantialias() does nothing for thick strokes or filled polygons.
+ * The mark is a rounded amber tile carrying a bold geometric "P" — a stem and
+ * a stroked bowl — in a 64-unit box. Geometry, not text: GD has no fonts to
+ * get wrong. The numbers below are the component's numbers; change them in
+ * both places or in neither.
+ *
+ * Drawn at 1024px and downscaled: imagecopyresampled is the anti-aliasing,
+ * because imageantialias() does nothing for filled shapes.
  */
-const OBSIDIAN = [0x0E, 0x10, 0x13];
-const AMBER = [0xF5, 0xA5, 0x24];
+const AMBER = [0xFF, 0xB0, 0x20];
+const AMBER_DEEP = [0xF2, 0x8C, 0x1A];
+const ON_AMBER = [0x1A, 0x10, 0x00];
 
-/** Drawn at this size, then downscaled. Large enough that the round caps survive. */
+/** Drawn at this size, then downscaled. */
 const CANVAS = 1024;
+
+/** The component's viewBox. */
+const BOX = 64;
+const TILE_RADIUS = 16;
+
+/** The stem: x, y, width, height. */
+const STEM = [15.5, 13.5, 11, 38];
+
+/** The bowl: a stroked half-ring. Centre x/y, arc radius, stroke width, bar start x. */
+const BOWL_CX = 33;
+const BOWL_CY = 30;
+const BOWL_R = 11;
+const BOWL_STROKE = 11;
+const BOWL_FROM_X = 21;
 
 $public = dirname(__DIR__).'/public';
 
@@ -24,7 +44,7 @@ $public = dirname(__DIR__).'/public';
 // ---------------------------------------------------------------------------
 
 /**
- * The glyph on a filled square.
+ * The glyph on an amber tile.
  *
  * `$bleed` fills the corners instead of rounding them: iOS masks its own
  * corners onto apple-touch-icon and backfills transparency with black, so a
@@ -39,58 +59,35 @@ function drawMark(bool $bleed): GdImage
     $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
     imagefill($image, 0, 0, $transparent);
 
-    $obsidian = imagecolorallocate($image, ...OBSIDIAN);
     $amber = imagecolorallocate($image, ...AMBER);
+    $ink = imagecolorallocate($image, ...ON_AMBER);
+
+    $u = CANVAS / BOX;
+    $px = fn (float $v): int => (int) round($v * $u);
 
     if ($bleed) {
-        imagefilledrectangle($image, 0, 0, CANVAS - 1, CANVAS - 1, $obsidian);
+        imagefilledrectangle($image, 0, 0, CANVAS - 1, CANVAS - 1, $amber);
     } else {
-        // 26-unit viewBox scaled up: a 24-unit square at (1,1) with a 7-unit
-        // corner radius, the same geometry the SVG component draws.
-        $scale = CANVAS / 26;
-        roundedRect($image, $scale, $scale, 25 * $scale, 25 * $scale, 7 * $scale, $obsidian);
+        roundedRect($image, 0, 0, CANVAS, CANVAS, TILE_RADIUS * $u, $amber);
     }
 
-    // The V, in the same 26-unit space: M8 7.5 L13 18.5 L18 7.5.
-    $scale = CANVAS / 26;
-    $stroke = 2.9 * $scale;
+    // The bowl: a full ring, then its left half painted back to amber. The
+    // stem and the two bars are drawn afterwards, so the erase cannot touch them.
+    $outer = BOWL_R + BOWL_STROKE / 2;
+    $inner = BOWL_R - BOWL_STROKE / 2;
+    imagefilledellipse($image, $px(BOWL_CX), $px(BOWL_CY), $px($outer * 2), $px($outer * 2), $ink);
+    imagefilledellipse($image, $px(BOWL_CX), $px(BOWL_CY), $px($inner * 2), $px($inner * 2), $amber);
+    imagefilledrectangle($image, $px(BOWL_CX - $outer - 1), $px(BOWL_CY - $outer - 1), $px(BOWL_CX) - 1, $px(BOWL_CY + $outer + 1), $amber);
 
-    $left = [8 * $scale, 7.5 * $scale];
-    $bottom = [13 * $scale, 18.5 * $scale];
-    $right = [18 * $scale, 7.5 * $scale];
-
-    thickLine($image, $left, $bottom, $stroke, $amber);
-    thickLine($image, $bottom, $right, $stroke, $amber);
-
-    // Round caps and the join, which a pair of quads leaves square.
-    foreach ([$left, $bottom, $right] as [$x, $y]) {
-        imagefilledellipse($image, (int) round($x), (int) round($y), (int) round($stroke), (int) round($stroke), $amber);
+    // The bars from the stem to the bowl, top and bottom.
+    foreach ([BOWL_CY - BOWL_R, BOWL_CY + BOWL_R] as $y) {
+        imagefilledrectangle($image, $px(BOWL_FROM_X), $px($y - BOWL_STROKE / 2), $px(BOWL_CX), $px($y + BOWL_STROKE / 2) - 1, $ink);
     }
+
+    [$sx, $sy, $sw, $sh] = STEM;
+    roundedRect($image, $sx * $u, $sy * $u, ($sx + $sw) * $u, ($sy + $sh) * $u, 1.5 * $u, $ink);
 
     return $image;
-}
-
-/** A stroked segment as a filled quad, offset perpendicular by half the width. */
-function thickLine(GdImage $image, array $from, array $to, float $width, int $colour): void
-{
-    [$x1, $y1] = $from;
-    [$x2, $y2] = $to;
-
-    $length = hypot($x2 - $x1, $y2 - $y1);
-
-    if ($length === 0.0) {
-        return;
-    }
-
-    $nx = -($y2 - $y1) / $length * $width / 2;
-    $ny = ($x2 - $x1) / $length * $width / 2;
-
-    imagefilledpolygon($image, [
-        (int) round($x1 + $nx), (int) round($y1 + $ny),
-        (int) round($x2 + $nx), (int) round($y2 + $ny),
-        (int) round($x2 - $nx), (int) round($y2 - $ny),
-        (int) round($x1 - $nx), (int) round($y1 - $ny),
-    ], $colour);
 }
 
 /** A cross of two rectangles plus four corner ellipses. */
@@ -99,8 +96,8 @@ function roundedRect(GdImage $image, float $x1, float $y1, float $x2, float $y2,
     $r = (int) round($radius);
     [$x1, $y1, $x2, $y2] = array_map(fn (float $v): int => (int) round($v), [$x1, $y1, $x2, $y2]);
 
-    imagefilledrectangle($image, $x1 + $r, $y1, $x2 - $r, $y2, $colour);
-    imagefilledrectangle($image, $x1, $y1 + $r, $x2, $y2 - $r, $colour);
+    imagefilledrectangle($image, $x1 + $r, $y1, $x2 - $r - 1, $y2 - 1, $colour);
+    imagefilledrectangle($image, $x1, $y1 + $r, $x2 - 1, $y2 - $r - 1, $colour);
 
     foreach ([[$x1 + $r, $y1 + $r], [$x2 - $r, $y1 + $r], [$x1 + $r, $y2 - $r], [$x2 - $r, $y2 - $r]] as [$cx, $cy]) {
         imagefilledellipse($image, $cx, $cy, $r * 2, $r * 2, $colour);
@@ -171,23 +168,43 @@ function ico(array $images): string
 // Write
 // ---------------------------------------------------------------------------
 
+$hex = fn (array $rgb): string => strtoupper(implode('', array_map(fn (int $c): string => str_pad(dechex($c), 2, '0', STR_PAD_LEFT), $rgb)));
+
 $rounded = drawMark(bleed: false);
 $bleed = drawMark(bleed: true);
 
 $written = [];
 
 // The one browsers prefer when they support it — vector, so it never softens.
-$svg = <<<'SVG'
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26" width="26" height="26">
-  <rect width="26" height="26" rx="7" fill="#0E1013"/>
-  <path d="M8 7.5L13 18.5L18 7.5" fill="none" stroke="#F5A524" stroke-width="2.8"
-        stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-
-SVG;
+// Same primitives as the component, gradient included.
+[$sx, $sy, $sw, $sh] = STEM;
+$svg = sprintf(
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 %1\$d %1\$d\" width=\"%1\$d\" height=\"%1\$d\">\n".
+    "  <defs><linearGradient id=\"g\" x1=\"0\" y1=\"0\" x2=\"%1\$d\" y2=\"%1\$d\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0\" stop-color=\"#FFC554\"/><stop offset=\"1\" stop-color=\"#%3\$s\"/></linearGradient></defs>\n".
+    "  <rect width=\"%1\$d\" height=\"%1\$d\" rx=\"%2\$d\" fill=\"url(#g)\"/>\n".
+    "  <rect x=\"%5\$s\" y=\"%6\$s\" width=\"%7\$s\" height=\"%8\$s\" rx=\"1.5\" fill=\"#%4\$s\"/>\n".
+    "  <path d=\"M%9\$s %10\$sH%11\$sa%12\$s %12\$s 0 0 1 0 %13\$sH%9\$s\" fill=\"none\" stroke=\"#%4\$s\" stroke-width=\"%14\$s\"/>\n".
+    "</svg>\n",
+    BOX,
+    TILE_RADIUS,
+    $hex(AMBER_DEEP),
+    $hex(ON_AMBER),
+    $sx, $sy, $sw, $sh,
+    BOWL_FROM_X,
+    BOWL_CY - BOWL_R,
+    BOWL_CX,
+    BOWL_R,
+    BOWL_R * 2,
+    BOWL_STROKE,
+);
 
 file_put_contents("{$public}/favicon.svg", $svg);
 $written['favicon.svg'] = strlen($svg);
+
+// Same mark as the house channel's seeded logo. One write, two paths, so
+// the admin list cannot keep a leftover chevron after the tile is nudged.
+file_put_contents("{$public}/img/networks/house.svg", $svg);
+$written['img/networks/house.svg'] = strlen($svg);
 
 $icoBytes = ico([
     16 => png(resize($rounded, 16)),

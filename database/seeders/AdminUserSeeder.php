@@ -11,8 +11,8 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $email = config('advault.seed_admin_email');
-        $password = config('advault.seed_admin_password') ?? Str::password(20);
+        $email = config('playndgain.seed_admin_email');
+        $password = config('playndgain.seed_admin_password') ?? Str::password(20);
 
         $user = User::query()->firstOrCreate(
             ['email' => $email],

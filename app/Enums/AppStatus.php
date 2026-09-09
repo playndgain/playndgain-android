@@ -26,13 +26,12 @@ enum AppStatus: string implements HasColor, HasIcon, HasLabel
 
     public function getColor(): string
     {
-        // Amber for attention, steel/slate for state. Green and red are money
-        // direction only — design.md §2.
+        // Green settled, amber waiting, rose refused, gray for the rest.
         return match ($this) {
             self::Pending => 'warning',
-            self::Active => 'info',
+            self::Active => 'success',
             self::Paused => 'gray',
-            self::Rejected => 'gray',
+            self::Rejected => 'danger',
         };
     }
 

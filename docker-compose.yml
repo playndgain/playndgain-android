@@ -1,0 +1,89 @@
+# PLAYNDGAIN on Dokploy — docs/13-dokploy.md.
+#
+# Three services, one image, one build. They are the three processes docs/11
+# describes: the web server, Horizon, and the scheduler. MySQL and Redis are
+# NOT here — they are Dokploy services created once in the panel, so their
+# backups, their storage and their lifecycle survive a redeploy of this stack.
+#
+# Point a Dokploy Compose application at this file, add the three domains to
+# the `app` service on port 80, and deploy.
+
+x-playndgain: &playndgain
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: playndgain-app:latest
+  restart: unless-stopped
+
+  # Dokploy writes the variables from the Environment tab to a .env file beside
+  # this compose file. Compose uses that file for ${...} interpolation on its
+  # own, but it does NOT pass it to containers — without this line the
+  # application starts with no configuration and the entrypoint refuses on the
+  # missing APP_KEY. `required: false` so a first deploy fails with that clear
+  # message rather than a compose-level "env file not found".
+  env_file:
+    - path: .env
+      required: false
+
+  # Nightly backups, the GeoIP databases (several hundred megabytes, refreshed
+  # weekly) and anything written to the `local` disk. Shared by all three roles:
+  # the scheduler fetches the GeoIP files and the wall reads them.
+  volumes:
+    - playndgain-storage:/var/www/html/storage/app
+
+  # Every service needs this network, not just the one with the domains: it is
+  # also how they reach the Dokploy MySQL and Redis services.
+  networks:
+    - dokploy-network
+
+services:
+  app:
+    <<: *playndgain
+    environment:
+      CONTAINER_ROLE: app
+      # The one place migrations run. Set false for a deploy where you want to
+      # run them by hand first.
+      RUN_MIGRATIONS: "true"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/up"]
+      interval: 15s
+      timeout: 5s
+      start_period: 120s
+      retries: 5
+
+  horizon:
+    <<: *playndgain
+    environment:
+      CONTAINER_ROLE: horizon
+    # Waits for the schema. `app` owns the migrations; a worker that starts
+    # first picks up jobs against tables that do not exist yet.
+    depends_on:
+      app:
+        condition: service_healthy
+    # An hour of grace, which is docs/11 §3's `stopwaitsecs=3600`: in-flight
+    # postbacks land instead of being killed mid-request on redeploy.
+    stop_grace_period: 3600s
+    healthcheck:
+      test: ["CMD", "su-exec", "www-data", "php", "artisan", "horizon:status"]
+      interval: 60s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+
+  scheduler:
+    <<: *playndgain
+    environment:
+      CONTAINER_ROLE: scheduler
+    depends_on:
+      app:
+        condition: service_healthy
+    # Long enough for a nightly backup or a GeoIP pull to finish rather than be
+    # cut in half, leaving a truncated archive that looks like a real one.
+    stop_grace_period: 600s
+
+volumes:
+  playndgain-storage:
+
+networks:
+  dokploy-network:
+    external: true

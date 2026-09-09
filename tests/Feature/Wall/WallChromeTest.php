@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\Network;
-
 require_once __DIR__.'/WallFixtures.php';
 
 /*
@@ -61,10 +59,23 @@ it('offers the opposite colour scheme in the menu and keeps the wall parameters 
         ->assertSee(__('wall.menu.dark'), false);
 });
 
+it('names the wall with the app lockup', function () {
+    wallGeo('US');
+    [$app, $network] = wallFixture(['name' => 'Quest Board']);
+    wallOffer($network, ['countries' => [], 'devices' => []]);
+
+    wallGet($app)->assertOk()
+        ->assertSee('wall-topbar__mark', false)
+        ->assertSee('wall-topbar__name', false)
+        ->assertSee('Quest Board')
+        ->assertSee('Earn '.$app->currency_name);
+});
+
 it('marks the current section in both navigations', function () {
     wallGeo('US');
     [$app, $network] = wallFixture();
     wallOffer($network, ['countries' => [], 'devices' => []]);
+    partnerNetwork();
 
     // Tab strip and app-nav each mark the current page — one navigation per
     // breakpoint, but the landmark contract is the same either way.
@@ -84,12 +95,23 @@ it('marks the current section in both navigations', function () {
         ->assertSee('aria-current="page"', false);
 });
 
-it('always shows the app-nav offerwall link', function () {
+it('omits the app-nav offerwall link when no partner wall is running', function () {
     wallGeo('US');
     [$app, $network] = wallFixture();
     wallOffer($network, ['countries' => [], 'devices' => []]);
 
-    wallGet($app)->assertOk()->assertSee('/wall/partners?appid='.$app->app_id, false);
+    wallGet($app)->assertOk()->assertDontSee('/wall/partners?appid='.$app->app_id, false);
+});
+
+it('covers the frame with a loader until the wall is ready', function () {
+    wallGeo('US');
+    [$app, $network] = wallFixture();
+    wallOffer($network, ['countries' => [], 'devices' => []]);
+
+    wallGet($app)->assertOk()
+        ->assertSee('wall-loader', false)
+        ->assertSee('wall-loader__spin', false)
+        ->assertSee('wall-loader__mark', false);
 });
 
 it('ships the menu sheet with only destinations that exist', function () {
@@ -101,7 +123,10 @@ it('ships the menu sheet with only destinations that exist', function () {
     // renders as a dead button, with JS on wall.js wires it to the dialog.
     wallGet($app)->assertOk()
         ->assertSee('id="wall-menu"', false)
+        ->assertSee('wall-menu__nav', false)
+        ->assertSee('wall-menu__mark', false)
         ->assertSee('data-menu', false)
         ->assertSee(route('legal', 'privacy'), false)
-        ->assertSee(route('legal', 'terms'), false);
+        ->assertSee(route('legal', 'terms'), false)
+        ->assertDontSee('/wall/partners?appid='.$app->app_id, false);
 });

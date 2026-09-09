@@ -21,7 +21,7 @@ use IP2Proxy\Database;
 beforeEach(function () {
     $this->geoip = sys_get_temp_dir().DIRECTORY_SEPARATOR.'geoip-test-'.getmypid();
     File::ensureDirectoryExists($this->geoip);
-    config(['advault.geoip_path' => $this->geoip]);
+    config(['playndgain.geoip_path' => $this->geoip]);
 });
 
 afterEach(function () {
@@ -126,8 +126,8 @@ it('reads a proxy verdict out of a real database rather than swallowing the call
 
 it('skips a source with no credential instead of failing the schedule', function () {
     config([
-        'advault.geoip_maxmind_license_key' => null,
-        'advault.geoip_ip2location_token' => null,
+        'playndgain.geoip_maxmind_license_key' => null,
+        'playndgain.geoip_ip2location_token' => null,
     ]);
 
     $this->artisan('geoip:update')

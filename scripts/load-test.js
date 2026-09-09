@@ -1,5 +1,5 @@
 /*
- * AdVault load test — docs/12-roadmap.md Phase 7:
+ * PLAYNDGAIN load test — docs/12-roadmap.md Phase 7:
  * "Load test: 1000 wall renders/min, 100 postbacks/min sustained."
  *
  * ############################################################################
@@ -24,7 +24,7 @@
  *
  * RUN:
  *   k6 run scripts/load-test.js \
- *     -e BASE_URL=https://wall.staging.advault.io \
+ *     -e BASE_URL=https://wall.staging.playndgain.com \
  *     -e APP_ID=10001 \
  *     -e APP_SECRET='...' \
  *     -e DURATION_MIN=5 \
@@ -40,7 +40,7 @@
  *
  *   1. The per-IP wall limiter WILL shed this traffic. AppServiceProvider
  *      registers `wall` at 60/min per IP and 600/min per app, and nginx repeats
- *      the 60/min (deploy/nginx/conf.d/advault-limit-zones.conf). One runner is
+ *      the 60/min (deploy/nginx/conf.d/playndgain-limit-zones.conf). One runner is
  *      one IP, so 1000 renders/min is 940 of them 429ing by design, and even
  *      spread across many IPs the per-app limit caps the app at 600/min. The
  *      limits are hardcoded, not env-tunable: raising them for the run is a code
@@ -212,7 +212,7 @@ export function handleSummary(data) {
     const verdict = (label, achieved, target) =>
         `${achieved >= target * 0.95 ? 'PASS' : 'FAIL'}  ${label}: ${achieved.toFixed(0)}/min achieved, ${target}/min required`;
 
-    lines.push('AdVault load test — docs/12 Phase 7');
+    lines.push('PLAYNDGAIN load test — docs/12 Phase 7');
     lines.push('='.repeat(60));
     lines.push(verdict('wall renders', count('wall_requests') / MINUTES, WALL_RATE));
     lines.push(`      error rate: ${(rate('wall_errors') * 100).toFixed(2)}%  (429s count as errors — see the header)`);

@@ -81,8 +81,8 @@ class GeoIpUpdateCommand extends Command
      */
     private function sources(): array
     {
-        $key = config('advault.geoip_maxmind_license_key');
-        $token = config('advault.geoip_ip2location_token');
+        $key = config('playndgain.geoip_maxmind_license_key');
+        $token = config('playndgain.geoip_ip2location_token');
 
         $maxmind = fn (string $edition): ?string => is_string($key) && $key !== ''
             ? 'https://download.maxmind.com/app/geoip_download?'.http_build_query([

@@ -10,6 +10,8 @@ use App\Models\Publisher;
 use App\Models\User;
 use App\Models\Withdrawal;
 use App\Services\Money\WithdrawalService;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The payout rules from docs/06 §4, asserted at the service rather than through
@@ -150,9 +152,48 @@ it('snapshots the destination so editing the payment method later does not move 
 
     $method->update(['details' => ['email' => 'somewhere-else@example.com']]);
 
-    $snapshot = json_decode((string) Withdrawal::query()->withoutGlobalScopes()->findOrFail($withdrawal->id)->payment_details, true);
+    $snapshot = Withdrawal::query()->withoutGlobalScopes()->findOrFail($withdrawal->id)->destination();
 
     expect($snapshot['email'])->toBe('payee@example.com');
+});
+
+it('reads a snapshot written before the array cast', function () {
+    $publisher = payableFixture();
+    $method = methodFor($publisher);
+
+    // The old `encrypted` cast stored encryptString(json_encode($details));
+    // `encrypted:array` must read that row unchanged.
+    $id = DB::table('withdrawals')->insertGetId([
+        'publisher_id' => $publisher->id,
+        'payment_method_id' => $method->id,
+        'amount' => '40.000000',
+        'method' => 'paypal',
+        'payment_details' => Crypt::encryptString(json_encode(['email' => 'legacy@example.com'])),
+        'status' => 'paid',
+        'requested_at' => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    expect(Withdrawal::query()->withoutGlobalScopes()->findOrFail($id)->destination())->toBe(['email' => 'legacy@example.com']);
+});
+
+it('stops holding a payout out of the available balance once it is debited', function () {
+    $publisher = payableFixture('100.000000');
+    $service = app(WithdrawalService::class);
+    $admin = User::factory()->admin()->create();
+
+    $withdrawal = $service->request($publisher, '40.00', methodFor($publisher));
+
+    expect($publisher->fresh()->withdrawableBalance())->toBe('60.000000');
+
+    // `processing` writes the ledger entry; cleared drops to 60 and the
+    // request must not be subtracted a second time.
+    $service->approve($withdrawal, $admin);
+    $publisher = $publisher->fresh();
+
+    expect($publisher->clearedBalance())->toBe('60.000000')
+        ->and($publisher->withdrawableBalance())->toBe('60.000000');
 });
 
 it('marks paid only from processing, and records the reference', function () {
@@ -171,4 +212,27 @@ it('marks paid only from processing, and records the reference', function () {
 
     expect($withdrawal->status)->toBe(WithdrawalStatus::Paid)
         ->and($withdrawal->tx_reference)->toBe('TX-1');
+});
+
+it('refuses to approve a payout larger than the cleared balance', function () {
+    $publisher = payableFixture('100.000000');
+    $service = app(WithdrawalService::class);
+    $admin = User::factory()->admin()->create();
+
+    $withdrawal = $service->request($publisher, '100.00', methodFor($publisher));
+
+    // Chargebacks after the request took the balance below the frozen amount.
+    LedgerEntry::create([
+        'publisher_id' => $publisher->id,
+        'type' => LedgerEntryType::Chargeback,
+        'amount' => '-30.000000',
+        'balance_after' => '70.000000',
+        'created_at' => now(),
+    ]);
+    $publisher->update(['balance' => '70.000000']);
+
+    expect(fn () => $service->approve($withdrawal, $admin))->toThrow(RuntimeException::class);
+
+    expect(LedgerEntry::query()->withoutGlobalScopes()->where('type', LedgerEntryType::Withdrawal)->count())->toBe(0)
+        ->and($withdrawal->fresh()->status)->toBe(WithdrawalStatus::Requested);
 });

@@ -1,0 +1,421 @@
+- generic [active] [ref=f16e1]:
+  - link "Skip to content" [ref=f16e2] [cursor=pointer]:
+    - /url: "#fi-main-content"
+  - navigation "Topbar" [ref=f16e4]:
+    - button "Expand sidebar" [ref=f16e5] [cursor=pointer]
+    - link "PLAYNDGAIN Publisher" [ref=f16e9] [cursor=pointer]:
+      - /url: https://playndgain.test/dashboard
+      - generic [ref=f16e16]:
+        - generic [ref=f16e17]: PLAYNDGAIN
+        - generic [ref=f16e18]: Publisher
+    - generic [ref=f16e19]:
+      - generic [ref=f16e22]:
+        - generic [ref=f16e23]: Global search
+        - searchbox "Global search" [ref=f16e29]
+      - button "User menu" [ref=f16e32] [cursor=pointer]:
+        - img "Avatar of demo@playndgain.test" [ref=f16e33]
+  - generic [ref=f16e34]:
+    - generic [ref=f16e35]:
+      - banner [ref=f16e37]:
+        - link "PLAYNDGAIN Publisher" [ref=f16e39] [cursor=pointer]:
+          - /url: https://playndgain.test/dashboard
+          - generic [ref=f16e46]:
+            - generic [ref=f16e47]: PLAYNDGAIN
+            - generic [ref=f16e48]: Publisher
+      - navigation "Sidebar navigation" [ref=f16e49]:
+        - list [ref=f16e50]:
+          - listitem [ref=f16e51]:
+            - generic [ref=f16e52] [cursor=pointer]:
+              - generic [ref=f16e53]: Overview
+              - button "Overview" [expanded] [ref=f16e54]
+            - list [ref=f16e57]:
+              - listitem [ref=f16e58]:
+                - link "Dashboard" [ref=f16e59] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard
+              - listitem [ref=f16e66]:
+                - link "Statistics" [ref=f16e67] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/statistics
+          - listitem [ref=f16e71]:
+            - generic [ref=f16e72] [cursor=pointer]:
+              - generic [ref=f16e73]: Monetize
+              - button "Monetize" [expanded] [ref=f16e74]
+            - list [ref=f16e77]:
+              - listitem [ref=f16e78]:
+                - link "Apps" [ref=f16e79] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/apps
+              - listitem [ref=f16e83]:
+                - link "Offers" [ref=f16e84] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/offers
+          - listitem [ref=f16e91]:
+            - generic [ref=f16e92] [cursor=pointer]:
+              - generic [ref=f16e93]: Activity
+              - button "Activity" [expanded] [ref=f16e94]
+            - list [ref=f16e97]:
+              - listitem [ref=f16e98]:
+                - link "Conversions" [ref=f16e99] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/transactions
+              - listitem [ref=f16e104]:
+                - link "Offerwall clicks" [ref=f16e105] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/offer-clicks
+              - listitem [ref=f16e113]:
+                - link "Postback reports" [ref=f16e114] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/postback-reports
+          - listitem [ref=f16e119]:
+            - generic [ref=f16e120] [cursor=pointer]:
+              - generic [ref=f16e121]: Payouts
+              - button "Payouts" [expanded] [ref=f16e122]
+            - list [ref=f16e125]:
+              - listitem [ref=f16e126]:
+                - link "Payments" [ref=f16e127] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/payments
+          - listitem [ref=f16e132]:
+            - generic [ref=f16e133] [cursor=pointer]:
+              - generic [ref=f16e134]: Protection
+              - button "Protection" [expanded] [ref=f16e135]
+            - list [ref=f16e138]:
+              - listitem [ref=f16e139]:
+                - link "Blacklists" [ref=f16e140] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/blacklists
+              - listitem [ref=f16e145]:
+                - link "Banned users" [ref=f16e146] [cursor=pointer]:
+                  - /url: https://playndgain.test/dashboard/banned-end-users
+          - listitem [ref=f16e153]:
+            - generic [ref=f16e154] [cursor=pointer]:
+              - generic [ref=f16e155]: Help
+              - button "Help" [expanded] [ref=f16e156]
+            - list [ref=f16e159]:
+              - listitem [ref=f16e160]:
+                - link "Documentation" [ref=f16e161] [cursor=pointer]:
+                  - /url: /docs
+    - main [ref=f16e166]:
+      - generic [ref=f16e168]:
+        - heading "Conversions" [level=1] [ref=f16e171]
+        - generic [ref=f16e179]:
+          - generic [ref=f16e182]:
+            - generic [ref=f16e183]:
+              - generic [ref=f16e184]: Search
+              - searchbox "Search" [ref=f16e190]
+            - button "Filter" [ref=f16e193] [cursor=pointer]:
+              - generic [ref=f16e196]: "0"
+          - table [ref=f16e199]:
+            - rowgroup [ref=f16e200]:
+              - row [ref=f16e201]:
+                - columnheader [ref=f16e202]:
+                  - generic [ref=f16e205]:
+                    - generic [ref=f16e206]: Sort by
+                    - combobox "Sort by" [ref=f16e209]:
+                      - option "-" [selected]
+                      - option "Amount (USD)"
+                      - option "Date"
+            - rowgroup [ref=f16e210]:
+              - row [ref=f16e211]:
+                - cell "TX ID OFFER8-VCHFTDT7CS6..." [ref=f16e212]:
+                  - generic [ref=f16e213]: TX ID
+                  - button "OFFER8-VCHFTDT7CS6..." [ref=f16e215] [cursor=pointer]
+                - cell "App demo" [ref=f16e217]:
+                  - generic [ref=f16e218]: App
+                  - button "demo" [ref=f16e220] [cursor=pointer]
+                - cell "Offer Temu" [ref=f16e222]:
+                  - generic [ref=f16e223]: Offer
+                  - button "Temu" [ref=f16e225] [cursor=pointer]
+                - cell "Type +" [ref=f16e227]:
+                  - generic [ref=f16e228]: Type
+                  - button "+" [ref=f16e230] [cursor=pointer]
+                - cell "Amount (USD) $0.203" [ref=f16e233]:
+                  - generic [ref=f16e234]: Amount (USD)
+                  - button "$0.203" [ref=f16e236] [cursor=pointer]
+                - cell "Currency 203.00" [ref=f16e238]:
+                  - generic [ref=f16e239]: Currency
+                  - button "203.00" [ref=f16e241] [cursor=pointer]
+                - cell "Status approved" [ref=f16e243]:
+                  - generic [ref=f16e244]: Status
+                  - button "approved" [ref=f16e246] [cursor=pointer]
+                - cell "Country CA" [ref=f16e249]:
+                  - generic [ref=f16e250]: Country
+                  - button "CA" [ref=f16e252] [cursor=pointer]
+                - cell "Date Sep 8, 2026 23:50:26" [ref=f16e255]:
+                  - generic [ref=f16e256]: Date
+                  - button "Sep 8, 2026 23:50:26" [ref=f16e258] [cursor=pointer]
+                - cell [ref=f16e260]:
+                  - button "View" [ref=f16e262] [cursor=pointer]
+              - row [ref=f16e267]:
+                - cell "TX ID OFFER2-S4OTQE4VTV7..." [ref=f16e268]:
+                  - generic [ref=f16e269]: TX ID
+                  - button "OFFER2-S4OTQE4VTV7..." [ref=f16e271] [cursor=pointer]
+                - cell "App demo" [ref=f16e273]:
+                  - generic [ref=f16e274]: App
+                  - button "demo" [ref=f16e276] [cursor=pointer]
+                - cell "Offer Royal Match" [ref=f16e278]:
+                  - generic [ref=f16e279]: Offer
+                  - button "Royal Match" [ref=f16e281] [cursor=pointer]
+                - cell "Type +" [ref=f16e283]:
+                  - generic [ref=f16e284]: Type
+                  - button "+" [ref=f16e286] [cursor=pointer]
+                - cell "Amount (USD) $6.125" [ref=f16e289]:
+                  - generic [ref=f16e290]: Amount (USD)
+                  - button "$6.125" [ref=f16e292] [cursor=pointer]
+                - cell "Currency 6,125.00" [ref=f16e294]:
+                  - generic [ref=f16e295]: Currency
+                  - button "6,125.00" [ref=f16e297] [cursor=pointer]
+                - cell "Status approved" [ref=f16e299]:
+                  - generic [ref=f16e300]: Status
+                  - button "approved" [ref=f16e302] [cursor=pointer]
+                - cell "Country US" [ref=f16e305]:
+                  - generic [ref=f16e306]: Country
+                  - button "US" [ref=f16e308] [cursor=pointer]
+                - cell "Date Sep 8, 2026 23:08:53" [ref=f16e311]:
+                  - generic [ref=f16e312]: Date
+                  - button "Sep 8, 2026 23:08:53" [ref=f16e314] [cursor=pointer]
+                - cell [ref=f16e316]:
+                  - button "View" [ref=f16e318] [cursor=pointer]
+              - row [ref=f16e323]:
+                - cell "TX ID OFFER1-ZYI5WQOTVYK..." [ref=f16e324]:
+                  - generic [ref=f16e325]: TX ID
+                  - button "OFFER1-ZYI5WQOTVYK..." [ref=f16e327] [cursor=pointer]
+                - cell "App demo" [ref=f16e329]:
+                  - generic [ref=f16e330]: App
+                  - button "demo" [ref=f16e332] [cursor=pointer]
+                - cell "Offer Coin Master" [ref=f16e334]:
+                  - generic [ref=f16e335]: Offer
+                  - button "Coin Master" [ref=f16e337] [cursor=pointer]
+                - cell "Type +" [ref=f16e339]:
+                  - generic [ref=f16e340]: Type
+                  - button "+" [ref=f16e342] [cursor=pointer]
+                - cell "Amount (USD) $0.448" [ref=f16e345]:
+                  - generic [ref=f16e346]: Amount (USD)
+                  - button "$0.448" [ref=f16e348] [cursor=pointer]
+                - cell "Currency 448.00" [ref=f16e350]:
+                  - generic [ref=f16e351]: Currency
+                  - button "448.00" [ref=f16e353] [cursor=pointer]
+                - cell "Status approved" [ref=f16e355]:
+                  - generic [ref=f16e356]: Status
+                  - button "approved" [ref=f16e358] [cursor=pointer]
+                - cell "Country US" [ref=f16e361]:
+                  - generic [ref=f16e362]: Country
+                  - button "US" [ref=f16e364] [cursor=pointer]
+                - cell "Date Sep 8, 2026 19:57:20" [ref=f16e367]:
+                  - generic [ref=f16e368]: Date
+                  - button "Sep 8, 2026 19:57:20" [ref=f16e370] [cursor=pointer]
+                - cell [ref=f16e372]:
+                  - button "View" [ref=f16e374] [cursor=pointer]
+              - row [ref=f16e379]:
+                - cell "TX ID OFFER1-LM8UYKBQFHR..." [ref=f16e380]:
+                  - generic [ref=f16e381]: TX ID
+                  - button "OFFER1-LM8UYKBQFHR..." [ref=f16e383] [cursor=pointer]
+                - cell "App demo" [ref=f16e385]:
+                  - generic [ref=f16e386]: App
+                  - button "demo" [ref=f16e388] [cursor=pointer]
+                - cell "Offer Coin Master" [ref=f16e390]:
+                  - generic [ref=f16e391]: Offer
+                  - button "Coin Master" [ref=f16e393] [cursor=pointer]
+                - cell "Type +" [ref=f16e395]:
+                  - generic [ref=f16e396]: Type
+                  - button "+" [ref=f16e398] [cursor=pointer]
+                - cell "Amount (USD) $0.448" [ref=f16e401]:
+                  - generic [ref=f16e402]: Amount (USD)
+                  - button "$0.448" [ref=f16e404] [cursor=pointer]
+                - cell "Currency 448.00" [ref=f16e406]:
+                  - generic [ref=f16e407]: Currency
+                  - button "448.00" [ref=f16e409] [cursor=pointer]
+                - cell "Status approved" [ref=f16e411]:
+                  - generic [ref=f16e412]: Status
+                  - button "approved" [ref=f16e414] [cursor=pointer]
+                - cell "Country CA" [ref=f16e417]:
+                  - generic [ref=f16e418]: Country
+                  - button "CA" [ref=f16e420] [cursor=pointer]
+                - cell "Date Sep 8, 2026 17:25:02" [ref=f16e423]:
+                  - generic [ref=f16e424]: Date
+                  - button "Sep 8, 2026 17:25:02" [ref=f16e426] [cursor=pointer]
+                - cell [ref=f16e428]:
+                  - button "View" [ref=f16e430] [cursor=pointer]
+              - row [ref=f16e435]:
+                - cell "TX ID OFFER4-CMAKUBIZH31..." [ref=f16e436]:
+                  - generic [ref=f16e437]: TX ID
+                  - button "OFFER4-CMAKUBIZH31..." [ref=f16e439] [cursor=pointer]
+                - cell "App demo" [ref=f16e441]:
+                  - generic [ref=f16e442]: App
+                  - button "demo" [ref=f16e444] [cursor=pointer]
+                - cell "Offer Shopee Shopping" [ref=f16e446]:
+                  - generic [ref=f16e447]: Offer
+                  - button "Shopee Shopping" [ref=f16e449] [cursor=pointer]
+                - cell "Type +" [ref=f16e451]:
+                  - generic [ref=f16e452]: Type
+                  - button "+" [ref=f16e454] [cursor=pointer]
+                - cell "Amount (USD) $1.561" [ref=f16e457]:
+                  - generic [ref=f16e458]: Amount (USD)
+                  - button "$1.561" [ref=f16e460] [cursor=pointer]
+                - cell "Currency 1,561.00" [ref=f16e462]:
+                  - generic [ref=f16e463]: Currency
+                  - button "1,561.00" [ref=f16e465] [cursor=pointer]
+                - cell "Status approved" [ref=f16e467]:
+                  - generic [ref=f16e468]: Status
+                  - button "approved" [ref=f16e470] [cursor=pointer]
+                - cell "Country FR" [ref=f16e473]:
+                  - generic [ref=f16e474]: Country
+                  - button "FR" [ref=f16e476] [cursor=pointer]
+                - cell "Date Sep 8, 2026 16:44:54" [ref=f16e479]:
+                  - generic [ref=f16e480]: Date
+                  - button "Sep 8, 2026 16:44:54" [ref=f16e482] [cursor=pointer]
+                - cell [ref=f16e484]:
+                  - button "View" [ref=f16e486] [cursor=pointer]
+              - row [ref=f16e491]:
+                - cell "TX ID OFFER11-OQXAJUIY5P..." [ref=f16e492]:
+                  - generic [ref=f16e493]: TX ID
+                  - button "OFFER11-OQXAJUIY5P..." [ref=f16e495] [cursor=pointer]
+                - cell "App demo" [ref=f16e497]:
+                  - generic [ref=f16e498]: App
+                  - button "demo" [ref=f16e500] [cursor=pointer]
+                - cell "Offer Duolingo" [ref=f16e502]:
+                  - generic [ref=f16e503]: Offer
+                  - button "Duolingo" [ref=f16e505] [cursor=pointer]
+                - cell "Type +" [ref=f16e507]:
+                  - generic [ref=f16e508]: Type
+                  - button "+" [ref=f16e510] [cursor=pointer]
+                - cell "Amount (USD) $0.294" [ref=f16e513]:
+                  - generic [ref=f16e514]: Amount (USD)
+                  - button "$0.294" [ref=f16e516] [cursor=pointer]
+                - cell "Currency 294.00" [ref=f16e518]:
+                  - generic [ref=f16e519]: Currency
+                  - button "294.00" [ref=f16e521] [cursor=pointer]
+                - cell "Status approved" [ref=f16e523]:
+                  - generic [ref=f16e524]: Status
+                  - button "approved" [ref=f16e526] [cursor=pointer]
+                - cell "Country US" [ref=f16e529]:
+                  - generic [ref=f16e530]: Country
+                  - button "US" [ref=f16e532] [cursor=pointer]
+                - cell "Date Sep 8, 2026 16:41:56" [ref=f16e535]:
+                  - generic [ref=f16e536]: Date
+                  - button "Sep 8, 2026 16:41:56" [ref=f16e538] [cursor=pointer]
+                - cell [ref=f16e540]:
+                  - button "View" [ref=f16e542] [cursor=pointer]
+              - row [ref=f16e547]:
+                - cell "TX ID OFFER2-MMFSNSR19MD..." [ref=f16e548]:
+                  - generic [ref=f16e549]: TX ID
+                  - button "OFFER2-MMFSNSR19MD..." [ref=f16e551] [cursor=pointer]
+                - cell "App demo" [ref=f16e553]:
+                  - generic [ref=f16e554]: App
+                  - button "demo" [ref=f16e556] [cursor=pointer]
+                - cell "Offer Royal Match" [ref=f16e558]:
+                  - generic [ref=f16e559]: Offer
+                  - button "Royal Match" [ref=f16e561] [cursor=pointer]
+                - cell "Type +" [ref=f16e563]:
+                  - generic [ref=f16e564]: Type
+                  - button "+" [ref=f16e566] [cursor=pointer]
+                - cell "Amount (USD) $6.125" [ref=f16e569]:
+                  - generic [ref=f16e570]: Amount (USD)
+                  - button "$6.125" [ref=f16e572] [cursor=pointer]
+                - cell "Currency 6,125.00" [ref=f16e574]:
+                  - generic [ref=f16e575]: Currency
+                  - button "6,125.00" [ref=f16e577] [cursor=pointer]
+                - cell "Status approved" [ref=f16e579]:
+                  - generic [ref=f16e580]: Status
+                  - button "approved" [ref=f16e582] [cursor=pointer]
+                - cell "Country IN" [ref=f16e585]:
+                  - generic [ref=f16e586]: Country
+                  - button "IN" [ref=f16e588] [cursor=pointer]
+                - cell "Date Sep 8, 2026 15:23:24" [ref=f16e591]:
+                  - generic [ref=f16e592]: Date
+                  - button "Sep 8, 2026 15:23:24" [ref=f16e594] [cursor=pointer]
+                - cell [ref=f16e596]:
+                  - button "View" [ref=f16e598] [cursor=pointer]
+              - row [ref=f16e603]:
+                - cell "TX ID OFFER8-XAQIB2IE6JP..." [ref=f16e604]:
+                  - generic [ref=f16e605]: TX ID
+                  - button "OFFER8-XAQIB2IE6JP..." [ref=f16e607] [cursor=pointer]
+                - cell "App demo" [ref=f16e609]:
+                  - generic [ref=f16e610]: App
+                  - button "demo" [ref=f16e612] [cursor=pointer]
+                - cell "Offer Temu" [ref=f16e614]:
+                  - generic [ref=f16e615]: Offer
+                  - button "Temu" [ref=f16e617] [cursor=pointer]
+                - cell "Type +" [ref=f16e619]:
+                  - generic [ref=f16e620]: Type
+                  - button "+" [ref=f16e622] [cursor=pointer]
+                - cell "Amount (USD) $0.203" [ref=f16e625]:
+                  - generic [ref=f16e626]: Amount (USD)
+                  - button "$0.203" [ref=f16e628] [cursor=pointer]
+                - cell "Currency 203.00" [ref=f16e630]:
+                  - generic [ref=f16e631]: Currency
+                  - button "203.00" [ref=f16e633] [cursor=pointer]
+                - cell "Status approved" [ref=f16e635]:
+                  - generic [ref=f16e636]: Status
+                  - button "approved" [ref=f16e638] [cursor=pointer]
+                - cell "Country GB" [ref=f16e641]:
+                  - generic [ref=f16e642]: Country
+                  - button "GB" [ref=f16e644] [cursor=pointer]
+                - cell "Date Sep 8, 2026 12:49:48" [ref=f16e647]:
+                  - generic [ref=f16e648]: Date
+                  - button "Sep 8, 2026 12:49:48" [ref=f16e650] [cursor=pointer]
+                - cell [ref=f16e652]:
+                  - button "View" [ref=f16e654] [cursor=pointer]
+              - row [ref=f16e659]:
+                - cell "TX ID OFFER5-FNOJXQLPWCY..." [ref=f16e660]:
+                  - generic [ref=f16e661]: TX ID
+                  - button "OFFER5-FNOJXQLPWCY..." [ref=f16e663] [cursor=pointer]
+                - cell "App demo" [ref=f16e665]:
+                  - generic [ref=f16e666]: App
+                  - button "demo" [ref=f16e668] [cursor=pointer]
+                - cell "Offer TikTok Lite" [ref=f16e670]:
+                  - generic [ref=f16e671]: Offer
+                  - button "TikTok Lite" [ref=f16e673] [cursor=pointer]
+                - cell "Type +" [ref=f16e675]:
+                  - generic [ref=f16e676]: Type
+                  - button "+" [ref=f16e678] [cursor=pointer]
+                - cell "Amount (USD) $1.008" [ref=f16e681]:
+                  - generic [ref=f16e682]: Amount (USD)
+                  - button "$1.008" [ref=f16e684] [cursor=pointer]
+                - cell "Currency 1,008.00" [ref=f16e686]:
+                  - generic [ref=f16e687]: Currency
+                  - button "1,008.00" [ref=f16e689] [cursor=pointer]
+                - cell "Status approved" [ref=f16e691]:
+                  - generic [ref=f16e692]: Status
+                  - button "approved" [ref=f16e694] [cursor=pointer]
+                - cell "Country AU" [ref=f16e697]:
+                  - generic [ref=f16e698]: Country
+                  - button "AU" [ref=f16e700] [cursor=pointer]
+                - cell "Date Sep 8, 2026 12:35:42" [ref=f16e703]:
+                  - generic [ref=f16e704]: Date
+                  - button "Sep 8, 2026 12:35:42" [ref=f16e706] [cursor=pointer]
+                - cell [ref=f16e708]:
+                  - button "View" [ref=f16e710] [cursor=pointer]
+              - row [ref=f16e715]:
+                - cell "TX ID OFFER3-KILQNBKRGMJ..." [ref=f16e716]:
+                  - generic [ref=f16e717]: TX ID
+                  - button "OFFER3-KILQNBKRGMJ..." [ref=f16e719] [cursor=pointer]
+                - cell "App demo" [ref=f16e721]:
+                  - generic [ref=f16e722]: App
+                  - button "demo" [ref=f16e724] [cursor=pointer]
+                - cell "Offer Monopoly Go" [ref=f16e726]:
+                  - generic [ref=f16e727]: Offer
+                  - button "Monopoly Go" [ref=f16e729] [cursor=pointer]
+                - cell "Type +" [ref=f16e731]:
+                  - generic [ref=f16e732]: Type
+                  - button "+" [ref=f16e734] [cursor=pointer]
+                - cell "Amount (USD) $3.92" [ref=f16e737]:
+                  - generic [ref=f16e738]: Amount (USD)
+                  - button "$3.92" [ref=f16e740] [cursor=pointer]
+                - cell "Currency 3,920.00" [ref=f16e742]:
+                  - generic [ref=f16e743]: Currency
+                  - button "3,920.00" [ref=f16e745] [cursor=pointer]
+                - cell "Status approved" [ref=f16e747]:
+                  - generic [ref=f16e748]: Status
+                  - button "approved" [ref=f16e750] [cursor=pointer]
+                - cell "Country IN" [ref=f16e753]:
+                  - generic [ref=f16e754]: Country
+                  - button "IN" [ref=f16e756] [cursor=pointer]
+                - cell "Date Sep 8, 2026 12:23:44" [ref=f16e759]:
+                  - generic [ref=f16e760]: Date
+                  - button "Sep 8, 2026 12:23:44" [ref=f16e762] [cursor=pointer]
+                - cell [ref=f16e764]:
+                  - button "View" [ref=f16e766] [cursor=pointer]
+          - navigation "Pagination navigation" [ref=f16e771]:
+            - generic [ref=f16e773]:
+              - combobox "Per page" [ref=f16e776]:
+                - option "5"
+                - option "10" [selected]
+                - option "25"
+                - option "50"
+              - generic [ref=f16e777]: Per page
+            - button "Next" [ref=f16e778] [cursor=pointer]
+  - generic:
+    - status

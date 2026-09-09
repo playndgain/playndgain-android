@@ -9,15 +9,15 @@
 
    The publisher owns the palette, so none of the design below may depend on a
    colour it does not control: every surface, line and tint here is derived from
-   the five theme properties with color-mix. The atmosphere photograph is the
-   one exception, and even that is washed with `--wall-bg` so a custom theme
-   tints it. That is also why the page's personality lives in structure, type
-   and state rather than in hue.
+   the six theme properties with color-mix. There is no wallpaper and no glass:
+   the surfaces are flat, the edges are hairlines, and the page's personality
+   lives in structure, type and state rather than in hue.
 
    The one deliberate move: rewards are a ledger column. Fixed tabular figures
-   flush to the card's inline-end edge, so payouts stack on a single axis down
+   flush to the row's inline-end edge, so payouts stack on a single axis down
    the list and the user compares them by glance instead of by reading. It is
-   the only job the wall has.
+   the only job the wall has. Faces come from fonts-wall.css — the lighter cuts
+   of the site's two families, because this is a phone over 3G.
 
    Written with logical properties throughout (inline-start, padding-inline,
    margin-block) because the same stylesheet serves the RTL Arabic wall. A
@@ -25,8 +25,28 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @import 'tailwindcss' source(none);
+@import './fonts-wall.css';
 @import './tokens.css';
+@import './brand-mark.css';
 @import './wall-ui.css';
+
+/* Since 2026-09-02 the wall shares the site's system: Sora as its one face
+   and the site's motion tokens. tokens.css (still imported — the panels'
+   preview reads it) names the older pair; these unlayered declarations win
+   over Tailwind's theme layer for this bundle only. The brand mark takes the
+   same face, so the footer's wordmark no longer needs a face of its own. */
+:root {
+  --font-sans: 'Sora Variable', 'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: var(--font-sans);
+  --font-brand: var(--font-sans);
+  --motion-fast: 150ms;
+  --motion-base: 260ms;
+  --motion-enter: 640ms;
+  --motion-exit: 200ms;
+  --motion-stagger: 85ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+}
 
 /* Only the wall's own views. An unscoped source would sweep the landing page's
    utilities into this bundle and eat the budget. */

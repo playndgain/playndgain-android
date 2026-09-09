@@ -1,40 +1,47 @@
 @extends('layouts.site')
 
-@section('title', \App\Support\Identity::name().' — Monetize your users. Audit every cent.')
-@section('description', 'Aggregated offers from a dozen ad networks, delivered through one hosted offerwall. Signed callbacks, chargeback protection, NET-30 payouts.')
+@section('title', \App\Support\Identity::name().' — Turn playtime into payouts')
+@section('description', 'Drop the '.\App\Support\Identity::name().' offerwall into any app or game. Players complete offers from the networks you already know; you are paid for every verified action — signed callbacks, an append-only ledger, monthly payouts, terms stated once.')
 
-@push('head')
-{{-- The hero wallpaper is the LCP element. Preload matches the <img> srcset
-     exactly or the browser fetches a second copy. --}}
-<link rel="preload" as="image" href="/img/hero-vault.webp" imagesrcset="/img/hero-vault-sm.webp 960w, /img/hero-vault.webp 1920w" imagesizes="100vw" fetchpriority="high">
-@endpush
+{{-- The page-open intro (partials/landing/intro). Declared as a section so
+     the layout can mark <html> with data-intro — the head script switches the
+     intro on only where a page carries one. --}}
+@section('intro')
+  @include('partials.landing.intro')
+@endsection
 
 @section('content')
 @php
-    // Defaults keep the page whole under the placeholder `Route::view` in
-    // routes/web.php. LandingController overrides them with real counts once the
-    // route is switched over; every figure it cannot defend stays out of it.
-    $stats = array_merge([
-        'offers' => 1284,
-        'countries' => 134,
-        'networks' => 6,
-        'fraud_rules' => 17,
-        'postback_ms' => 94,
-        'avg_payout' => 2.79,
-    ], $stats ?? []);
+    // Real figures only. LandingController leaves out anything it cannot
+    // defend, and each section states what the product does in that slot
+    // instead of showing a number from nowhere. The terms fall back to the
+    // configured defaults so the page renders before a migration has run.
+    $stats = $stats ?? [];
+    $terms = array_merge(['hold_days' => '30', 'min_payout' => '20'], $terms ?? []);
+    $snippet = $snippet ?? ['html' => '', 'lines' => 0];
+    $name = \App\Support\Identity::name();
+    $categories = \App\Support\LandingContent::demandCategories();
+    $nodes = \App\Support\LandingContent::orbitNodes();
 @endphp
 
-@include('partials.landing.trace-rail')
-
+{{-- Sections run in bands of one surface: ink, paper, ink, paper. Where the
+     surface changes, a .seam (app.css) lays the incoming surface over the
+     outgoing one as a sheet with a rounded top edge; with scroll-driven
+     animations the outgoing band's content settles back as the sheet slides
+     over it. The seam must directly follow the band it closes. --}}
 <main id="main">
+  @include('partials.landing.icons')
   @include('partials.landing.hero')
   @include('partials.landing.metrics')
+  <div class="seam seam-to-paper" data-seam="1" aria-hidden="true"></div>
+  @include('partials.landing.inventory')
+  @include('partials.landing.product')
+  @include('partials.landing.solutions')
+  <div class="seam seam-to-ink" data-seam="2" aria-hidden="true"></div>
   @include('partials.landing.how')
-  @include('partials.landing.wall')
-  @include('partials.landing.terms')
   @include('partials.landing.features')
-  @include('partials.landing.integrate')
-  @include('partials.landing.faq')
+  <div class="seam seam-to-paper" data-seam="3" aria-hidden="true"></div>
+  @include('partials.landing.results')
   @include('partials.landing.cta')
 </main>
 @endsection

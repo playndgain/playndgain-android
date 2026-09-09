@@ -13,14 +13,6 @@
     // link on the page echoes rather than rebuilt from the request.
     parse_str($params, $fields);
 
-    // The rail is admin-pinned inventory, and the test offer is neither pinned
-    // nor inventory: it is `is_featured` so it sorts first, and it is already
-    // unshifted above the grid. In the rail it would be the same card twice.
-    $featured = array_values(array_filter(
-        $offers,
-        fn (array $offer): bool => $offer['is_featured'] && ! $offer['is_test'],
-    ));
-
     // One index feeds both the filter and every card: a card reads `list[i]`
     // rather than repeating its own name and categories into its own scope.
     $index = array_map(fn (array $offer): array => [
@@ -37,6 +29,14 @@
             ['android', 'ios', 'desktop'],
         )),
     ], $offers);
+
+    $featuredIndexes = [];
+
+    foreach ($offers as $i => $offer) {
+        if (($offer['is_featured'] ?? false) && ! ($offer['is_test'] ?? false)) {
+            $featuredIndexes[] = $i;
+        }
+    }
 
     // Known category names only. Free-form tags from nine catalogues do not
     // get a guessed glyph — an unknown value here would be a box pointing at
@@ -70,20 +70,46 @@
 
             <h1 class="wall-sr">{{ __('wall.title') }}</h1>
 
-            @if ($offers !== [] && $categories !== [])
-                <div class="wall-chips" role="group" aria-label="{{ __('wall.title') }}">
-                    <button type="button" class="wall-chip" :class="cat === 'all' && 'is-on'" :aria-pressed="cat === 'all'" @click="cat = 'all'">
-                        <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
-                        {{ __('wall.all') }}
-                    </button>
-                    @foreach ($categories as $category)
-                        <button type="button" class="wall-chip" :class="cat === @js($category) && 'is-on'" :aria-pressed="cat === @js($category)" @click="cat = @js($category)">
-                            @if ($icon = $chipIcon($category))
-                                <svg class="wall-chip__icon" aria-hidden="true"><use href="#{{ $icon }}"/></svg>
-                            @endif
-                            {{ $category }}
-                        </button>
-                    @endforeach
+            {{-- One filter row, not two. The category chips and the three
+                 device glyphs used to sit in separate strips at opposite ends
+                 of the page, which asked the user to look in two places to
+                 answer one question. Divided by a hairline so the groups stay
+                 legible as groups, and scrolled inline when they do not fit. --}}
+            @if ($offers !== [])
+                <div class="wall-filters">
+                    @if ($categories !== [])
+                        <div class="wall-chips" role="group" aria-label="{{ __('wall.title') }}">
+                            <button type="button" class="wall-chip" :class="cat === 'all' && 'is-on'" :aria-pressed="cat === 'all'" @click="cat = 'all'">
+                                <svg class="wall-chip__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
+                                {{ __('wall.all') }}
+                            </button>
+                            @foreach ($categories as $category)
+                                <button type="button" class="wall-chip" :class="cat === @js($category) && 'is-on'" :aria-pressed="cat === @js($category)" @click="cat = @js($category)">
+                                    @if ($icon = $chipIcon($category))
+                                        <svg class="wall-chip__icon" aria-hidden="true"><use href="#{{ $icon }}"/></svg>
+                                    @endif
+                                    {{ $category }}
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    {{-- Client-side, like the chips: the list is already on the
+                         page. Hidden until Alpine boots, so a no-JS reader is
+                         not left with a control that does nothing. --}}
+                    <div class="wall-devices" role="group" aria-label="{{ __('wall.filter.device') }}" x-cloak>
+                        {{-- Three toggles and no "all" button: pressing the one
+                             that is on turns it off, which is what a filter of
+                             three mutually exclusive things wants. The row
+                             already carries a chip called "All" and two
+                             controls with that word meaning different things
+                             is one word too many. --}}
+                        @foreach (['android', 'ios', 'desktop'] as $kind)
+                            <button type="button" class="wall-devices__btn" :class="device === '{{ $kind }}' && 'is-on'" :aria-pressed="device === '{{ $kind }}'" @click="device = device === '{{ $kind }}' ? 'all' : '{{ $kind }}'" aria-label="{{ __("wall.device.{$kind}") }}">
+                                <svg class="wall-devices__icon" aria-hidden="true"><use href="#ic-{{ $kind }}"/></svg>
+                            </button>
+                        @endforeach
+                    </div>
                 </div>
             @endif
         </div>
@@ -100,49 +126,24 @@
                     <p>{{ __($unplaced ? 'wall.unplaced.body' : 'wall.empty.body') }}</p>
                 </div>
             @else
-                {{-- The pinned offers as a scrolling strip. Not a carousel: no
-                     autoplay, no timer. The browser already operates the track
-                     with a wheel, a swipe, a trackpad and the arrow keys; the
-                     next control is an enhancement that JS hides when it
-                     cannot run.
+                @if ($featuredIndexes !== [])
+                    <section class="wall-rail" x-show="{{ json_encode($featuredIndexes) }}.some((i) => rank[i] > -1)" aria-label="{{ __('wall.featured_offers') }}">
+                        <h2 class="wall-rail__title">{{ __('wall.featured_offers') }}</h2>
 
-                     Absent below two featured offers, because a rail of one is
-                     a card with a scrollbar. Hidden while the search or a chip
-                     is on: a strip of "featured" cards sitting above a filtered
-                     grid and ignoring the query reads as a bug. No `x-cloak` on
-                     that — with JS off there is no filter, so the rail is
-                     simply always there. --}}
-                @if (count($featured) > 1)
-                    <section class="wall-rail" aria-labelledby="wall-rail-h" x-show="q === '' && cat === 'all' && device === 'all'">
-                        <h2 class="wall-rail__h" id="wall-rail-h">{{ __('wall.featured_offers') }}</h2>
-
-                        <div class="wall-rail__frame">
-                            <ul class="wall-rail__track">
-                                @foreach ($featured as $offer)
-                                    <li>@include('wall.partials.card', ['rail' => true])</li>
-                                @endforeach
-                            </ul>
-
-                            <button type="button" class="wall-rail__next" x-cloak @click="railNext" aria-label="{{ __('wall.rail_next') }}">
-                                <span aria-hidden="true"></span>
-                            </button>
-                        </div>
+                        <ul class="wall-rail__scroller">
+                            @foreach ($featuredIndexes as $i)
+                                <li x-show="rank[{{ $i }}] > -1">
+                                    @include('wall.partials.card', ['offer' => $offers[$i], 'rail' => true])
+                                </li>
+                            @endforeach
+                        </ul>
                     </section>
                 @endif
 
                 <div class="wall-catalogue">
-                    <div class="wall-catalogue__lede">
-                        <h2 class="wall-catalogue__h">{{ __('wall.all_offers') }}</h2>
+                    <h2 class="wall-catalogue__title">{{ __('wall.all_offers') }}</h2>
 
-                        {{-- Only while a filter is on. Unfiltered it would say
-                             "All Offers · 9 offers", and a count the user did
-                             not ask for is one more thing to read. --}}
-                        <p class="wall-header__count num" x-cloak x-show="hits !== list.length">
-                            <span x-text="hits">{{ count($offers) }}</span> / {{ count($offers) }}
-                        </p>
-                    </div>
-
-                    <div class="wall-tools">
+                    <div class="wall-catalogue__tools">
                         <label class="wall-search">
                             <span class="wall-sr">{{ __('wall.search') }}</span>
 
@@ -159,20 +160,6 @@
                                 </svg>
                             </button>
                         </label>
-
-                        {{-- Client-side, like the chips: the list is already on
-                             the page. Hidden until Alpine boots, so a no-JS
-                             reader is not left with a control that does nothing. --}}
-                        <div class="wall-devices" role="group" aria-label="{{ __('wall.filter.device') }}" x-cloak>
-                            <button type="button" class="wall-devices__btn" :class="device === 'all' && 'is-on'" :aria-pressed="device === 'all'" @click="device = 'all'" aria-label="{{ __('wall.filter.all_devices') }}">
-                                {{ __('wall.all') }}
-                            </button>
-                            @foreach (['android', 'ios', 'desktop'] as $kind)
-                                <button type="button" class="wall-devices__btn" :class="device === '{{ $kind }}' && 'is-on'" :aria-pressed="device === '{{ $kind }}'" @click="device = '{{ $kind }}'" aria-label="{{ __("wall.device.{$kind}") }}">
-                                    <svg class="wall-devices__icon" aria-hidden="true"><use href="#ic-{{ $kind }}"/></svg>
-                                </button>
-                            @endforeach
-                        </div>
 
                         {{-- Server-side, as a form submit — not a client-side reorder.
                              The filter above may hide DOM nodes, and that is fine; a
@@ -202,6 +189,13 @@
                         </form>
                     </div>
                 </div>
+
+                {{-- The count, on its own line and only while a filter is on.
+                     Unfiltered it would restate the length of a list the user
+                     is already looking at. --}}
+                <p class="wall-count num" x-cloak x-show="hits !== list.length">
+                    <span x-text="hits">{{ count($offers) }}</span> / {{ count($offers) }}
+                </p>
 
                 <ul class="wall-grid">
                     @foreach ($offers as $offer)

@@ -2,13 +2,20 @@
     /** @var array<string, mixed> $offer */
     /** @var string $params */
     /** @var string $currency */
-    /** @var bool $rail */
+    /** @var bool $rail     Kept for callers; the featured edge now travels with the offer. */
     /** @var bool $preview */
     /** @var bool $compact */
+    /** @var bool $bare     Figure only — no sign, no currency label. The landing mocks. */
 
     $rail = $rail ?? false;
     $preview = $preview ?? false;
     $compact = $compact ?? false;
+    $bare = $bare ?? false;
+
+    // The featured edge travels with the offer rather than with the container
+    // it is rendered in. A pinned row keeps its mark wherever it lands, which
+    // is what makes a filtered list still honest about what is pinned.
+    $lead = ($offer['is_featured'] ?? false) && ! ($offer['is_test'] ?? false);
 
     $iconSrc = $offer['icon_src'] ?? null;
 
@@ -16,30 +23,38 @@
         $iconSrc = ($offer['has_icon'] ?? false) ? '/img/offer/'.$offer['id'] : null;
     }
 
-    // Test inventory says only that. Anything else can legitimately carry both
-    // tags. The rail is the featured treatment already, so its cards drop the
-    // chips — the reference strip is icon, name, note, reward, and nothing else.
-    $tags = $offer['is_test']
-        ? [[__('wall.test_badge'), true]]
+    // Everything that is not the name, the instruction or the figure, on one
+    // line, joined by a separator. It used to be two pill badges plus a device
+    // strip plus a headcount, all competing with the reward for the same row;
+    // a row can carry one loud thing and the figure is it.
+    //
+    // Test inventory says only that. Anything else can legitimately carry both.
+    $meta = $offer['is_test']
+        ? [__('wall.test_badge')]
         : array_values(array_filter([
-            $offer['is_featured'] ? [__('wall.featured'), true] : null,
+            $offer['is_featured'] ? __('wall.featured') : null,
             ($offer['goal_count'] ?? 0) > 1
-                ? [trans_choice('wall.steps', $offer['goal_count'], ['count' => $offer['goal_count']]), false]
-                : ($offer['is_multi_reward'] ? [__('wall.multi_reward'), false] : null),
+                ? trans_choice('wall.steps', $offer['goal_count'], ['count' => $offer['goal_count']])
+                : ($offer['is_multi_reward'] ? __('wall.multi_reward') : null),
         ]));
 @endphp
 
-{{-- One card component, two containers: the grid and the featured rail render
-     this same file. A second card template for the rail drifts — the first
-     change to the reward pill lands in one of them and not the other.
+{{-- One card component, three containers: the grid, the publisher's live
+     preview and the landing mock render this same file. A second template
+     drifts — the first change to the figure lands in one of them and not the
+     others.
 
      A link to the offer's own page, not a div with a click handler: focusable,
      middle-clickable, and readable by a screen reader as what it is. The dialog
      is an interception of this same URL. --}}
+@php
+    $cardClass = 'wall-card';
+    $cardClass .= $rail ? ' wall-card--rail' : ($lead ? ' wall-card--lead' : '');
+@endphp
 @if ($preview)
-<div class="wall-card @if ($rail) wall-card--rail @endif">
+<div class="{{ $cardClass }}">
 @else
-<a class="wall-card @if ($rail) wall-card--rail @endif"
+<a class="{{ $cardClass }}"
    href="{{ route('wall.offer', $offer['id']) }}?{{ $params }}"
    @click="open">
 @endif
@@ -56,40 +71,46 @@
     </span>
 
     <span class="wall-card__body">
-        <span class="wall-card__head">
-            <span class="wall-card__name">{{ $offer['name'] }}</span>
-            @if (! $rail && ! $compact && $tags !== [])
-                <span class="wall-tags">
-                    @foreach ($tags as [$label, $accent])
-                        <span class="wall-tag @if ($accent) wall-tag--accent @endif">{{ $label }}</span>
-                    @endforeach
-                </span>
-            @endif
-        </span>
+        <span class="wall-card__name">{{ $offer['name'] }}</span>
 
         @if (filled($offer['instructions']))
             <span class="wall-card__note">{{ $offer['instructions'] }}</span>
         @endif
 
         @if (! $rail && ! $compact)
-            @include('wall.partials.facts', [
-                'devices' => $offer['devices'] ?? [],
-                'people' => (int) ($offer['people'] ?? 0),
-            ])
+            <span class="wall-card__meta">
+                @foreach ($meta as $label)
+                    <span class="wall-card__meta-item">{{ $label }}</span>
+                @endforeach
+
+                @include('wall.partials.facts', [
+                    'devices' => $offer['devices'] ?? [],
+                    'people' => (int) ($offer['people'] ?? 0),
+                ])
+            </span>
         @endif
     </span>
 
-    {{-- The whole card is still the link; the pill is the affordance drawn,
-         never a second control. --}}
+    {{-- The ledger column. Fixed width so every figure on the list shares one
+         inline-end edge and the user compares by glance rather than by
+         reading. No chevron beside it: the whole row is the link, so an arrow
+         is decoration standing where the only number belongs. --}}
     <span class="wall-card__end">
-        <span class="wall-reward wall-reward--cta">
+        <span class="wall-reward">
             @if (($offer['goal_count'] ?? 0) > 1)
                 <span class="wall-reward__upto">{{ __('wall.up_to') }}</span>
             @endif
-            <span class="wall-reward__row">
+
+            @if ($bare)
+                {{-- The design board draws the mock's figure bare — "640", not
+                     "+640 COINS" — because the card's own header already names
+                     the currency. Only the landing asks for this; the live wall
+                     and the publisher preview keep the sign and the label. --}}
+                <span class="num wall-reward__value">{{ $offer['reward_label'] }}</span>
+            @else
                 <span class="num wall-reward__value">+{{ $offer['reward_label'] }}</span>
                 <span class="wall-reward__currency">{{ $currency }}</span>
-            </span>
+            @endif
         </span>
     </span>
 @if ($preview)

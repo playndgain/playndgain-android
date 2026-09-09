@@ -186,6 +186,7 @@ class PublisherResource extends Resource
                         ->requiresConfirmation()
                         ->modalDescription('You will be signed in as this publisher. The session is audit-logged and shows a banner until you stop.')
                         ->visible(fn (Publisher $record): bool => $record->status !== PublisherStatus::Banned
+                            && $record->status !== PublisherStatus::Suspended
                             && ! session()->has(ImpersonationController::SESSION_KEY))
                         ->action(function (Publisher $record) {
                             if (session()->has(ImpersonationController::SESSION_KEY)) {
@@ -223,8 +224,19 @@ class PublisherResource extends Resource
 
                             Notification::make()->title('Adjustment written')->success()->send();
                         }),
-                ]),
+                ])
+                    // Approve, suspend, ban, impersonate and a balance
+                    // adjustment live behind this trigger. Named and
+                    // tooltipped like the publisher panel's group — an
+                    // unlabelled dot-menu over actions this consequential
+                    // tells an admin nothing about what is inside.
+                    ->label('Manage')
+                    ->icon('lucide-ellipsis')
+                    ->tooltip('Manage publisher'),
             ])
+            ->emptyStateHeading('No publishers yet')
+            ->emptyStateDescription('Publishers appear here once someone registers and their account is reviewed.')
+            ->emptyStateIcon('lucide-users')
             ->defaultSort('created_at', 'desc');
     }
 

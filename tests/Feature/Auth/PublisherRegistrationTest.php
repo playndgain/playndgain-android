@@ -42,7 +42,7 @@ it('serves the registration page', function () {
     $this->get('/dashboard/register')
         ->assertOk()
         ->assertSee('Apply as a publisher')
-        ->assertSee('Every cent that reaches your users', false)
+        ->assertSee('Turn playtime into payouts.', false)
         ->assertDontSee('Your revenue share')
         ->assertDontSee('of every payout is yours');
 });
@@ -89,7 +89,7 @@ it('reads the answers back on the review step, and prices the currency rate', fu
         ->assertSee('1,000 Coins per $1')
         // The line that prevents the most common setup error: 50c at 70% share
         // over 1000 units per $1. Wrong here means every user is credited wrong.
-        ->assertSee('credits your user 350 Coins');
+        ->assertSee('credits your player 350 Coins');
 });
 
 /**

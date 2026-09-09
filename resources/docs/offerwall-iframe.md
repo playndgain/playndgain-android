@@ -1,9 +1,9 @@
 ---
-title: Offerwall iframe
-description: The primary integration. One iframe, two required parameters.
+title: Embedding the wall
+description: One iframe, two required parameters, and the four attributes that decide whether clicks work.
 ---
 
-The wall is hosted by us and embedded by you. There is no SDK, no npm package and no script tag.
+The wall is a page we host and you embed. There is no SDK, no package to install and no script tag.
 
 ## The embed
 
@@ -14,57 +14,62 @@ The wall is hosted by us and embedded by you. There is no SDK, no npm package an
   height="800"
   frameborder="0"
   allow="clipboard-write"
-  title="Rewards"></iframe>
+  title="Earn coins"></iframe>
 ```
 
-Two parameters are required: `appid` and `userid`. Everything else is optional and listed in [URL parameters](/docs/url-parameters).
+`appid` and `userid` are required. Everything else is optional and typed in [URL parameters](/docs/url-parameters).
+
+Give the frame a `title` your players would recognise. It is what a screen reader announces when focus enters the wall, and "iframe" is not an answer.
 
 ## Sizing
 
-The wall is mobile-first: one column, two at 640 px, three at 1024 px. It scrolls internally, so a fixed height is fine and is what most publishers use.
+The wall is mobile first: one column, two at 640px, three at 1024px. It scrolls inside itself, so a fixed height is fine and is what most publishers use.
 
-- **Minimum usable width:** 320 px.
-- **Recommended height:** 600–900 px, or `100%` of a container you control.
+- **Minimum usable width:** 320px
+- **Recommended height:** 600px to 900px, or `100%` of a container you control
 
-The wall does not post its height to the parent frame. If you want to size the frame to the content, give it a viewport-relative height instead:
+The wall does not post its height to the parent frame. To size the frame to the viewport instead, give it a viewport-relative height:
 
 ```html
 <iframe src="{APP_URL}/wall?appid=YOUR_APP_ID&userid=USER_ID"
         style="width:100%;height:calc(100vh - 120px);border:0"></iframe>
 ```
 
-## Permissions
+## The attributes that matter
 
-`allow="clipboard-write"` lets an offer's instructions copy a promo code. Leave it out and the copy buttons inside offer instructions silently do nothing.
+`allow="clipboard-write"` lets an offer's instructions copy a promo code. Leave it off and the copy buttons inside offer instructions do nothing, silently.
 
-If you use `sandbox`, you must include at least:
+If you use `sandbox`, it must include at least these four:
 
 ```txt
-sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation-by-user-activation"
+sandbox="allow-scripts allow-same-origin allow-popups allow-top-navigation-by-user-activation"
 ```
 
-`allow-popups` and `allow-top-navigation-by-user-activation` matter: offer clicks navigate to a third-party tracking URL. Without them the click goes nowhere and the user sees a blank frame.
+The last two are the ones people miss. An offer click navigates to a third-party tracking URL, and without those permissions the click goes nowhere and your player is looking at a frame that appears broken.
 
-## In a mobile app
+## Inside a mobile app
 
-Use a system web view — `WKWebView` on iOS, `WebView` on Android — with JavaScript and third-party cookies enabled. Point it at the same URL.
+Use a system web view: `WKWebView` on iOS, `WebView` on Android, with JavaScript and third-party cookies enabled. Same URL.
 
-Do not open the wall in an in-app browser that blocks redirects to app stores. Most CPI offers end in a store link, and a web view that cannot follow it converts at zero.
+Do not use an in-app browser that blocks redirects to the app stores. Most install offers end at a store link, and a web view that cannot follow one converts at zero while looking like it works.
 
-## What not to do
+## Four things not to do
 
-- **Do not put the secret key in the URL.** The iframe URL is client-side. If your app requires signed wall URLs, the signature is computed **on your server** — see [Signed URLs](/docs/signed-urls).
-- **Do not reuse one `userid` across users.** Everyone gets the same rewards and your fraud score collapses.
-- **Do not cache the iframe HTML.** The wall sends `Cache-Control: private, no-store`; honour it. Offers change and completed offers disappear per user.
-- **Do not open the wall in a new window from an ad.** That is incentivised pop traffic and it is [prohibited](/docs/prohibited-traffic).
+**Do not put the secret key in the URL.** The wall URL is client-side and readable by anyone. If your app requires signed wall URLs, the signature is computed on your server. See [Signed wall URLs](/docs/signed-urls).
 
-## Consent
+**Do not reuse one `userid` across players.** They all see the same completed offers, they all get each other's rewards, and your fraud score collapses.
 
-When the resolved country requires consent — the EU-27, the UK and the EEA — the wall renders a consent screen before any offer. Accepting stores consent per `(app, end user)`, so it survives an iframe reload. Declining shows an explanation and **no offers**.
+**Do not cache the wall HTML.** It is sent with `Cache-Control: private, no-store` because the offer list is per player and completed offers disappear from it. Honour that and do not layer your own cache on top.
 
-You do not need to build anything for this. You do need to know that a European user who declines will see an empty wall, and that this is correct behaviour rather than a bug.
+**Do not open the wall from an ad or a pop.** That is incentivised pop traffic, and it voids the conversions it produces. See [Traffic rules](/docs/traffic-quality).
 
-We are **not** a registered IAB TCF vendor and this page does not claim TCF compliance.
+## Consent in Europe
+
+When the resolved country is in the EU-27, the UK or the EEA, the wall shows a consent screen before any offer. Accepting stores consent per app and player, so it survives a reload. Declining shows an explanation and no offers.
+
+You do not build anything for this. You do need to know that a European player who declines sees an empty wall, and that this is the wall working rather than failing.
+
+We are not a registered IAB TCF vendor and this page does not claim TCF compliance.
 
 ## Next
 

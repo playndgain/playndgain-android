@@ -1,0 +1,466 @@
+- generic [active] [ref=f3e1]:
+  - link "Skip to content" [ref=f3e3] [cursor=pointer]:
+    - /url: "#fi-main-content"
+  - navigation "Topbar" [ref=f3e5]:
+    - link "PLAYNDGAIN Admin" [ref=f3e7] [cursor=pointer]:
+      - /url: https://playndgain.test/admin
+      - generic [ref=f3e14]:
+        - generic [ref=f3e15]: PLAYNDGAIN
+        - generic [ref=f3e16]: Admin
+    - generic [ref=f3e17]:
+      - button "Admin panel" [ref=f3e21] [cursor=pointer]
+      - generic [ref=f3e26]:
+        - generic [ref=f3e27]: Global search
+        - searchbox "Global search" [ref=f3e33]
+      - button "User menu" [ref=f3e36] [cursor=pointer]:
+        - img "Avatar of PLAYNDGAIN Admin" [ref=f3e37]
+  - generic [ref=f3e38]:
+    - navigation "Sidebar navigation" [ref=f3e41]:
+      - list [ref=f3e42]:
+        - listitem [ref=f3e43]:
+          - list [ref=f3e44]:
+            - listitem [ref=f3e45]:
+              - link "Dashboard" [ref=f3e46] [cursor=pointer]:
+                - /url: https://playndgain.test/admin
+        - listitem [ref=f3e50]:
+          - generic [ref=f3e51] [cursor=pointer]:
+            - generic [ref=f3e52]: Supply
+            - button "Supply" [expanded] [ref=f3e53]
+          - list [ref=f3e56]:
+            - listitem [ref=f3e57]:
+              - link "Networks" [ref=f3e58] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/networks
+            - listitem [ref=f3e62]:
+              - link "Offers" [ref=f3e63] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/offers
+            - listitem [ref=f3e67]:
+              - link "Sync log" [ref=f3e68] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/network-syncs
+        - listitem [ref=f3e72]:
+          - generic [ref=f3e73] [cursor=pointer]:
+            - generic [ref=f3e74]: Publishers
+            - button "Publishers" [expanded] [ref=f3e75]
+          - list [ref=f3e78]:
+            - listitem [ref=f3e79]:
+              - link "Publishers" [ref=f3e80] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/publishers
+            - listitem [ref=f3e84]:
+              - link "Apps" [ref=f3e85] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/apps
+            - listitem [ref=f3e89]:
+              - link "Signup queue" [ref=f3e90] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/signup-queue
+        - listitem [ref=f3e94]:
+          - generic [ref=f3e95] [cursor=pointer]:
+            - generic [ref=f3e96]: Money
+            - button "Money" [expanded] [ref=f3e97]
+          - list [ref=f3e100]:
+            - listitem [ref=f3e101]:
+              - link "Conversions" [ref=f3e102] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/conversions
+            - listitem [ref=f3e106]:
+              - link "Withdrawals" [ref=f3e107] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/withdrawals
+            - listitem [ref=f3e111]:
+              - link "Ledger" [ref=f3e112] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/ledger-entries
+            - listitem [ref=f3e116]:
+              - link "Profit history" [ref=f3e117] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/profit-history
+        - listitem [ref=f3e121]:
+          - generic [ref=f3e122] [cursor=pointer]:
+            - generic [ref=f3e123]: Risk
+            - button "Risk" [expanded] [ref=f3e124]
+          - list [ref=f3e127]:
+            - listitem [ref=f3e128]:
+              - link "Protection" [ref=f3e129] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/protection
+            - listitem [ref=f3e133]:
+              - link "Review queue" [ref=f3e134] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/review-queue
+            - listitem [ref=f3e138]:
+              - link "Fraud Rules" [ref=f3e139] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/fraud-rules
+            - listitem [ref=f3e143]:
+              - link "Fraud Events" [ref=f3e144] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/fraud-events
+            - listitem [ref=f3e148]:
+              - link "Banned users" [ref=f3e149] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/banned-end-users
+        - listitem [ref=f3e153]:
+          - generic [ref=f3e154] [cursor=pointer]:
+            - generic [ref=f3e155]: Logs
+            - button "Logs" [expanded] [ref=f3e156]
+          - list [ref=f3e159]:
+            - listitem [ref=f3e160]:
+              - link "Offerwall clicks" [ref=f3e161] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/offer-clicks
+            - listitem [ref=f3e165]:
+              - link "Incoming Postbacks" [ref=f3e166] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/incoming-postbacks
+            - listitem [ref=f3e170]:
+              - link "Outgoing Postbacks" [ref=f3e171] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/outgoing-postbacks
+            - listitem [ref=f3e175]:
+              - link "Audit Logs" [ref=f3e176] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/audit-logs
+        - listitem [ref=f3e180]:
+          - generic [ref=f3e181] [cursor=pointer]:
+            - generic [ref=f3e182]: System
+            - button "System" [expanded] [ref=f3e183]
+          - list [ref=f3e186]:
+            - listitem [ref=f3e187]:
+              - link "Settings" [ref=f3e188] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/settings
+            - listitem [ref=f3e193]:
+              - link "Admin users" [ref=f3e194] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/admin-users
+            - listitem [ref=f3e198]:
+              - link "Health" [ref=f3e199] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/health
+            - listitem [ref=f3e203]:
+              - link "Announcements" [ref=f3e204] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/announcements
+            - listitem [ref=f3e208]:
+              - link "Sent mail" [ref=f3e209] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/emails
+    - main [ref=f3e214]:
+      - generic [ref=f3e216]:
+        - generic [ref=f3e217]:
+          - generic [ref=f3e218]:
+            - navigation "Breadcrumb" [ref=f3e219]:
+              - list [ref=f3e220]:
+                - listitem [ref=f3e221]:
+                  - link "Offers" [ref=f3e222] [cursor=pointer]:
+                    - /url: https://playndgain.test/admin/offers
+                - listitem [ref=f3e223]:
+                  - generic [ref=f3e226]: List
+            - heading "Offers" [level=1] [ref=f3e227]
+          - button "Add offer" [ref=f3e230] [cursor=pointer]
+        - generic [ref=f3e240]:
+          - generic [ref=f3e243]:
+            - generic [ref=f3e244]:
+              - generic [ref=f3e245]: Search
+              - searchbox "Search" [ref=f3e251]
+            - button "Filter" [ref=f3e254] [cursor=pointer]:
+              - generic [ref=f3e257]: "0"
+          - table [ref=f3e260]:
+            - rowgroup [ref=f3e261]:
+              - row [ref=f3e262]:
+                - columnheader [ref=f3e263]
+                - columnheader [ref=f3e264]:
+                  - button "Name" [ref=f3e265] [cursor=pointer]
+                - columnheader [ref=f3e268]:
+                  - button "Network" [ref=f3e269] [cursor=pointer]
+                - columnheader [ref=f3e272]:
+                  - button "Payout" [ref=f3e273] [cursor=pointer]
+                - columnheader "Conversion type" [ref=f3e276]
+                - columnheader "Geo" [ref=f3e277]
+                - columnheader "Devices" [ref=f3e278]
+                - columnheader "Status" [ref=f3e279]
+                - columnheader [ref=f3e280]:
+                  - button "Clicks 7d" [ref=f3e281] [cursor=pointer]
+                - columnheader [ref=f3e284]:
+                  - button "Conv 7d" [ref=f3e285] [cursor=pointer]
+                - columnheader [ref=f3e288]:
+                  - button "Last seen" [ref=f3e289] [cursor=pointer]
+                - columnheader "Actions" [ref=f3e292]
+            - rowgroup [ref=f3e293]:
+              - row [ref=f3e294]:
+                - cell [ref=f3e295]
+                - cell [ref=f3e296]
+                - cell [ref=f3e297]:
+                  - generic [ref=f3e302]:
+                    - generic [ref=f3e303]: Network
+                    - combobox "Network" [ref=f3e307]:
+                      - option "All" [selected]
+                      - option "AdGate"
+                      - option "Admantum"
+                      - option "Adscend Media"
+                      - option "Adtogame"
+                      - option "Ayet Studios"
+                      - option "ClickWall"
+                      - option "Demo Network"
+                      - option "GemiAd"
+                      - option "HangMyAds"
+                      - option "Klink"
+                      - option "Monlix"
+                      - option "MyChips"
+                      - option "Notik"
+                      - option "Offery"
+                      - option "OGAds"
+                      - option "PLAYNDGAIN (house)"
+                      - option "Skylup"
+                      - option "Torox"
+                - cell "Min Max" [ref=f3e308]:
+                  - generic [ref=f3e310]:
+                    - generic [ref=f3e313]:
+                      - generic [ref=f3e314]: Min
+                      - spinbutton "Min" [ref=f3e318]
+                    - generic [ref=f3e321]:
+                      - generic [ref=f3e322]: Max
+                      - spinbutton "Max" [ref=f3e326]
+                - cell [ref=f3e327]:
+                  - generic [ref=f3e332]:
+                    - generic [ref=f3e333]: Conversion type
+                    - combobox "Conversion type" [ref=f3e337]:
+                      - option "All" [selected]
+                      - option "Cpi"
+                      - option "Cpa"
+                      - option "Cpl"
+                      - option "Survey"
+                      - option "Signup"
+                      - option "Purchase"
+                      - option "Other"
+                - cell [ref=f3e338]
+                - cell [ref=f3e339]
+                - cell [ref=f3e340]:
+                  - generic [ref=f3e345]:
+                    - generic [ref=f3e346]: Status
+                    - combobox "Status" [ref=f3e350]:
+                      - option "All" [selected]
+                      - option "Active"
+                      - option "Inactive"
+                      - option "Blocked"
+                - cell [ref=f3e351]
+                - cell [ref=f3e352]
+                - cell [ref=f3e353]
+                - cell [ref=f3e354]
+              - row "A very long offer name that has to trunc... demo-12 Demo Network $0.05 cpi all all active 0 0 2 minutes ago View events Actions" [ref=f3e355]:
+                - cell [ref=f3e356]
+                - cell [ref=f3e359]:
+                  - generic [ref=f3e361]:
+                    - paragraph [ref=f3e362]: A very long offer name that has to trunc...
+                    - paragraph [ref=f3e363]: demo-12
+                - cell "Demo Network" [ref=f3e364]
+                - cell "$0.05" [ref=f3e367]
+                - cell "cpi" [ref=f3e370]
+                - cell [ref=f3e374]:
+                  - paragraph [ref=f3e376]: all
+                - cell [ref=f3e377]:
+                  - paragraph [ref=f3e379]: all
+                - cell "active" [ref=f3e380]
+                - cell "0" [ref=f3e384]
+                - cell "0" [ref=f3e387]
+                - cell "2 minutes ago" [ref=f3e390]
+                - cell [ref=f3e393]:
+                  - generic [ref=f3e394]:
+                    - button "View events" [ref=f3e395] [cursor=pointer]
+                    - button "Actions" [ref=f3e401] [cursor=pointer]
+              - row "Duolingo demo-11 Demo Network $0.42 cpi all all active 123 5 2 minutes ago View events Actions" [ref=f3e404]:
+                - cell [ref=f3e405]
+                - cell [ref=f3e408]:
+                  - generic [ref=f3e410]:
+                    - paragraph [ref=f3e411]: Duolingo
+                    - paragraph [ref=f3e412]: demo-11
+                - cell "Demo Network" [ref=f3e413]
+                - cell "$0.42" [ref=f3e416]
+                - cell "cpi" [ref=f3e419]
+                - cell [ref=f3e423]:
+                  - paragraph [ref=f3e425]: all
+                - cell [ref=f3e426]:
+                  - paragraph [ref=f3e428]: all
+                - cell "active" [ref=f3e429]
+                - cell "123" [ref=f3e433]
+                - cell "5" [ref=f3e436]
+                - cell "2 minutes ago" [ref=f3e439]
+                - cell [ref=f3e442]:
+                  - generic [ref=f3e443]:
+                    - button "View events" [ref=f3e444] [cursor=pointer]
+                    - button "Actions" [ref=f3e450] [cursor=pointer]
+              - row "Nubank demo-10 Demo Network $12.40 cpi all all active 118 9 2 minutes ago View events 3 Actions" [ref=f3e453]:
+                - cell [ref=f3e454]
+                - cell [ref=f3e457]:
+                  - generic [ref=f3e459]:
+                    - paragraph [ref=f3e460]: Nubank
+                    - paragraph [ref=f3e461]: demo-10
+                - cell "Demo Network" [ref=f3e462]
+                - cell "$12.40" [ref=f3e465]
+                - cell "cpi" [ref=f3e468]
+                - cell [ref=f3e472]:
+                  - paragraph [ref=f3e474]: all
+                - cell [ref=f3e475]:
+                  - paragraph [ref=f3e477]: all
+                - cell "active" [ref=f3e478]
+                - cell "118" [ref=f3e482]
+                - cell "9" [ref=f3e485]
+                - cell "2 minutes ago" [ref=f3e488]
+                - cell [ref=f3e491]:
+                  - generic [ref=f3e492]:
+                    - button "View events 3" [ref=f3e493] [cursor=pointer]:
+                      - generic [ref=f3e496]: View events
+                      - generic [ref=f3e497]: "3"
+                    - button "Actions" [ref=f3e501] [cursor=pointer]
+              - row "Bingo Blitz demo-9 Demo Network $0.11 cpi all all active 0 0 2 minutes ago View events Actions" [ref=f3e504]:
+                - cell [ref=f3e505]
+                - cell [ref=f3e508]:
+                  - generic [ref=f3e510]:
+                    - paragraph [ref=f3e511]: Bingo Blitz
+                    - paragraph [ref=f3e512]: demo-9
+                - cell "Demo Network" [ref=f3e513]
+                - cell "$0.11" [ref=f3e516]
+                - cell "cpi" [ref=f3e519]
+                - cell [ref=f3e523]:
+                  - paragraph [ref=f3e525]: all
+                - cell [ref=f3e526]:
+                  - paragraph [ref=f3e528]: all
+                - cell "active" [ref=f3e529]
+                - cell "0" [ref=f3e533]
+                - cell "0" [ref=f3e536]
+                - cell "2 minutes ago" [ref=f3e539]
+                - cell [ref=f3e542]:
+                  - generic [ref=f3e543]:
+                    - button "View events" [ref=f3e544] [cursor=pointer]
+                    - button "Actions" [ref=f3e550] [cursor=pointer]
+              - row "Temu demo-8 Demo Network $0.29 cpi all all active 108 5 2 minutes ago View events Actions" [ref=f3e553]:
+                - cell [ref=f3e554]
+                - cell [ref=f3e557]:
+                  - generic [ref=f3e559]:
+                    - paragraph [ref=f3e560]: Temu
+                    - paragraph [ref=f3e561]: demo-8
+                - cell "Demo Network" [ref=f3e562]
+                - cell "$0.29" [ref=f3e565]
+                - cell "cpi" [ref=f3e568]
+                - cell [ref=f3e572]:
+                  - paragraph [ref=f3e574]: all
+                - cell [ref=f3e575]:
+                  - paragraph [ref=f3e577]: all
+                - cell "active" [ref=f3e578]
+                - cell "108" [ref=f3e582]
+                - cell "5" [ref=f3e585]
+                - cell "2 minutes ago" [ref=f3e588]
+                - cell [ref=f3e591]:
+                  - generic [ref=f3e592]:
+                    - button "View events" [ref=f3e593] [cursor=pointer]
+                    - button "Actions" [ref=f3e599] [cursor=pointer]
+              - row "Badoo — Dating & Chat demo-7 Demo Network $0.63 cpi all all active 127 6 2 minutes ago View events Actions" [ref=f3e602]:
+                - cell [ref=f3e603]
+                - cell [ref=f3e606]:
+                  - generic [ref=f3e608]:
+                    - paragraph [ref=f3e609]: Badoo — Dating & Chat
+                    - paragraph [ref=f3e610]: demo-7
+                - cell "Demo Network" [ref=f3e611]
+                - cell "$0.63" [ref=f3e614]
+                - cell "cpi" [ref=f3e617]
+                - cell [ref=f3e621]:
+                  - paragraph [ref=f3e623]: all
+                - cell [ref=f3e624]:
+                  - paragraph [ref=f3e626]: all
+                - cell "active" [ref=f3e627]
+                - cell "127" [ref=f3e631]
+                - cell "6" [ref=f3e634]
+                - cell "2 minutes ago" [ref=f3e637]
+                - cell [ref=f3e640]:
+                  - generic [ref=f3e641]:
+                    - button "View events" [ref=f3e642] [cursor=pointer]
+                    - button "Actions" [ref=f3e648] [cursor=pointer]
+              - row "Survey — 8 minutes demo-6 Demo Network $0.87 cpi all all active 122 5 2 minutes ago View events 2 Actions" [ref=f3e651]:
+                - cell [ref=f3e652]
+                - cell [ref=f3e655]:
+                  - generic [ref=f3e657]:
+                    - paragraph [ref=f3e658]: Survey — 8 minutes
+                    - paragraph [ref=f3e659]: demo-6
+                - cell "Demo Network" [ref=f3e660]
+                - cell "$0.87" [ref=f3e663]
+                - cell "cpi" [ref=f3e666]
+                - cell [ref=f3e670]:
+                  - paragraph [ref=f3e672]: all
+                - cell [ref=f3e673]:
+                  - paragraph [ref=f3e675]: all
+                - cell "active" [ref=f3e676]
+                - cell "122" [ref=f3e680]
+                - cell "5" [ref=f3e683]
+                - cell "2 minutes ago" [ref=f3e686]
+                - cell [ref=f3e689]:
+                  - generic [ref=f3e690]:
+                    - button "View events 2" [ref=f3e691] [cursor=pointer]:
+                      - generic [ref=f3e694]: View events
+                      - generic [ref=f3e695]: "2"
+                    - button "Actions" [ref=f3e699] [cursor=pointer]
+              - row "TikTok Lite demo-5 Demo Network $1.44 cpi all all active 120 6 2 minutes ago View events 4 Actions" [ref=f3e702]:
+                - cell [ref=f3e703]
+                - cell [ref=f3e706]:
+                  - generic [ref=f3e708]:
+                    - paragraph [ref=f3e709]: TikTok Lite
+                    - paragraph [ref=f3e710]: demo-5
+                - cell "Demo Network" [ref=f3e711]
+                - cell "$1.44" [ref=f3e714]
+                - cell "cpi" [ref=f3e717]
+                - cell [ref=f3e721]:
+                  - paragraph [ref=f3e723]: all
+                - cell [ref=f3e724]:
+                  - paragraph [ref=f3e726]: all
+                - cell "active" [ref=f3e727]
+                - cell "120" [ref=f3e731]
+                - cell "6" [ref=f3e734]
+                - cell "2 minutes ago" [ref=f3e737]
+                - cell [ref=f3e740]:
+                  - generic [ref=f3e741]:
+                    - button "View events 4" [ref=f3e742] [cursor=pointer]:
+                      - generic [ref=f3e745]: View events
+                      - generic [ref=f3e746]: "4"
+                    - button "Actions" [ref=f3e750] [cursor=pointer]
+              - row "Shopee Shopping demo-4 Demo Network $2.23 cpi all all active 114 5 2 minutes ago View events 2 Actions" [ref=f3e753]:
+                - cell [ref=f3e754]
+                - cell [ref=f3e757]:
+                  - generic [ref=f3e759]:
+                    - paragraph [ref=f3e760]: Shopee Shopping
+                    - paragraph [ref=f3e761]: demo-4
+                - cell "Demo Network" [ref=f3e762]
+                - cell "$2.23" [ref=f3e765]
+                - cell "cpi" [ref=f3e768]
+                - cell [ref=f3e772]:
+                  - paragraph [ref=f3e774]: all
+                - cell [ref=f3e775]:
+                  - paragraph [ref=f3e777]: all
+                - cell "active" [ref=f3e778]
+                - cell "114" [ref=f3e782]
+                - cell "5" [ref=f3e785]
+                - cell "2 minutes ago" [ref=f3e788]
+                - cell [ref=f3e791]:
+                  - generic [ref=f3e792]:
+                    - button "View events 2" [ref=f3e793] [cursor=pointer]:
+                      - generic [ref=f3e796]: View events
+                      - generic [ref=f3e797]: "2"
+                    - button "Actions" [ref=f3e801] [cursor=pointer]
+              - row "Monopoly Go demo-3 Demo Network $5.60 cpi all all active 113 7 2 minutes ago View events Actions" [ref=f3e804]:
+                - cell [ref=f3e805]
+                - cell [ref=f3e808]:
+                  - generic [ref=f3e810]:
+                    - paragraph [ref=f3e811]: Monopoly Go
+                    - paragraph [ref=f3e812]: demo-3
+                - cell "Demo Network" [ref=f3e813]
+                - cell "$5.60" [ref=f3e816]
+                - cell "cpi" [ref=f3e819]
+                - cell [ref=f3e823]:
+                  - paragraph [ref=f3e825]: all
+                - cell [ref=f3e826]:
+                  - paragraph [ref=f3e828]: all
+                - cell "active" [ref=f3e829]
+                - cell "113" [ref=f3e833]
+                - cell "7" [ref=f3e836]
+                - cell "2 minutes ago" [ref=f3e839]
+                - cell [ref=f3e842]:
+                  - generic [ref=f3e843]:
+                    - button "View events" [ref=f3e844] [cursor=pointer]
+                    - button "Actions" [ref=f3e850] [cursor=pointer]
+          - navigation "Pagination navigation" [ref=f3e853]:
+            - generic [ref=f3e854]: Showing 1 to 10 of 12 results
+            - generic [ref=f3e857]:
+              - generic [ref=f3e858]: Per page
+              - combobox "Per page" [ref=f3e861]:
+                - option "5"
+                - option "10" [selected]
+                - option "25"
+                - option "50"
+            - list [ref=f3e862]:
+              - listitem [ref=f3e863]:
+                - button "Go to page 1" [ref=f3e864] [cursor=pointer]:
+                  - generic [ref=f3e865]: "1"
+              - listitem [ref=f3e866]:
+                - button "Go to page 2" [ref=f3e867] [cursor=pointer]:
+                  - generic [ref=f3e868]: "2"
+              - listitem [ref=f3e869]:
+                - button "Next" [ref=f3e870] [cursor=pointer]
+  - generic:
+    - status

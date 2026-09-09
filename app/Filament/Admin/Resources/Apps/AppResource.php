@@ -23,6 +23,7 @@ use App\Filament\Tables\Columns\UserColumn;
 use App\Models\App;
 use App\Models\AuditLog;
 use App\Services\Money\MacroResolver;
+use App\Services\Wall\WallContext;
 use App\Services\Wall\WallGate;
 use App\Support\Contrast;
 use BackedEnum;
@@ -125,13 +126,13 @@ class AppResource extends Resource
                             ->columnSpanFull(),
                     ]),
                     Section::make('Appearance')->columns(2)->schema([
-                        ColorPicker::make('theme.primary')->label('Primary')->default('#F5A524'),
-                        ColorPicker::make('theme.background')->label('Background')->default('#0B0D10'),
-                        ColorPicker::make('theme.text')->label('Text')->default('#F5F7FA'),
+                        ColorPicker::make('theme.primary')->label('Primary')->default(WallContext::DEFAULT_THEME['primary']),
+                        ColorPicker::make('theme.background')->label('Background')->default(WallContext::DEFAULT_THEME['background']),
+                        ColorPicker::make('theme.text')->label('Text')->default(WallContext::DEFAULT_THEME['text']),
                         TextInput::make('theme.radius')
                             ->label('Corner radius (px)')
                             ->numeric()
-                            ->default(12)
+                            ->default(4)
                             ->minValue(0)
                             ->maxValue(40)
                             ->formatStateUsing(fn (mixed $state): ?int => is_scalar($state) ? (int) $state : null)
@@ -195,8 +196,21 @@ class AppResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                ActionGroup::make(self::managementActions()),
+                // Named like the publisher panel's Integration group: this one
+                // holds approve, pause, reject and the wall link, and a bare
+                // dot-menu gives no clue which. A tooltip is the only label an
+                // icon-only trigger gets.
+                ActionGroup::make(self::managementActions())
+                    ->label('Manage')
+                    ->icon('lucide-ellipsis')
+                    ->tooltip('Manage app'),
             ])
+            // Apps arrive by publisher registration, never by an admin — so
+            // the empty state explains where rows come from rather than
+            // offering a create button that canCreate() refuses anyway.
+            ->emptyStateHeading('No apps yet')
+            ->emptyStateDescription('Apps appear here once a publisher creates a placement in their panel.')
+            ->emptyStateIcon('lucide-smartphone')
             ->defaultSort('created_at', 'desc');
     }
 

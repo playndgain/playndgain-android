@@ -16,9 +16,9 @@ it('serves every legal page with its own real content', function (string $slug, 
         ->assertSee("Last updated: {$updated}")
         ->assertSee($marker, escape: false);
 })->with([
-    ['privacy', 'Privacy policy', 'We are not a registered IAB TCF vendor', '2026-08-16'],
-    ['terms', 'Terms of service', 'AdVault is an <strong>offerwall aggregator</strong>', '2026-08-16'],
-    ['publisher-agreement', 'Publisher agreement', 'The default is 70%', '2026-09-01'],
+    ['privacy', 'Privacy policy', 'We are not a registered IAB TCF vendor', '2026-09-01'],
+    ['terms', 'Terms of service', 'PLAYNDGAIN is an <strong>offerwall aggregator</strong>', '2026-09-01'],
+    ['publisher-agreement', 'Publisher agreement', 'Each offer carries a payout', '2026-09-01'],
 ]);
 
 it('404s a legal slug that is not one of the three', function (string $slug) {
@@ -28,17 +28,45 @@ it('404s a legal slug that is not one of the three', function (string $slug) {
 it('keeps the payout figures identical to the payout terms documentation', function () {
     $agreement = $this->get('/legal/publisher-agreement')->getContent();
 
-    foreach (['70%', 'start of the next calendar month', '$20'] as $figure) {
+    foreach (['start of the next calendar month', '$20'] as $figure) {
         expect($agreement)->toContain($figure);
     }
 
-    // Same three figures, same meaning, in the page a developer reads instead.
-    $docs = $this->get('/docs/payout-terms')->getContent();
+    // Same figures, same meaning, in the page a developer reads instead.
+    $payouts = $this->get('/docs/statements-and-payouts')->getContent();
 
-    foreach (['70%', 'start of the next calendar month', '$20'] as $figure) {
-        expect($docs)->toContain($figure);
+    foreach (['start of the next calendar month', '$20'] as $figure) {
+        expect($payouts)->toContain($figure);
     }
 });
+
+/**
+ * The revenue share is a per-publisher commercial term. A rate on a public
+ * page anchors every negotiation after it and tells a publisher on a different
+ * rate exactly where they stand, so no public surface states one.
+ */
+it('never states a revenue share on a public page', function (string $path) {
+    $html = (string) $this->get($path)->getContent();
+
+    // Visible text only. A Tailwind width utility is written `w-[70%]`, and
+    // matching the raw HTML would fail on a gradient stop rather than on a rate.
+    $text = strip_tags((string) preg_replace('#<(script|style)\b[^>]*>.*?</\1>#is', ' ', $html));
+
+    expect($text)
+        ->not->toContain('revenue share')
+        ->not->toContain('Revenue share')
+        ->not->toContain('70%')
+        ->not->toContain('30%')
+        ->not->toContain('our cut');
+})->with([
+    '/',
+    '/about',
+    '/legal/publisher-agreement',
+    '/legal/terms',
+    '/docs/your-payout',
+    '/docs/quick-start',
+    '/docs/introduction',
+]);
 
 it('states what a deletion request does not erase', function () {
     // The retention basis is the one claim on the privacy page that the code
@@ -65,5 +93,5 @@ it('renders the legal pages inside the site chrome', function () {
         // the Markdown these pages share a parser with is also styled by the
         // same rules rather than by a second sheet that starts identical.
         ->assertSee('.doc-prose h2', escape: false)
-        ->assertSee('AdVault');
+        ->assertSee('PLAYNDGAIN');
 });

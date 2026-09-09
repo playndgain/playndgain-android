@@ -76,7 +76,8 @@ The core. Nothing else matters until this is right.
 
 Everything in [07-admin-panel.md](07-admin-panel.md).
 
-- [ ] Statistics dashboard reading `daily_stats`
+- [x] Statistics dashboard reading `daily_stats`
+- [x] Admin Analytics (`/admin/analytics`) — filtered money, supply, chargebacks, fraud sources
 - [ ] Networks (credentials form, test connection, sync now)
 - [ ] Offers, publishers, apps, signup queue
 - [ ] Conversions, withdrawals queue, ledger, profit history

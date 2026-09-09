@@ -1,6 +1,6 @@
 # 02 — Network Adapters
 
-How AdVault talks to partner ad networks. One interface, many drivers, zero special cases leaking into the rest of the app.
+How PLAYNDGAIN talks to partner ad networks. One interface, many drivers, zero special cases leaking into the rest of the app.
 
 ---
 
@@ -69,7 +69,7 @@ abstract class AbstractDriver implements NetworkDriver
     {
         return Http::timeout(30)
             ->retry(3, 200, throw: false)
-            ->withUserAgent('AdVault/1.0');
+            ->withUserAgent('PLAYNDGAIN/1.0');
     }
 }
 ```

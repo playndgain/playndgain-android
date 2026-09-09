@@ -34,6 +34,19 @@ class NotikDriver extends AbstractDriver
     /** Their click/session slot — iframe docs, postback `s1`. */
     private const SUBID_PARAM = 's1';
 
+    /**
+     * The placeholder tokens catalogue links arrive with.
+     * Notik API responses ship `[user_id]` (or `[USER_ID]`, `{user_id}`, `USER_ID_HERE`).
+     */
+    private const USER_PLACEHOLDERS = [
+        '[USER_ID]' => '{click_id}',
+        '[user_id]' => '{click_id}',
+        '{USER_ID}' => '{click_id}',
+        '{user_id}' => '{click_id}',
+        'USER_ID_HERE' => '{click_id}',
+        '{{userid}}' => '{click_id}',
+    ];
+
     public static function key(): string
     {
         return 'notik';
@@ -157,7 +170,12 @@ class NotikDriver extends AbstractDriver
 
     public function buildTrackingUrl(Offer $offer, string $clickId): string
     {
-        return str_replace('{click_id}', $clickId, $offer->tracking_url);
+        // Through the same helper the catalogue went through, not a bare
+        // str_replace. A stored link with no macro in it — hand-edited, or
+        // synced before this driver normalized links — would otherwise be
+        // handed to the user untouched, and every conversion off it comes back
+        // with a blank subid that matches no click.
+        return str_replace('{click_id}', $clickId, $this->withSubIdMacro($offer->tracking_url));
     }
 
     /**
@@ -238,6 +256,12 @@ class NotikDriver extends AbstractDriver
 
     private function withSubIdMacro(string $link): string
     {
+        $link = str_replace(
+            array_keys(self::USER_PLACEHOLDERS),
+            array_values(self::USER_PLACEHOLDERS),
+            $link,
+        );
+
         if (str_contains($link, self::SUBID_PARAM.'={click_id}')) {
             return $link;
         }

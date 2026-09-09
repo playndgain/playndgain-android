@@ -54,7 +54,7 @@
         margin-top: 22px;
         padding: 10px 12px;
         background: #f4f4f4;
-        border-left: 3px solid #F5A524;
+        border-left: 3px solid #DFC08A;
     }
     .close { margin-top: 22px; color: #333; }
     .sign { margin-top: 16px; }

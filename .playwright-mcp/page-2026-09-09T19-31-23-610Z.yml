@@ -1,0 +1,223 @@
+- generic [active] [ref=f5e1]:
+  - link "Skip to content" [ref=f5e3] [cursor=pointer]:
+    - /url: "#fi-main-content"
+  - navigation "Topbar" [ref=f5e5]:
+    - link "PLAYNDGAIN Admin" [ref=f5e7] [cursor=pointer]:
+      - /url: https://playndgain.test/admin
+      - generic [ref=f5e14]:
+        - generic [ref=f5e15]: PLAYNDGAIN
+        - generic [ref=f5e16]: Admin
+    - generic [ref=f5e17]:
+      - button "Admin panel" [ref=f5e21] [cursor=pointer]
+      - generic [ref=f5e26]:
+        - generic [ref=f5e27]: Global search
+        - searchbox "Global search" [ref=f5e33]
+      - button "User menu" [ref=f5e36] [cursor=pointer]:
+        - img "Avatar of PLAYNDGAIN Admin" [ref=f5e37]
+  - generic [ref=f5e38]:
+    - navigation "Sidebar navigation" [ref=f5e41]:
+      - list [ref=f5e42]:
+        - listitem [ref=f5e43]:
+          - list [ref=f5e44]:
+            - listitem [ref=f5e45]:
+              - link "Dashboard" [ref=f5e46] [cursor=pointer]:
+                - /url: https://playndgain.test/admin
+        - listitem [ref=f5e50]:
+          - generic [ref=f5e51] [cursor=pointer]:
+            - generic [ref=f5e52]: Overview
+            - button "Overview" [expanded] [ref=f5e53]
+          - list [ref=f5e56]:
+            - listitem [ref=f5e57]:
+              - link "Analytics" [ref=f5e58] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/analytics
+        - listitem [ref=f5e62]:
+          - generic [ref=f5e63] [cursor=pointer]:
+            - generic [ref=f5e64]: Supply
+            - button "Supply" [expanded] [ref=f5e65]
+          - list [ref=f5e68]:
+            - listitem [ref=f5e69]:
+              - link "Networks" [ref=f5e70] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/networks
+            - listitem [ref=f5e74]:
+              - link "Offers" [ref=f5e75] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/offers
+            - listitem [ref=f5e79]:
+              - link "Sync log" [ref=f5e80] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/network-syncs
+        - listitem [ref=f5e84]:
+          - generic [ref=f5e85] [cursor=pointer]:
+            - generic [ref=f5e86]: Publishers
+            - button "Publishers" [expanded] [ref=f5e87]
+          - list [ref=f5e90]:
+            - listitem [ref=f5e91]:
+              - link "Publishers" [ref=f5e92] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/publishers
+            - listitem [ref=f5e96]:
+              - link "Apps" [ref=f5e97] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/apps
+            - listitem [ref=f5e101]:
+              - link "Signup queue" [ref=f5e102] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/signup-queue
+        - listitem [ref=f5e106]:
+          - generic [ref=f5e107] [cursor=pointer]:
+            - generic [ref=f5e108]: Money
+            - button "Money" [expanded] [ref=f5e109]
+          - list [ref=f5e112]:
+            - listitem [ref=f5e113]:
+              - link "Conversions" [ref=f5e114] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/conversions
+            - listitem [ref=f5e118]:
+              - link "Withdrawals" [ref=f5e119] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/withdrawals
+            - listitem [ref=f5e123]:
+              - link "Ledger" [ref=f5e124] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/ledger-entries
+            - listitem [ref=f5e128]:
+              - link "Profit history" [ref=f5e129] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/profit-history
+        - listitem [ref=f5e133]:
+          - generic [ref=f5e134] [cursor=pointer]:
+            - generic [ref=f5e135]: Risk
+            - button "Risk" [expanded] [ref=f5e136]
+          - list [ref=f5e139]:
+            - listitem [ref=f5e140]:
+              - link "Protection" [ref=f5e141] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/protection
+            - listitem [ref=f5e145]:
+              - link "Review queue" [ref=f5e146] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/review-queue
+            - listitem [ref=f5e150]:
+              - link "Fraud Rules" [ref=f5e151] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/fraud-rules
+            - listitem [ref=f5e155]:
+              - link "Fraud Events" [ref=f5e156] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/fraud-events
+            - listitem [ref=f5e160]:
+              - link "Banned users" [ref=f5e161] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/banned-end-users
+        - listitem [ref=f5e165]:
+          - generic [ref=f5e166] [cursor=pointer]:
+            - generic [ref=f5e167]: Logs
+            - button "Logs" [expanded] [ref=f5e168]
+          - list [ref=f5e171]:
+            - listitem [ref=f5e172]:
+              - link "Offerwall clicks" [ref=f5e173] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/offer-clicks
+            - listitem [ref=f5e177]:
+              - link "Incoming Postbacks" [ref=f5e178] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/incoming-postbacks
+            - listitem [ref=f5e182]:
+              - link "Outgoing Postbacks" [ref=f5e183] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/outgoing-postbacks
+            - listitem [ref=f5e187]:
+              - link "Audit Logs" [ref=f5e188] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/audit-logs
+        - listitem [ref=f5e192]:
+          - generic [ref=f5e193] [cursor=pointer]:
+            - generic [ref=f5e194]: System
+            - button "System" [expanded] [ref=f5e195]
+          - list [ref=f5e198]:
+            - listitem [ref=f5e199]:
+              - link "Settings" [ref=f5e200] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/settings
+            - listitem [ref=f5e205]:
+              - link "Admin users" [ref=f5e206] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/admin-users
+            - listitem [ref=f5e210]:
+              - link "Health" [ref=f5e211] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/health
+            - listitem [ref=f5e215]:
+              - link "Mailing list 3" [ref=f5e216] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/newsletter-subscribers
+                - generic [ref=f5e219]: Mailing list
+                - generic [ref=f5e220]: "3"
+            - listitem [ref=f5e224]:
+              - link "Announcements" [ref=f5e225] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/announcements
+            - listitem [ref=f5e229]:
+              - link "Sent mail" [ref=f5e230] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/emails
+    - main [ref=f5e235]:
+      - generic [ref=f5e237]:
+        - generic [ref=f5e239]:
+          - navigation "Breadcrumb" [ref=f5e240]:
+            - list [ref=f5e241]:
+              - listitem [ref=f5e242]:
+                - link "Sent mail" [ref=f5e243] [cursor=pointer]:
+                  - /url: https://playndgain.test/admin/emails
+              - listitem [ref=f5e244]:
+                - generic [ref=f5e247]: List
+          - heading "Sent mail" [level=1] [ref=f5e248]
+        - generic [ref=f5e256]:
+          - generic [ref=f5e257]:
+            - generic [ref=f5e259]:
+              - generic [ref=f5e260]:
+                - heading "Filters" [level=2] [ref=f5e261]
+                - button "Reset" [ref=f5e263] [cursor=pointer]
+              - generic [ref=f5e265]:
+                - generic [ref=f5e272]:
+                  - generic [ref=f5e273]: To
+                  - textbox "To" [ref=f5e280]:
+                    - /placeholder: Recipient address
+                - generic [ref=f5e287]:
+                  - generic [ref=f5e288]: Subject
+                  - textbox "Subject" [ref=f5e295]:
+                    - /placeholder: Subject line
+                - generic [ref=f5e302]:
+                  - generic [ref=f5e303]: Attachments
+                  - combobox "Attachments" [ref=f5e310]:
+                    - option "All" [selected]
+                    - option "With attachments"
+                    - option "Without attachments"
+                - generic [ref=f5e314]:
+                  - generic [ref=f5e317]:
+                    - generic [ref=f5e318]: Period
+                    - generic [ref=f5e327]:
+                      - combobox "Period" [ref=f5e328] [cursor=pointer]:
+                        - generic [ref=f5e329]: Custom range
+                      - status [ref=f5e331]
+                  - generic [ref=f5e334]:
+                    - generic [ref=f5e335]: From
+                    - textbox "From" [ref=f5e342]
+                  - generic [ref=f5e345]:
+                    - generic [ref=f5e346]: Until
+                    - textbox "Until" [ref=f5e353]
+            - generic [ref=f5e356]:
+              - generic [ref=f5e357]: Search
+              - searchbox "Search" [ref=f5e363]
+          - table [ref=f5e365]:
+            - rowgroup [ref=f5e366]:
+              - row [ref=f5e367]:
+                - columnheader [ref=f5e368]:
+                  - checkbox "Select/deselect all items for bulk actions." [ref=f5e369]
+                - columnheader "Headers" [ref=f5e370]
+                - columnheader "Subject" [ref=f5e371]
+                - columnheader [ref=f5e372]:
+                  - button "Sent at" [ref=f5e373] [cursor=pointer]
+                - columnheader "Actions" [ref=f5e376]
+            - rowgroup [ref=f5e377]:
+              - row [ref=f5e378]:
+                - cell [ref=f5e379]:
+                  - checkbox "Select/deselect item 1 for bulk actions." [ref=f5e380]
+                - cell [ref=f5e381]:
+                  - generic [ref=f5e383]:
+                    - paragraph [ref=f5e384]: "From: no-reply@playndgain.com <PLAYNDGAIN>"
+                    - paragraph [ref=f5e385]: "To: demo@playndgain.test"
+                - cell "Plugin check" [ref=f5e386]
+                - cell "2026-09-09 01:39:02" [ref=f5e389]
+                - cell [ref=f5e392]:
+                  - generic [ref=f5e393]:
+                    - button [ref=f5e394] [cursor=pointer]
+                    - button [ref=f5e398] [cursor=pointer]
+                    - button [ref=f5e401] [cursor=pointer]
+          - navigation "Pagination navigation" [ref=f5e404]:
+            - generic [ref=f5e405]: Showing 1 result
+            - generic [ref=f5e408]:
+              - generic [ref=f5e409]: Per page
+              - combobox "Per page" [ref=f5e412]:
+                - option "10" [selected]
+                - option "25"
+                - option "50"
+                - option "All"
+  - generic:
+    - status

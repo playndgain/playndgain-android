@@ -36,6 +36,26 @@ final class Money
         return self::round(self::decimal($amount), $scale);
     }
 
+    /**
+     * "$1,234.5679" for the panels — sign before the symbol, always at least
+     * cents, and the remaining decimals only while they carry a digit:
+     * `$0.0037` keeps its precision, `$235.718000` does not drag four zeros
+     * behind it. Nothing is rounded away — trailing zeros are the only thing
+     * dropped. The one formatter every money figure a publisher sees goes
+     * through, so two pages cannot show the same number two ways — design.md §3.
+     */
+    public static function display(string|float|int $amount): string
+    {
+        $formatted = self::format($amount);
+        $negative = str_starts_with($formatted, '-');
+        [$whole, $fraction] = explode('.', ltrim($formatted, '-'), 2);
+
+        $fraction = rtrim($fraction, '0');
+        $fraction = str_pad($fraction, 2, '0');
+
+        return ($negative ? '-$' : '$').number_format((int) $whole).'.'.$fraction;
+    }
+
     public static function negate(string|float|int $amount, int $scale = self::SCALE): string
     {
         return bcsub('0', self::decimal($amount), $scale);

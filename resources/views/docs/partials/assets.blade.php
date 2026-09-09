@@ -5,7 +5,7 @@
      hang Tailwind utilities on — `.doc-prose h2` is the only way to reach it —
      and both of those files belong to the landing site.
 
-     Literal hex, matching app.css, rather than var(--color-*): Tailwind v4
+     Literal hex, matching tokens.css, rather than var(--color-*): Tailwind v4
      only emits the theme variables it saw used, and a colour referenced from
      a Blade <style> block is not something it sees.
 
@@ -15,140 +15,149 @@
 @push('head')
 <style>
   /* ── Prose ───────────────────────────────────────────────────────────── */
-  .doc-prose { color: #A2ABB8; font-size: 15.5px; line-height: 1.75; }
+  .doc-prose { color: #A6ABBE; font-size: 15.5px; line-height: 1.75; }
   .doc-prose > * + * { margin-top: 1.1rem; }
 
   .doc-prose h2, .doc-prose h3 {
-    font-family: "Archivo", sans-serif; font-variation-settings: "wdth" 112;
-    letter-spacing: -0.018em; color: #E9ECF1; scroll-margin-top: 96px;
+    font-family: "Sora Variable", "Sora", system-ui, sans-serif; font-weight: 700;
+    font-optical-sizing: auto; letter-spacing: -0.02em; color: #F4F5FA; scroll-margin-top: 96px;
   }
-  .doc-prose h2 { margin-top: 2.9rem; font-size: 1.4rem; font-weight: 700; }
-  .doc-prose h3 { margin-top: 2.1rem; font-size: 1.08rem; font-weight: 600; }
+  .doc-prose h2 { margin-top: 2.9rem; font-size: 1.65rem; line-height: 1.15; }
+  .doc-prose h3 { margin-top: 2.1rem; font-size: 1.25rem; line-height: 1.2; }
 
   .doc-anchor {
-    margin-left: .45em; color: #363D47; text-decoration: none;
+    margin-left: .45em; color: #464C6A; text-decoration: none;
     font-weight: 400; opacity: 0; transition: opacity .15s;
   }
   h2:hover > .doc-anchor, h3:hover > .doc-anchor,
   .doc-anchor:focus-visible { opacity: 1; }
 
-  .doc-prose strong { color: #E9ECF1; font-weight: 600; }
-  .doc-prose em { color: #A2ABB8; }
-  .doc-prose a { color: #F5A524; text-decoration: underline; text-underline-offset: 3px;
-                 text-decoration-color: rgba(245,165,36,.35); }
-  .doc-prose a:hover { color: #FFBE4D; text-decoration-color: #FFBE4D; }
+  .doc-prose strong { color: #F4F5FA; font-weight: 600; }
+  .doc-prose em { color: #A6ABBE; }
+  .doc-prose a { color: #FFB020; text-decoration: underline; text-underline-offset: 3px;
+                 text-decoration-color: rgba(255,176,32,.35); }
+  .doc-prose a:hover { color: #FFC554; text-decoration-color: #FFC554; }
   .doc-prose a.doc-anchor { text-decoration: none; }
 
   .doc-prose ul, .doc-prose ol { padding-left: 1.15rem; }
   .doc-prose ul { list-style: disc; }
   .doc-prose ol { list-style: decimal; }
   .doc-prose li { margin-top: .4rem; }
-  .doc-prose li::marker { color: #6E7784; }
+  .doc-prose li::marker { color: #7E839A; }
 
   .doc-prose hr { border: 0; height: 1px; margin: 2.4rem 0;
-                  background: linear-gradient(90deg, #262B33, transparent); }
+                  background: linear-gradient(90deg, #262A40, transparent); }
 
   .doc-prose blockquote {
-    border-left: 2px solid #F5A524; background: #14171B;
-    border-radius: 0 10px 10px 0; padding: 1rem 1.25rem;
+    border-left: 2px solid #FFB020; background: #11131F;
+    border-radius: 14px; padding: 1rem 1.25rem;
   }
   .doc-prose blockquote > * + * { margin-top: .8rem; }
 
-  /* Inline code. Not the obsidian slab — that is for blocks. */
+  /* Inline code. Not the panel slab — that is for blocks. */
   .doc-prose :not(pre) > code {
-    font-family: "Geist Mono", monospace; font-size: .87em;
-    background: #1A1E24; border: 1px solid #262B33; border-radius: 5px;
-    padding: .12em .4em; color: #E9ECF1; white-space: nowrap;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: .87em;
+    background: #1A1D2E; border: 1px solid #262A40; border-radius: 8px;
+    padding: .12em .4em; color: #F4F5FA; white-space: nowrap;
   }
 
   /* ── Tables ──────────────────────────────────────────────────────────── */
   .doc-table-wrap { overflow-x: auto; }
   .doc-prose table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .doc-prose th, .doc-prose td {
-    border-bottom: 1px solid #262B33; padding: .6rem .8rem;
+    border-bottom: 1px solid #262A40; padding: .6rem .8rem;
     text-align: left; vertical-align: top;
   }
-  .doc-prose th { color: #E9ECF1; font-weight: 600; font-size: 12px;
+  .doc-prose th { color: #F4F5FA; font-weight: 600; font-size: 12px;
                   text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
-  .doc-prose tbody tr:hover { background: rgba(20,23,27,.6); }
+  .doc-prose tbody tr:hover { background: rgba(26,29,46,.7); }
 
-  /* ── Code blocks. Obsidian in every context — code reads better dark. ── */
+  /* ── Code blocks. The panel surface in every context — code reads better dark. ── */
   .doc-code { position: relative; margin-top: 1.1rem; }
   .doc-code pre {
-    overflow-x: auto; background: #08090A; border: 1px solid #262B33;
-    border-radius: 12px; padding: 1rem 1.15rem; margin: 0;
-    font-family: "Geist Mono", monospace; font-size: 12.5px; line-height: 1.7;
-    color: #C7CEDA; tab-size: 4;
+    overflow-x: auto; background: #11131F; border: 1px solid #343954;
+    border-radius: 14px; padding: 1rem 1.15rem; margin: 0;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 12.5px; line-height: 1.7;
+    color: #C3C7D6; tab-size: 4;
   }
   .doc-copy {
     position: absolute; top: 8px; right: 8px; z-index: 1;
-    font-family: "Geist Mono", monospace; font-size: 11px;
-    color: #6E7784; background: #14171B; border: 1px solid #262B33;
-    border-radius: 6px; padding: 3px 9px; cursor: pointer;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 11px;
+    color: #7E839A; background: #11131F; border: 1px solid #262A40;
+    border-radius: 8px; padding: 3px 9px; cursor: pointer;
     opacity: 0; transition: opacity .15s, color .15s, border-color .15s;
   }
   .doc-code:hover .doc-copy, .doc-copy:focus-visible { opacity: 1; }
-  .doc-copy:hover { color: #E9ECF1; border-color: #363D47; }
+  .doc-copy:hover { color: #F4F5FA; border-color: #464C6A; }
 
-  /* tempest/highlight tokens. Three colours: amber is syntax, green is a
-     literal value, chalk is a name. Go and Ruby have no grammar in the
+  /* tempest/highlight tokens, coloured the way the landing page paints its
+     callback handler: a literal value is gold, a keyword is bright, a name is
+     the body colour, a comment is faint. Go and Ruby have no grammar in the
      highlighter and fall through to the base colour, which is why the base
      colour is legible rather than a placeholder grey. */
-  .hl-keyword, .hl-type, .hl-number, .hl-attribute { color: #FFBE4D; }
-  .hl-value, .hl-literal { color: #2FBF71; }
-  .hl-variable, .hl-injection { color: #E9ECF1; }
-  .hl-property, .hl-operator, .hl-generic { color: #A2ABB8; }
-  .hl-comment { color: #8A94A2; font-style: italic; }
+  .hl-keyword, .hl-type, .hl-number, .hl-attribute { color: #F4F5FA; }
+  .hl-value, .hl-literal { color: #FFB020; }
+  .hl-variable, .hl-injection { color: #A6ABBE; }
+  .hl-property, .hl-operator, .hl-generic { color: #A6ABBE; }
+  .hl-comment { color: #7E839A; font-style: italic; }
 
   /* ── Language tabs ───────────────────────────────────────────────────── */
   .doc-tabs { margin-top: 1.1rem; }
   .doc-tabs-bar { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: -.4rem; }
   .doc-tabs-bar button {
-    font-family: "Geist Mono", monospace; font-size: 12px; color: #6E7784;
-    background: transparent; border: 1px solid transparent; border-radius: 7px;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 12px; color: #7E839A;
+    background: transparent; border: 1px solid transparent; border-radius: 8px;
     padding: 4px 10px; cursor: pointer; transition: color .15s, background-color .15s;
   }
-  .doc-tabs-bar button:hover { color: #A2ABB8; }
-  .doc-tabs-bar button.is-on { color: #E9ECF1; background: #1A1E24; border-color: #262B33; }
+  .doc-tabs-bar button:hover { color: #A6ABBE; }
+  .doc-tabs-bar button.is-on { color: #F4F5FA; background: #1A1D2E; border-color: #262A40; }
 
   /* ── Postback URL builder ────────────────────────────────────────────── */
   .doc-builder {
-    margin-top: 1.1rem; border: 1px solid #262B33; border-radius: 12px;
-    background: #14171B; padding: 1.1rem; position: relative;
+    margin-top: 1.1rem; border: 1px solid #262A40; border-radius: 14px;
+    background: #11131F; padding: 1.1rem; position: relative;
   }
-  .doc-builder-label { font-family: "Geist Mono", monospace; font-size: 11px;
-    text-transform: uppercase; letter-spacing: .06em; color: #6E7784; margin: 0 0 .45rem; }
+  .doc-builder-label { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .06em; color: #7E839A; margin: 0 0 .45rem; }
   .doc-builder-label + * { margin-top: 0; }
   .doc-builder-input {
-    width: 100%; background: #08090A; border: 1px solid #262B33; border-radius: 8px;
-    padding: .5rem .7rem; color: #E9ECF1; font-family: "Geist Mono", monospace; font-size: 12.5px;
+    width: 100%; background: #0A0B14; border: 1px solid #262A40; border-radius: 8px;
+    padding: .5rem .7rem; color: #F4F5FA; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 12.5px;
   }
   .doc-builder-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: .3rem .8rem; margin: 0 0 1rem;
   }
   .doc-builder-grid label { display: flex; align-items: center; gap: .5rem;
-    font-size: 13px; color: #A2ABB8; cursor: pointer; }
-  .doc-builder-grid input { accent-color: #F5A524; }
-  .doc-builder-grid code { font-family: "Geist Mono", monospace; font-size: 12px; }
+    font-size: 13px; color: #A6ABBE; cursor: pointer; }
+  .doc-builder-grid input { accent-color: #FFB020; }
+  .doc-builder-grid code { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 12px; }
   .doc-builder-out {
-    display: block; word-break: break-all; background: #08090A;
-    border: 1px solid #262B33; border-radius: 8px; padding: .7rem .8rem;
-    font-family: "Geist Mono", monospace; font-size: 12px; line-height: 1.65; color: #2FBF71;
+    display: block; word-break: break-all; background: #0A0B14;
+    border: 1px solid #262A40; border-radius: 8px; padding: .7rem .8rem;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 12px; line-height: 1.65; color: #FFB020;
   }
   .doc-builder-copy {
-    margin-top: .7rem; font-family: "Geist Mono", monospace; font-size: 11px;
-    color: #6E7784; background: #1A1E24; border: 1px solid #262B33;
-    border-radius: 6px; padding: 4px 10px; cursor: pointer;
+    margin-top: .7rem; font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; font-size: 11px;
+    color: #7E839A; background: #1A1D2E; border: 1px solid #262A40;
+    border-radius: 8px; padding: 4px 10px; cursor: pointer;
   }
-  .doc-builder-copy:hover { color: #E9ECF1; border-color: #363D47; }
+  .doc-builder-copy:hover { color: #F4F5FA; border-color: #464C6A; }
+
+  /* ── Copy page menu rows. Same shape as a search hit. ──────────────────── */
+  .doc-action {
+    display: block; width: 100%; text-align: left;
+    border-radius: 12px; padding: .55rem .75rem;
+    transition: background-color .15s;
+  }
+  .doc-action:hover { background: #1A1D2E; }
 
   /* ── Table of contents ───────────────────────────────────────────────── */
   .doc-toc a { display: block; padding: 3px 0 3px 11px; margin-left: -1px;
-    border-left: 1px solid transparent; color: #6E7784; font-size: 12.5px; line-height: 1.5;
+    border-left: 1px solid transparent; color: #7E839A; font-size: 12.5px; line-height: 1.5;
     transition: color .15s, border-color .15s; }
-  .doc-toc a:hover { color: #A2ABB8; }
-  .doc-toc a.is-on { color: #F5A524; border-left-color: #F5A524; }
+  .doc-toc a:hover { color: #A6ABBE; }
+  .doc-toc a.is-on { color: #FFB020; border-left-color: #FFB020; }
   .doc-toc .lvl-3 { padding-left: 22px; }
 
   /* Native disclosure, so the mobile nav and the mobile contents both work
@@ -179,6 +188,46 @@
       };
     });
 
+    // The Copy page menu. The Markdown and the prompt are fetched on click
+    // rather than embedded, so the page carries neither twice and the prompt
+    // can pre-fill the reader's App ID server-side.
+    Alpine.data('docsActions', function (slug) {
+      return {
+        open: false,
+        label: 'Copy page',
+        mcp: JSON.stringify({ mcpServers: { '{{ Str::slug(\App\Support\Identity::name()) }}-docs': { type: 'http', url: '{{ url('/mcp') }}' } } }, null, 2),
+        toggle: function () { this.open = ! this.open; },
+        close: function () {
+          if (! this.open) return;
+          this.open = false;
+          this.$refs.toggle.focus();
+        },
+        done: function (message) {
+          var self = this;
+          this.open = false;
+          this.label = message;
+          setTimeout(function () { self.label = 'Copy page'; }, 1500);
+        },
+        copyText: function (text, message) {
+          var self = this;
+          navigator.clipboard.writeText(text).then(function () { self.done(message); });
+        },
+        copy: function (url, message) {
+          var self = this;
+          // Clipboard access must follow the click closely on Safari, so the
+          // fetch is handed to the clipboard as a promise rather than awaited.
+          var body = fetch(url, { credentials: 'same-origin' }).then(function (r) { return r.text(); });
+          var write = window.ClipboardItem
+            ? navigator.clipboard.write([new ClipboardItem({ 'text/plain': body.then(function (t) { return new Blob([t], { type: 'text/plain' }); }) })])
+            : body.then(function (t) { return navigator.clipboard.writeText(t); });
+          write.then(function () { self.done(message); }).catch(function () { self.done('Copy failed'); });
+        },
+        openIn: function (base) {
+          return base + encodeURIComponent('Read ' + '{{ url('/docs') }}/' + slug + '.md and help me apply it to my integration.');
+        },
+      };
+    });
+
     // The order the macros are documented in, so the built URL reads the same
     // way as the table above it however the reader ticked the boxes.
     var MACROS = ['user_id', 'trans_id', 'offer_id', 'offer_name', 'payout_usd',
@@ -186,7 +235,7 @@
 
     Alpine.data('docsUrlBuilder', function () {
       return {
-        base: 'https://yoursite.com/advault/callback',
+        base: 'https://yoursite.com/playndgain/callback',
         picked: ['user_id', 'trans_id', 'payout_usd', 'currency_amount', 'status', 'signature'],
         label: 'Copy',
         get url() {

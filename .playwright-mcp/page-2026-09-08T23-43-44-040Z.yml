@@ -1,0 +1,280 @@
+- generic [ref=f12e2]:
+  - link "Skip to offers" [ref=f12e3] [cursor=pointer]:
+    - /url: "#offers"
+  - generic [ref=f12e4]:
+    - banner [ref=f12e5]:
+      - generic [ref=f12e6]:
+        - generic [ref=f12e7]: Earn Coins
+        - heading "Offers" [level=1] [ref=f12e10]
+        - generic [ref=f12e11]:
+          - group "Offers" [ref=f12e12]:
+            - button "All" [pressed] [ref=f12e13] [cursor=pointer]
+            - button "Education" [ref=f12e16] [cursor=pointer]
+            - button "Finance" [ref=f12e17] [cursor=pointer]
+            - button "Games" [ref=f12e18] [cursor=pointer]
+            - button "Other" [ref=f12e21] [cursor=pointer]
+            - button "Shopping" [ref=f12e22] [cursor=pointer]
+            - button "Social" [ref=f12e23] [cursor=pointer]
+            - button "Surveys" [ref=f12e24] [cursor=pointer]
+          - group "Filter by device" [ref=f12e27]:
+            - button "Android" [ref=f12e28] [cursor=pointer]
+            - button "iOS" [ref=f12e31] [cursor=pointer]
+            - button "Desktop" [ref=f12e34] [cursor=pointer]
+    - main [ref=f12e37]:
+      - generic [ref=f12e38]:
+        - generic [ref=f12e39]:
+          - heading "All Offers" [level=2] [ref=f12e40]
+          - generic [ref=f12e41]:
+            - generic [ref=f12e42]: Search offers
+            - searchbox "Search offers" [ref=f12e43]
+          - generic [ref=f12e44]:
+            - generic [ref=f12e45]: Sort offers
+            - combobox "Sort offers" [ref=f12e46] [cursor=pointer]:
+              - option "Featured" [selected]
+              - option "Top reward"
+              - option "Trending"
+        - list [ref=f12e47]:
+          - listitem [ref=f12e48]:
+            - link "Bingo Blitz Bingo Blitz Complete the tutorial Test offer · Any device +77 Coins" [ref=f12e49] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/9?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e50]:
+                - generic [aria-hidden] [ref=f12e51]: B
+                - img "Bingo Blitz" [ref=f12e52]
+              - generic [ref=f12e53]:
+                - generic [ref=f12e54]: Bingo Blitz
+                - generic [ref=f12e55]: Complete the tutorial
+                - generic [ref=f12e56]:
+                  - generic [ref=f12e57]: Test offer
+                  - generic [ref=f12e58]:
+                    - text: ·
+                    - generic [ref=f12e59]: Any device
+              - generic [ref=f12e68]:
+                - generic [ref=f12e69]: "+77"
+                - generic [ref=f12e70]: Coins
+          - listitem [ref=f12e71]:
+            - link "Royal Match Royal Match Pass level 50 within 7 days Featured · 4 steps · Any device · people +493 Up to +6,125 Coins" [ref=f12e72] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/2?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e73]:
+                - generic [aria-hidden] [ref=f12e74]: R
+                - img "Royal Match" [ref=f12e75]
+              - generic [ref=f12e76]:
+                - generic [ref=f12e77]: Royal Match
+                - generic [ref=f12e78]: Pass level 50 within 7 days
+                - generic [ref=f12e79]:
+                  - generic [ref=f12e80]: Featured
+                  - generic [ref=f12e81]: · 4 steps
+                  - generic [ref=f12e82]:
+                    - text: ·
+                    - generic [ref=f12e83]: Any device
+                    - generic [ref=f12e91]:
+                      - text: ·
+                      - generic [ref=f12e94]: people
+                      - generic [ref=f12e95]: "+493"
+              - generic [ref=f12e97]:
+                - generic [ref=f12e98]: Up to
+                - generic [ref=f12e99]: +6,125
+                - generic [ref=f12e100]: Coins
+          - listitem [ref=f12e101]:
+            - link "Coin Master Coin Master Reach village level 10 Featured · Any device · people +486 +448 Coins" [ref=f12e102] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/1?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e103]:
+                - generic [aria-hidden] [ref=f12e104]: C
+                - img "Coin Master" [ref=f12e105]
+              - generic [ref=f12e106]:
+                - generic [ref=f12e107]: Coin Master
+                - generic [ref=f12e108]: Reach village level 10
+                - generic [ref=f12e109]:
+                  - generic [ref=f12e110]: Featured
+                  - generic [ref=f12e111]:
+                    - text: ·
+                    - generic [ref=f12e112]: Any device
+                    - generic [ref=f12e120]:
+                      - text: ·
+                      - generic [ref=f12e123]: people
+                      - generic [ref=f12e124]: "+486"
+              - generic [ref=f12e126]:
+                - generic [ref=f12e127]: "+448"
+                - generic [ref=f12e128]: Coins
+          - listitem [ref=f12e129]:
+            - link "Nubank Nubank Open an account and activate the card 3 steps · Any device · people +263 Up to +8,680 Coins" [ref=f12e130] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/10?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e131]:
+                - generic [aria-hidden] [ref=f12e132]: "N"
+                - img "Nubank" [ref=f12e133]
+              - generic [ref=f12e134]:
+                - generic [ref=f12e135]: Nubank
+                - generic [ref=f12e136]: Open an account and activate the card
+                - generic [ref=f12e137]:
+                  - generic [ref=f12e138]: 3 steps
+                  - generic [ref=f12e139]:
+                    - text: ·
+                    - generic [ref=f12e140]: Any device
+                    - generic [ref=f12e148]:
+                      - text: ·
+                      - generic [ref=f12e151]: people
+                      - generic [ref=f12e152]: "+263"
+              - generic [ref=f12e154]:
+                - generic [ref=f12e155]: Up to
+                - generic [ref=f12e156]: +8,680
+                - generic [ref=f12e157]: Coins
+          - listitem [ref=f12e158]:
+            - link "Monopoly Go Monopoly Go Reach 1,000 net worth Any device · people +247 +3,920 Coins" [ref=f12e159] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/3?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e160]:
+                - generic [aria-hidden] [ref=f12e161]: M
+                - img "Monopoly Go" [ref=f12e162]
+              - generic [ref=f12e163]:
+                - generic [ref=f12e164]: Monopoly Go
+                - generic [ref=f12e165]: Reach 1,000 net worth
+                - generic [ref=f12e167]:
+                  - generic [ref=f12e168]: Any device
+                  - generic [ref=f12e176]:
+                    - text: ·
+                    - generic [ref=f12e179]: people
+                    - generic [ref=f12e180]: "+247"
+              - generic [ref=f12e182]:
+                - generic [ref=f12e183]: +3,920
+                - generic [ref=f12e184]: Coins
+          - listitem [ref=f12e185]:
+            - link "Shopee Shopping Shopee Shopping Install and make a first purchase 2 steps · Any device · people +273 Up to +1,561 Coins" [ref=f12e186] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/4?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e187]:
+                - generic [aria-hidden] [ref=f12e188]: S
+                - img "Shopee Shopping" [ref=f12e189]
+              - generic [ref=f12e190]:
+                - generic [ref=f12e191]: Shopee Shopping
+                - generic [ref=f12e192]: Install and make a first purchase
+                - generic [ref=f12e193]:
+                  - generic [ref=f12e194]: 2 steps
+                  - generic [ref=f12e195]:
+                    - text: ·
+                    - generic [ref=f12e196]: Any device
+                    - generic [ref=f12e204]:
+                      - text: ·
+                      - generic [ref=f12e207]: people
+                      - generic [ref=f12e208]: "+273"
+              - generic [ref=f12e210]:
+                - generic [ref=f12e211]: Up to
+                - generic [ref=f12e212]: +1,561
+                - generic [ref=f12e213]: Coins
+          - listitem [ref=f12e214]:
+            - link "TikTok Lite TikTok Lite Watch for 10 minutes a day 4 steps · Any device · people +276 Up to +1,008 Coins" [ref=f12e215] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/5?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e216]:
+                - generic [aria-hidden] [ref=f12e217]: T
+                - img "TikTok Lite" [ref=f12e218]
+              - generic [ref=f12e219]:
+                - generic [ref=f12e220]: TikTok Lite
+                - generic [ref=f12e221]: Watch for 10 minutes a day
+                - generic [ref=f12e222]:
+                  - generic [ref=f12e223]: 4 steps
+                  - generic [ref=f12e224]:
+                    - text: ·
+                    - generic [ref=f12e225]: Any device
+                    - generic [ref=f12e233]:
+                      - text: ·
+                      - generic [ref=f12e236]: people
+                      - generic [ref=f12e237]: "+276"
+              - generic [ref=f12e239]:
+                - generic [ref=f12e240]: Up to
+                - generic [ref=f12e241]: +1,008
+                - generic [ref=f12e242]: Coins
+          - listitem [ref=f12e243]:
+            - link "Survey — 8 minutes Survey — 8 minutes Answer honestly, no speeding 2 steps · Any device · people +268 Up to +609 Coins" [ref=f12e244] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/6?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e245]:
+                - generic [aria-hidden] [ref=f12e246]: S
+                - img "Survey — 8 minutes" [ref=f12e247]
+              - generic [ref=f12e248]:
+                - generic [ref=f12e249]: Survey — 8 minutes
+                - generic [ref=f12e250]: Answer honestly, no speeding
+                - generic [ref=f12e251]:
+                  - generic [ref=f12e252]: 2 steps
+                  - generic [ref=f12e253]:
+                    - text: ·
+                    - generic [ref=f12e254]: Any device
+                    - generic [ref=f12e262]:
+                      - text: ·
+                      - generic [ref=f12e265]: people
+                      - generic [ref=f12e266]: "+268"
+              - generic [ref=f12e268]:
+                - generic [ref=f12e269]: Up to
+                - generic [ref=f12e270]: "+609"
+                - generic [ref=f12e271]: Coins
+          - listitem [ref=f12e272]:
+            - link "Badoo — Dating & Chat Badoo — Dating & Chat Complete signup and verify your photo Any device · people +260 +441 Coins" [ref=f12e273] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/7?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e274]:
+                - generic [aria-hidden] [ref=f12e275]: B
+                - img "Badoo — Dating & Chat" [ref=f12e276]
+              - generic [ref=f12e277]:
+                - generic [ref=f12e278]: Badoo — Dating & Chat
+                - generic [ref=f12e279]: Complete signup and verify your photo
+                - generic [ref=f12e281]:
+                  - generic [ref=f12e282]: Any device
+                  - generic [ref=f12e290]:
+                    - text: ·
+                    - generic [ref=f12e293]: people
+                    - generic [ref=f12e294]: "+260"
+              - generic [ref=f12e296]:
+                - generic [ref=f12e297]: "+441"
+                - generic [ref=f12e298]: Coins
+          - listitem [ref=f12e299]:
+            - link "Duolingo Duolingo Any device · people +268 +294 Coins" [ref=f12e300] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/11?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e301]:
+                - generic [aria-hidden] [ref=f12e302]: D
+                - img "Duolingo" [ref=f12e303]
+              - generic [ref=f12e304]:
+                - generic [ref=f12e305]: Duolingo
+                - generic [ref=f12e307]:
+                  - generic [ref=f12e308]: Any device
+                  - generic [ref=f12e316]:
+                    - text: ·
+                    - generic [ref=f12e319]: people
+                    - generic [ref=f12e320]: "+268"
+              - generic [ref=f12e322]:
+                - generic [ref=f12e323]: "+294"
+                - generic [ref=f12e324]: Coins
+          - listitem [ref=f12e325]:
+            - link "Temu Temu Sign up with a new account Any device · people +286 +203 Coins" [ref=f12e326] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/8?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e327]:
+                - generic [aria-hidden] [ref=f12e328]: T
+                - img "Temu" [ref=f12e329]
+              - generic [ref=f12e330]:
+                - generic [ref=f12e331]: Temu
+                - generic [ref=f12e332]: Sign up with a new account
+                - generic [ref=f12e334]:
+                  - generic [ref=f12e335]: Any device
+                  - generic [ref=f12e343]:
+                    - text: ·
+                    - generic [ref=f12e346]: people
+                    - generic [ref=f12e347]: "+286"
+              - generic [ref=f12e349]:
+                - generic [ref=f12e350]: "+203"
+                - generic [ref=f12e351]: Coins
+          - listitem [ref=f12e352]:
+            - link "A very long offer name that has to truncate on a narrow card A very long offer name that has to truncate on a narrow card And an instruction line that also runs past the card width Any device +35 Coins" [ref=f12e353] [cursor=pointer]:
+              - /url: https://playndgain.test/wall/offer/12?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+              - generic [ref=f12e354]:
+                - generic [aria-hidden] [ref=f12e355]: A
+                - img "A very long offer name that has to truncate on a narrow card" [ref=f12e356]
+              - generic [ref=f12e357]:
+                - generic [ref=f12e358]: A very long offer name that has to truncate on a narrow card
+                - generic [ref=f12e359]: And an instruction line that also runs past the card width
+                - generic [ref=f12e360]: Any device
+              - generic [ref=f12e371]:
+                - generic [ref=f12e372]: "+35"
+                - generic [ref=f12e373]: Coins
+  - navigation "Offerwall sections" [ref=f12e374]:
+    - link "Offers" [ref=f12e375] [cursor=pointer]:
+      - /url: https://playndgain.test/wall?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+    - link "History" [ref=f12e379] [cursor=pointer]:
+      - /url: https://playndgain.test/wall/history?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+    - link "Offerwall" [ref=f12e383] [cursor=pointer]:
+      - /url: https://playndgain.test/wall/partners?appid=10000&userid=PREVIEW&lang=en&country=US&theme=light
+    - button "Menu" [ref=f12e387] [cursor=pointer]
+  - contentinfo [ref=f12e391]:
+    - generic [ref=f12e392]: Powered by
+    - generic [ref=f12e393]: PLAYNDGAIN

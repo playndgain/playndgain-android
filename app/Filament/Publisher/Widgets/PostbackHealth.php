@@ -48,13 +48,14 @@ class PostbackHealth extends StatsOverviewWidget
         return [
             Stat::make('Success rate', number_format($rate, 1).'%')
                 ->color(match (true) {
-                    $rate < 80 => 'danger',
+                    // Attention is amber, a healthy state is steel — green
+                    // and red are money direction only, design.md §2.
                     $rate < 95 => 'warning',
-                    default => 'success',
+                    default => 'info',
                 })
                 ->description("{$succeeded} of {$attempts} attempts"),
             Stat::make('Failures', number_format($failed))
-                ->color($failed > 0 ? 'danger' : 'gray'),
+                ->color($failed > 0 ? 'warning' : 'gray'),
             Stat::make('Average response', $average.' ms')
                 ->description($average > 5000 ? 'Slow — we time out at 15s' : 'Within budget')
                 ->color($average > 5000 ? 'warning' : 'gray'),

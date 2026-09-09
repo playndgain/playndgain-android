@@ -237,7 +237,7 @@ class HistoryController extends Controller
 
         return [
             'id' => $click->offer_id,
-            'name' => (string) ($click->offer?->name ?? ''),
+            'name' => (string) ($click->offer->name ?? ''),
             'has_icon' => filled($click->offer?->icon_url),
             // Ours, from our own catalogue. Only a partner row names a partner.
             'partner' => null,

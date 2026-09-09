@@ -7,6 +7,7 @@ use App\Filament\Admin\Resources\Conversions\Pages\ListConversions;
 use App\Filament\Admin\Resources\Conversions\Pages\ViewConversion;
 use App\Filament\Admin\Support\ConversionColumns;
 use App\Filament\Admin\Support\DateRangeFilter;
+use App\Filament\Support\AppColumns;
 use App\Models\Conversion;
 use App\Services\Money\ConversionProcessor;
 use BackedEnum;
@@ -57,7 +58,7 @@ class ConversionResource extends Resource
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with([
                 // company_name is the group title, and a relation loaded without it
                 // groups every publisher under a blank heading.
-                'publisher:id,pub_id,company_name', 'app:id,name', 'network:id,name',
+                'publisher:id,pub_id,company_name', AppColumns::eager(), 'network:id,name',
             ]))
             ->columns(ConversionColumns::full())
             // "Which publisher is charging back, and how much" is a group and a

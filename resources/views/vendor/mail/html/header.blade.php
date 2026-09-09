@@ -1,21 +1,19 @@
 @props(['url'])
-{{-- A link must not wrap a table — premailer and Outlook both close the
-     anchor before the first `<table>`, which left the mark unclickable.
-     The wordmark is the link. The glyph sits beside it. --}}
+{{-- The mark, built from a table cell rather than an image or SVG: mail
+     clients strip inline SVG, and a hosted logo is a tracking pixel by another
+     name. Same geometry as components/brand-mark.blade.php — an amber tile
+     carrying a bold "P" beside the wordmark. An anchor must not wrap a table
+     (premailer and Outlook both close it early), so the wordmark is the link
+     and the tile sits beside it. --}}
 <tr>
-<td class="header" align="center" bgcolor="#08090A">
-<table cellpadding="0" cellspacing="0" role="presentation" align="center">
+<td class="header-cell" bgcolor="#11131F">
+<table cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td style="vertical-align:middle;padding-right:10px;">
-<svg class="logo" width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<rect x="1" y="1" width="24" height="24" rx="7" stroke="#262B33" stroke-width="1.5"/>
-<path d="M8 7.5L13 18.5L18 7.5" stroke="#F5A524" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<td class="mark-tile" width="28" height="28" align="center" valign="middle" bgcolor="#FFB020">
+<span class="mark-glyph" aria-hidden="true">P</span>
 </td>
-<td style="vertical-align:middle;">
-<a href="{{ $url }}" style="font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:bold;letter-spacing:-0.3px;color:#E9ECF1;text-decoration:none;">
-{{ \App\Support\Identity::name() }}
-</a>
+<td class="mark-word-cell">
+<a href="{{ $url }}" class="mark-word">{{ \App\Support\Identity::name() }}</a>
 </td>
 </tr>
 </table>

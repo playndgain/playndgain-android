@@ -14,14 +14,6 @@ use Illuminate\Testing\TestResponse;
 
 require_once __DIR__.'/WallFixtures.php';
 
-function partnerNetwork(array $attributes = []): Network
-{
-    return Network::factory()->create([
-        'wall_url' => 'https://p.test/w?s={sub_id}&u={user_id}',
-        ...$attributes,
-    ]);
-}
-
 function partnerGet(App\Models\App $app, ?Network $network = null, string $user = 'USER_1', array $extra = []): TestResponse
 {
     $query = http_build_query(['appid' => $app->app_id, 'userid' => $user, ...$extra]);
@@ -200,10 +192,20 @@ it('answers with the notice, not a frame, when fraud blocks the open', function 
     expect(OfferClick::query()->whereNull('offer_id')->sole()->blocked)->toBeTrue();
 });
 
-it('always shows the offerwall tab', function () {
+it('hides the offerwall tab when no partner wall is running', function () {
     wallGeo('US');
     [$app, $network] = wallFixture();
     wallOffer($network, ['countries' => [], 'devices' => []]);
+
+    wallGet($app)->assertOk()
+        ->assertDontSee('/wall/partners?appid='.$app->app_id.'&amp;userid=USER_1', false);
+});
+
+it('shows the offerwall tab when a partner wall is running', function () {
+    wallGeo('US');
+    [$app, $network] = wallFixture();
+    wallOffer($network, ['countries' => [], 'devices' => []]);
+    partnerNetwork();
 
     wallGet($app)->assertOk()
         ->assertSee('/wall/partners?appid='.$app->app_id.'&amp;userid=USER_1', false);

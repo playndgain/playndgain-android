@@ -1,37 +1,46 @@
-{{-- Right-hand panel on every auth page. Not a testimonial and not a stock
-     photograph: the same trace that carries the landing page, so signing in
-     lands somewhere familiar. Decorative — the form is the page. --}}
+{{-- The brand panel beside every auth form — the landing hero, condensed:
+     the mark, the claim, three proofs, and the real wall on a phone. It reads
+     the panel it is rendered in, so the admin login does not promise payouts
+     to the people who pay them. Decorative, hence aria-hidden; the form is
+     the page.
+
+     The proofs are capabilities, never a rate. What a publisher earns is
+     their own commercial term, settled on their account and not quoted at
+     a stranger on a login screen. --}}
+@php
+    $admin = filament()->getId() === 'admin';
+@endphp
 <aside class="fi-auth-brand" aria-hidden="true">
-  <div class="fi-auth-brand-img"></div>
-  <div class="fi-auth-brand-veil"></div>
+  <div class="fi-auth-brand-mark">
+    <x-brand-mark :size="28" />
+  </div>
 
-  <div class="relative flex h-full flex-col justify-end p-12 xl:p-16">
-    <p class="num mb-4 text-[11px] tracking-wider text-amber-500">14:34:51.109 · POSTBACK DELIVERED</p>
+  <div class="fi-auth-brand-body">
+    @if ($admin)
+      <p class="fi-auth-eyebrow">Operations</p>
+      <p class="fi-auth-claim">Every click, rule and cent, in one place.</p>
+      <p class="fi-auth-lede">Inventory, fraud verdicts, the ledger and payouts — the other side of the wall.</p>
+      <ul class="fi-auth-proofs">
+        <li>Append-only ledger</li>
+        <li>Rules that explain themselves</li>
+        <li>Signed postbacks</li>
+      </ul>
+    @else
+      <p class="fi-auth-eyebrow">Rewarded monetisation for apps and games</p>
+      <p class="fi-auth-claim">Turn playtime into payouts.</p>
+      <p class="fi-auth-lede">Players complete offers inside your app. You are paid for every verified action — signed, on a ledger that is never edited, paid monthly.</p>
+      <ul class="fi-auth-proofs">
+        <li>Live in a day</li>
+        <li>Your brand on the wall</li>
+        <li>Monthly payouts</li>
+      </ul>
+    @endif
+  </div>
 
-    <p class="display max-w-[19ch] text-[1.9rem] font-bold leading-[1.15] text-chalk">
-      Every cent that reaches your users came through a step you can read.
-    </p>
-
-    <div class="mt-9 max-w-[420px] rounded-2xl border border-steel-700 bg-steel-850/75 p-5 backdrop-blur-sm">
-      <div class="space-y-2.5">
-        <div class="flex items-baseline justify-between gap-4">
-          <span class="num text-[11px] text-steel-400">14:32:07.221</span>
-          <span class="text-[12px] text-steel-300">click · US · Android</span>
-        </div>
-        <div class="flex items-baseline justify-between gap-4">
-          <span class="num text-[11px] text-steel-400">14:34:51.006</span>
-          <span class="num text-[12px] text-chalk">$0.130000</span>
-        </div>
-        <div class="flex items-baseline justify-between gap-4">
-          <span class="num text-[11px] text-steel-400">14:34:51.014</span>
-          <span class="num text-[12px] text-gain">+$0.091000</span>
-        </div>
-        <div class="h-px bg-steel-700"></div>
-        <div class="flex items-baseline justify-between gap-4">
-          <span class="text-[12px] text-chalk">User credited</span>
-          <span class="num text-[14px] font-medium text-amber-400">91 Coins</span>
-        </div>
-      </div>
+  <div class="fi-auth-shot">
+    <div class="fi-auth-phone">
+      <img src="/img/landing/wall-dark.webp" alt="" width="780" height="1560" loading="lazy" decoding="async">
     </div>
+    <div class="fi-auth-pill"><i>✓</i><span>+640 Coins<small>credited in 0.4 s</small></span></div>
   </div>
 </aside>

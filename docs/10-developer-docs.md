@@ -93,42 +93,69 @@ A banner above the first snippet reads: *"Showing values for **Just rewards #100
 
 ```
 /docs
-  Getting started
-    ├── Introduction              What AdVault is, how the money flows
-    ├── Quick start               Live in 10 minutes
-    └── Core concepts             App, end user, click, conversion, postback
+  Start here
+    ├── Introduction              What PLAYNDGAIN is, where the money comes from
+    ├── Quick start               Six steps, each verifiable on its own
+    └── Core concepts             App, end user, click, conversion, postback, rate
 
-  Integration
-    ├── Offerwall iframe          The primary integration
+  The wall
+    ├── Embedding the wall        The iframe and the four sandbox attributes
     ├── URL parameters            Every parameter, typed
-    ├── Signed URLs               HMAC, when and how
+    ├── Signed wall URLs          HMAC, when and how
     ├── Theming                   Colours, radius, dark mode, live preview
-    └── Multiple placements       One app vs many
+    └── One app or several        When to split an integration
 
-  Callbacks
-    ├── How postbacks work        The lifecycle, with a diagram
-    ├── Macro reference           The full table
-    ├── Signature verification    Snippets in 5 languages
-    ├── Chargebacks & reversals   ← THE important page
-    ├── Retries & failure         Schedule, what a failure means
-    └── Idempotency               Why you must dedupe on trans_id
+  The callback
+    ├── How the callback works    The lifecycle, with a diagram
+    ├── Macro reference           The full table and the URL builder
+    ├── Verifying the signature   Complete handlers in 5 languages
+    ├── Reversals                 ← THE important page
+    └── Retries and duplicates    Schedule, dedupe, why SELECT-first is broken
 
-  Testing
-    ├── Test mode                 The toggle, the test offer
-    ├── Sending a test postback   The button, and what to expect
-    └── Troubleshooting           Symptom → cause → fix
+  Testing and going live
+    ├── Testing your integration  Test mode, the button, and the two curl cases
+    ├── Troubleshooting           Symptom → cause → fix, plus every status code
+    └── Going live                What approval means and the pre-launch checklist
 
-  Reference
-    ├── Countries & devices
+  Money
+    ├── Revenue share and rate    The two numbers and why they are unrelated
+    ├── Statements and payouts    The hold, the month-end run, the skip reasons
+    └── The ledger                Append-only, and how to reconcile against it
+
+  Reference and policies
+    ├── Countries and devices
     ├── Conversion statuses
-    ├── Error codes
-    └── Rate limits
-
-  Policies
-    ├── Traffic quality
-    ├── Prohibited traffic
-    └── Payout terms
+    ├── Rate limits
+    └── Traffic rules             What is measured, and what voids a conversion
 ```
+
+Six sections, 23 pages.
+
+Every page also has a **Copy page** menu beside its title: copy the page as
+Markdown (`/docs/{slug}.md`), copy the integration prompt (`/docs/prompt.txt`,
+App ID pre-filled for a signed-in publisher), copy an MCP config pointing at
+`/mcp`, copy the `/docs/llms.txt` link, or open the page in Claude or ChatGPT.
+`/mcp` is a read-only MCP server (Streamable HTTP, JSON-RPC) with three tools:
+`list_pages`, `read_page`, `search_docs`. All of it resolves through
+`DocSource`, so an unpublished draft is invisible on every surface. The order follows one conversion from the player's tap
+to the money in the publisher's account, because that is the order the questions
+arrive in.
+
+Pages that answer the same question live on one page rather than cross-
+referencing each other: retries and duplicates are one problem seen from both
+ends, a test offer and a test postback are one job, a symptom and its status
+code are one lookup.
+
+Slugs retired when this was restructured are 301'd in `DocsController::MOVED`,
+never deleted: they are in publishers' bookmarks and in mail already sent.
+
+| Retired | Absorbed by |
+|---|---|
+| `idempotency` | `retries-and-failure` |
+| `test-postback` | `test-mode` |
+| `error-codes` | `troubleshooting` |
+| `prohibited-traffic` | `traffic-quality` |
+| `payout-terms` | `statements-and-payouts` |
 
 ---
 
@@ -152,12 +179,12 @@ The most important page on the site. Five steps, each verifiable, no prose betwe
 >
 > **4 · Add your callback URL**
 > ```
-> https://yoursite.com/advault/callback?user_id={user_id}&trans_id={trans_id}&amount={currency_amount}&payout={payout_usd}&status={status}&sig={signature}
+> https://yoursite.com/playndgain/callback?user_id={user_id}&trans_id={trans_id}&amount={currency_amount}&payout={payout_usd}&status={status}&sig={signature}
 > ```
 >
 > **5 · Verify the signature and credit the user**
 > ```php
-> $expected = hash('sha256', $_GET['trans_id'] . $_GET['payout'] . ADVAULT_SECRET);
+> $expected = hash('sha256', $_GET['trans_id'] . $_GET['payout'] . PLAYNDGAIN_SECRET);
 >
 > if (! hash_equals($expected, $_GET['sig'])) {
 >     http_response_code(403);

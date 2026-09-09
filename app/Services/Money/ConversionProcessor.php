@@ -175,38 +175,41 @@ class ConversionProcessor
             return null;
         }
 
-        if ($conversion->status === ConversionStatus::Reversed) {
+        $wasCredited = $this->transition($conversion, ConversionStatus::Reversed, function (Conversion $locked) use ($log): bool {
+            // A pending or rejected conversion never credited anyone. Charging it
+            // back would invent a debt out of a postback nobody was paid for.
+            $wasCredited = $locked->status === ConversionStatus::Approved;
+
+            $locked->update([
+                'status' => ConversionStatus::Reversed,
+                'reversed_at' => now(),
+            ]);
+
+            if ($wasCredited && ! $locked->is_test) {
+                $this->chargeBack($locked);
+            }
+
+            $log->update([
+                'result' => IncomingPostbackResult::Accepted,
+                'conversion_id' => $locked->id,
+            ]);
+
+            return $wasCredited;
+        });
+
+        if ($wasCredited === null) {
+            // Already reversed — by an earlier retry, or by the worker that held
+            // the lock a moment ago. Either way the retry it is.
             $log->update([
                 'result' => IncomingPostbackResult::Duplicate,
                 'conversion_id' => $conversion->id,
             ]);
 
-            return $conversion;
+            return $conversion->refresh();
         }
 
-        // A pending or rejected conversion never credited anyone. Charging it
-        // back would invent a debt out of a postback nobody was paid for.
-        $wasCredited = $conversion->status === ConversionStatus::Approved;
-        $wasEarned = $wasCredited && ! $conversion->is_test;
-
-        DB::transaction(function () use ($conversion, $wasEarned, $log): void {
-            $conversion->update([
-                'status' => ConversionStatus::Reversed,
-                'reversed_at' => now(),
-            ]);
-
-            if ($wasEarned) {
-                LedgerEntry::createChargeback($conversion);
-            }
-
-            $log->update([
-                'result' => IncomingPostbackResult::Accepted,
-                'conversion_id' => $conversion->id,
-            ]);
-        });
-
         if ($wasCredited) {
-            $this->notifyPublisher($conversion, OutgoingPostbackKind::Reversal);
+            $this->notifyPublisher($conversion->refresh(), OutgoingPostbackKind::Reversal);
         }
 
         return $conversion;
@@ -222,21 +225,27 @@ class ConversionProcessor
      */
     public function approvePending(Conversion $conversion, ?User $actor = null): Conversion
     {
-        if ($conversion->status !== ConversionStatus::Pending) {
-            return $conversion;
-        }
-
-        DB::transaction(function () use ($conversion): void {
-            $conversion->update(['status' => ConversionStatus::Approved, 'rejected_reason' => null]);
-
-            if (! $conversion->is_test) {
-                LedgerEntry::createEarning($conversion);
+        $approved = $this->transition($conversion, ConversionStatus::Approved, function (Conversion $locked): bool {
+            if ($locked->status !== ConversionStatus::Pending) {
+                return false;
             }
+
+            $locked->update(['status' => ConversionStatus::Approved, 'rejected_reason' => null]);
+
+            if (! $locked->is_test) {
+                LedgerEntry::createEarning($locked);
+            }
+
+            return true;
         });
+
+        if ($approved !== true) {
+            return $conversion->refresh();
+        }
 
         AuditLog::record('conversion.approved', $conversion, ['status' => 'pending'], ['status' => 'approved'], $actor);
 
-        $this->notifyPublisher($conversion, OutgoingPostbackKind::Credit);
+        $this->notifyPublisher($conversion->refresh(), OutgoingPostbackKind::Credit);
 
         return $conversion;
     }
@@ -270,24 +279,26 @@ class ConversionProcessor
      */
     public function forceReverse(Conversion $conversion, string $reason, ?User $actor = null): Conversion
     {
-        if ($conversion->status === ConversionStatus::Reversed) {
-            return $conversion;
-        }
-
-        $wasCredited = $conversion->status === ConversionStatus::Approved;
-        $wasEarned = $wasCredited && ! $conversion->is_test;
         $before = $conversion->status->value;
 
-        DB::transaction(function () use ($conversion, $wasEarned): void {
-            $conversion->update([
+        $wasCredited = $this->transition($conversion, ConversionStatus::Reversed, function (Conversion $locked) use ($actor): bool {
+            $wasCredited = $locked->status === ConversionStatus::Approved;
+
+            $locked->update([
                 'status' => ConversionStatus::Reversed,
                 'reversed_at' => now(),
             ]);
 
-            if ($wasEarned) {
-                LedgerEntry::createChargeback($conversion);
+            if ($wasCredited && ! $locked->is_test) {
+                $this->chargeBack($locked, $actor);
             }
+
+            return $wasCredited;
         });
+
+        if ($wasCredited === null) {
+            return $conversion->refresh();
+        }
 
         AuditLog::record('conversion.force_reversed', $conversion, ['status' => $before], [
             'status' => 'reversed',
@@ -295,10 +306,64 @@ class ConversionProcessor
         ], $actor);
 
         if ($wasCredited) {
-            $this->notifyPublisher($conversion, OutgoingPostbackKind::Reversal);
+            $this->notifyPublisher($conversion->refresh(), OutgoingPostbackKind::Reversal);
         }
 
         return $conversion;
+    }
+
+    /**
+     * Run a status change against the row as it is *now*, not as the caller
+     * last saw it.
+     *
+     * Every caller reads the conversion, checks its status, and then writes —
+     * a check-then-act. Two reversal postbacks for one txid (networks retry,
+     * and there is more than one worker), or two admins clicking Approve in
+     * the same second, both pass the check and both write: two chargebacks
+     * for one earning, or two earnings for one conversion. The unique index
+     * settles duplicates on the credit path; this is the equivalent for the
+     * paths that change an existing row. The lock serialises them and the
+     * re-read makes the second one see what the first one did.
+     *
+     * Returns null when the row is already in `$target`, otherwise whatever
+     * `$change` returned.
+     *
+     * @template T
+     *
+     * @param  callable(Conversion): T  $change
+     * @return T|null
+     */
+    private function transition(Conversion $conversion, ConversionStatus $target, callable $change): mixed
+    {
+        return DB::transaction(function () use ($conversion, $target, $change): mixed {
+            $locked = Conversion::query()
+                ->withoutGlobalScopes()
+                ->whereKey($conversion->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($locked->status === $target) {
+                return null;
+            }
+
+            return $change($locked);
+        });
+    }
+
+    /**
+     * The debit and the open request it shrinks, in one transaction — docs/06
+     * §4: the request froze its amount before this debit existed, and reducing
+     * it here is the only way the two can never disagree.
+     */
+    private function chargeBack(Conversion $conversion, ?User $actor = null): void
+    {
+        $entry = LedgerEntry::createChargeback($conversion);
+
+        app(WithdrawalService::class)->applyChargeback(
+            Publisher::query()->findOrFail($conversion->publisher_id),
+            $entry->amount,
+            $actor,
+        );
     }
 
     /** Re-queue the publisher callback for a conversion. Used by both panels. */
@@ -358,6 +423,12 @@ class ConversionProcessor
             offer: Offer::query()->find($click->offer_id),
             click: $click,
             payout: Money::share(Money::format($dto->payout), Money::format($publisher->rev_share, 2)),
+            // The postback's own address, never the click's fallback. The two
+            // post-conversion IP rules exist to inspect whoever *completed* the
+            // offer — a tracking URL copied out of the address bar is completed
+            // by someone the click stage never saw — and `$ip` above cannot
+            // tell those two apart. See FraudContext::$conversionIp.
+            conversionIp: $dto->ip,
         );
 
         $decision = app(FraudPipeline::class)->evaluate(FraudStage::PostConversion, $context);

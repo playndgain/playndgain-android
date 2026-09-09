@@ -61,7 +61,7 @@ it('reads stored events and invents one when the offer pays once', function () {
 });
 
 it('lists each event and the network payout for an admin', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     Filament::setCurrentPanel('admin');
 
     $offer = eventsOffer();
@@ -89,7 +89,7 @@ it('lists each event and the network payout for an admin', function () {
         ->toContain('Install the game')
         ->toContain('Each event pays on its own')
         ->toContain('1,000 Coins / $1')
-        ->not->toContain('Amounts are yours after rev share');
+        ->not->toContain('Amounts shown are what you earn');
 });
 
 it('lists each event at the publisher share and hides the network payout', function () {
@@ -121,7 +121,7 @@ it('lists each event at the publisher share and hides the network payout', funct
         ->toContain('+$1.2250')
         ->toContain('+1,575 Coins')
         ->toContain('+1,225 Coins')
-        ->toContain('Amounts are yours after rev share')
+        ->toContain('Amounts shown are what you earn')
         ->toContain('User reward uses this app currency')
         ->not->toContain('+$2.2500')
         ->not->toContain('+$1.7500');
@@ -172,7 +172,7 @@ it('does not invent a user reward when the publisher has no app in scope', funct
 });
 
 it('still opens for a single-step offer', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     Filament::setCurrentPanel('admin');
 
     $offer = eventsOffer([

@@ -4,8 +4,12 @@
     use App\Models\App;
     use Illuminate\Support\Facades\Storage;
 
-    $app = $record instanceof App ? $record : null;
-    $name = $app?->name ?: (is_string($getState()) ? $getState() : null);
+    $state = $getState();
+    $app = $state instanceof App
+        ? $state
+        : ($record instanceof App ? $record : ($record->app ?? null));
+    $app = $app instanceof App ? $app : null;
+    $name = $app?->name ?: (is_string($state) ? $state : null);
 
     $icon = null;
     if ($app !== null && filled($app->icon_path)) {
@@ -21,7 +25,7 @@
 @endphp
 
 @if ($app === null && blank($name))
-    <p class="fi-ta-placeholder ad-user">—</p>
+    <p class="fi-ta-placeholder ad-user">{{ $getPlaceholder() ?: '—' }}</p>
 @else
     <div class="ad-user">
         <span class="ad-user__mark" aria-hidden="true">

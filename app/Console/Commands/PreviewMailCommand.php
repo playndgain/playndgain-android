@@ -42,7 +42,7 @@ use Spatie\Backup\Notifications\Notifications\UnhealthyBackupWasFoundNotificatio
 class PreviewMailCommand extends Command
 {
     protected $signature = 'mail:preview
-        {--to=preview@advault.test : Address Mailpit will show}';
+        {--to=preview@playndgain.test : Address Mailpit will show}';
 
     protected $description = 'Send one of every email type to Mailpit (local only)';
 
@@ -55,7 +55,7 @@ class PreviewMailCommand extends Command
         }
 
         $to = (string) $this->option('to');
-        $recipient = User::make(['name' => 'Mail preview', 'email' => $to]);
+        $recipient = new User(['name' => 'Mail preview', 'email' => $to]);
 
         $this->send('Contact form', fn () => Mail::to($to)->send(new ContactMessage(
             senderName: 'Dana Okonkwo',

@@ -1,13 +1,13 @@
 ---
-title: Signed URLs
-description: HMAC on the wall URL — when you need it and how to compute it.
+title: Signed wall URLs
+description: When guessable player IDs make signing necessary, and how to compute the signature.
 ---
 
-By default anyone who knows your App ID can load your wall with any `userid`. For most publishers that is harmless: the wall shows offers, and rewards only move when a real conversion completes.
+By default anyone who knows your App ID can load your wall with any `userid`. For most publishers that is harmless: the wall shows offers, and coins only move when a real conversion completes.
 
-It stops being harmless when your `userid` is guessable. If your identifiers are sequential integers, anyone can open a wall as user `1`, complete an offer, and the reward lands on someone else's account.
+It stops being harmless the moment your identifiers are guessable. If they are sequential integers, anyone can open the wall as player `1`, complete an offer, and the reward lands on a stranger's account.
 
-**Turn on Require signed wall URLs** in **Apps → Security** when your user identifiers are enumerable.
+**Turn on Require signed wall URLs** in **Apps → Security** when your identifiers are enumerable. If they are opaque hashes, you do not need this page.
 
 ## The signature
 
@@ -15,9 +15,9 @@ It stops being harmless when your `userid` is guessable. If your identifiers are
 sig = sha256(appid + userid + secret_key)
 ```
 
-Plain concatenation, no separators, lower-case hex. Computed **on your server**, then written into the iframe URL you render.
+Plain concatenation, no separators, lower-case hex. Computed on your server, then written into the URL you render.
 
-With the app active and signing required, a request with a missing or wrong `sig` gets a `403` and no offers.
+With signing required, a missing or wrong `sig` gets a `403` and no offers.
 
 ## Compute it
 
@@ -25,9 +25,9 @@ With the app active and signing required, a request with a missing or wrong `sig
 <?php
 
 $appId  = 'YOUR_APP_ID';
-$userId = (string) $user->id;
+$userId = (string) $player->id;
 
-$sig = hash('sha256', $appId . $userId . getenv('ADVAULT_SECRET'));
+$sig = hash('sha256', $appId . $userId . getenv('PLAYNDGAIN_SECRET'));
 
 $url = '{APP_URL}/wall?' . http_build_query([
     'appid'  => $appId,
@@ -40,10 +40,10 @@ $url = '{APP_URL}/wall?' . http_build_query([
 import { createHash } from 'node:crypto';
 
 const appId  = 'YOUR_APP_ID';
-const userId = String(user.id);
+const userId = String(player.id);
 
 const sig = createHash('sha256')
-  .update(appId + userId + process.env.ADVAULT_SECRET)
+  .update(appId + userId + process.env.PLAYNDGAIN_SECRET)
   .digest('hex');
 
 const url = `{APP_URL}/wall?appid=${appId}&userid=${encodeURIComponent(userId)}&sig=${sig}`;
@@ -54,10 +54,10 @@ import hashlib, os
 from urllib.parse import urlencode
 
 app_id  = "YOUR_APP_ID"
-user_id = str(user.id)
+user_id = str(player.id)
 
 sig = hashlib.sha256(
-    (app_id + user_id + os.environ["ADVAULT_SECRET"]).encode()
+    (app_id + user_id + os.environ["PLAYNDGAIN_SECRET"]).encode()
 ).hexdigest()
 
 url = "{APP_URL}/wall?" + urlencode(
@@ -65,13 +65,16 @@ url = "{APP_URL}/wall?" + urlencode(
 )
 ```
 
-## Rules
+## Four rules
 
-- **Never compute the signature in the browser.** Shipping the secret to the client defeats the entire mechanism and leaks the key that also signs your postbacks.
-- **Sign the exact string you send.** If you URL-encode `userid`, sign the *decoded* value — we verify against what we decoded.
-- **The signature is not a session.** It authenticates the pairing of an app and a user identifier. It does not expire and it carries no timestamp; a user who bookmarks their wall URL keeps a working one.
-- **Rotating the secret invalidates every signed URL** you have already rendered, and every postback signature your endpoint is checking. Rotate during a deploy, not on a Friday.
+**Never compute it in the browser.** Shipping the secret to the client defeats the mechanism entirely, and leaks the key that also signs your postbacks.
 
-## Verifying you got it right
+**Sign the string you send, decoded.** If you URL-encode `userid`, sign the decoded value. We verify against what we decoded.
 
-Turn signing on, load your wall without `sig`, and confirm you get a `403`. Then load it with the signature and confirm the offers come back. If both hold, you are done.
+**It is not a session.** It authenticates the pairing of an app and a player identifier. There is no timestamp and no expiry, so a player who bookmarks their wall URL keeps a working one.
+
+**Rotating the secret invalidates every URL you have already rendered**, and every postback signature your endpoint is currently checking. Rotate inside a deploy, and not on a Friday.
+
+## Check you got it right
+
+Turn signing on, load your wall with no `sig`, confirm a `403`. Add the signature, confirm the offers come back. If both hold you are finished.

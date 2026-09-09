@@ -6,6 +6,7 @@ use App\Enums\BannedBy;
 use App\Filament\Publisher\Resources\BannedEndUsers\Pages\ListBannedEndUsers;
 use App\Filament\Publisher\Resources\PublisherScopedResource;
 use App\Filament\Publisher\Support\CurrentPublisher;
+use App\Filament\Support\AppColumns;
 use App\Models\App;
 use App\Models\BannedEndUser;
 use BackedEnum;
@@ -35,9 +36,11 @@ class BannedEndUserResource extends PublisherScopedResource
 {
     protected static ?string $model = BannedEndUser::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserMinus;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-user-x';
 
-    protected static ?int $navigationSort = 11;
+    protected static string|\UnitEnum|null $navigationGroup = 'Protection';
+
+    protected static ?int $navigationSort = 41;
 
     protected static ?string $navigationLabel = 'Banned users';
 
@@ -68,10 +71,10 @@ class BannedEndUserResource extends PublisherScopedResource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('app:id,name'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(AppColumns::eager()))
             ->columns([
                 TextColumn::make('end_user_id')->label('End user')->searchable()->copyable(),
-                TextColumn::make('app.name')->label('App')->placeholder('All apps'),
+                AppColumns::show()->placeholder('All apps'),
                 TextColumn::make('reason')->placeholder('—')->wrap()->limit(60),
                 TextColumn::make('banned_by')->label('Banned by')->badge()
                     ->formatStateUsing(fn (BannedBy $state): string => $state === BannedBy::System ? 'system' : 'you')
@@ -126,7 +129,7 @@ class BannedEndUserResource extends PublisherScopedResource
                             ]);
                         }
 
-                        Notification::make()->title("Banned {$ids->count()} users")->success()->send();
+                        Notification::make()->title("Banned {$ids->count()} users")->send();
                     }),
             ])
             ->recordActions([

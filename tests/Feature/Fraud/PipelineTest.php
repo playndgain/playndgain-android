@@ -128,7 +128,7 @@ it('has a registered class for every key the seeder ships', function () {
     $registry = app(RuleRegistry::class);
     $keys = FraudRule::query()->pluck('key');
 
-    expect($keys)->toHaveCount(20);
+    expect($keys)->toHaveCount(23);
 
     foreach ($keys as $key) {
         expect($registry->has($key))->toBeTrue("no rule class registered for '{$key}'");

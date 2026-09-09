@@ -4,13 +4,13 @@ use App\Enums\AppPlatform;
 use App\Filament\Publisher\Resources\Apps\AppResource;
 use App\Filament\Publisher\Resources\Apps\Pages\CreateApp;
 use App\Filament\Support\ImpersonateAction;
-use App\Filament\Support\PanelSwitcher;
 use App\Http\Controllers\ImpersonationController;
 use App\Models\App;
 use App\Models\Conversion;
 use App\Models\OfferClick;
 use App\Models\Publisher;
 use App\Models\User;
+use BezhanSalleh\PanelSwitch\PanelSwitch;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
 
@@ -109,11 +109,14 @@ it('does not scope the money path, which has no panel at all', function () {
 });
 
 it('offers the panel switcher to admins and to nobody else', function () {
+    // The switch lists the panels the user can access and renders only when
+    // there are two or more — an admin has both, a publisher has one.
     $this->actingAs(User::factory()->admin()->create());
-    expect(PanelSwitcher::items('admin'))->toHaveKey('switch-panel');
+    expect(PanelSwitch::make()->isVisible())->toBeTrue()
+        ->and(array_keys(PanelSwitch::make()->getPanels()))->toBe(['admin', 'publisher']);
 
     $this->actingAs(Publisher::factory()->create()->user);
-    expect(PanelSwitcher::items('publisher'))->toBe([]);
+    expect(PanelSwitch::make()->isVisible())->toBeFalse();
 });
 
 it('hides impersonation from inside an impersonated session', function () {

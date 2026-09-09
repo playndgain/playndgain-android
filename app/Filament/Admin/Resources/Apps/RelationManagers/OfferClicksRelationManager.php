@@ -25,7 +25,11 @@ class OfferClicksRelationManager extends RelationManager
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['offer:id,name']))
             ->columns([
                 TextColumn::make('created_at')->label('Time')->dateTime()->sortable(),
-                TextColumn::make('click_id')->label('Click ID')->copyable()->limit(14)->searchable(),
+                TextColumn::make('click_id')->label('Click ID')
+                    ->copyable()
+                    ->copyableState(fn (?string $state): ?string => $state)
+                    ->limit(14)
+                    ->searchable(),
                 TextColumn::make('offer.name')->label('Offer')->limit(24)->placeholder('—'),
                 TextColumn::make('end_user_id')->label('End user')->limit(20)->searchable(),
                 TextColumn::make('ip')->label('IP')->searchable()

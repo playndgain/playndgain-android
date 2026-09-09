@@ -8,7 +8,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Config;
 
 it('renders publisher identity as a user cell, flag, and status mark', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $publisher = Publisher::factory()->create([
         'company_name' => 'Iberia Media',
@@ -38,7 +38,7 @@ it('renders publisher identity as a user cell, flag, and status mark', function 
 });
 
 it('names a missing country instead of inventing a flag', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     Publisher::factory()->create([
         'country' => null,
@@ -63,9 +63,9 @@ it('labels each publisher status for the admin table', function (PublisherStatus
         ->and($status->getIcon())->toBe($icon);
 })->with([
     [PublisherStatus::Pending, 'Pending', 'warning', Heroicon::OutlinedClock],
-    [PublisherStatus::Approved, 'Approved', 'info', Heroicon::OutlinedCheckBadge],
+    [PublisherStatus::Approved, 'Approved', 'success', Heroicon::OutlinedCheckBadge],
     [PublisherStatus::Suspended, 'Suspended', 'warning', Heroicon::OutlinedPauseCircle],
-    [PublisherStatus::Banned, 'Banned', 'gray', Heroicon::OutlinedNoSymbol],
+    [PublisherStatus::Banned, 'Banned', 'danger', Heroicon::OutlinedNoSymbol],
 ]);
 
 it('resolves a stored country code to a human name', function () {

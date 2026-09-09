@@ -59,7 +59,7 @@ final class TestConversion
         // catches the second one exactly as it would a network's retry.
         $this->processor->record(
             new PostbackDTO(
-                networkTxId: 'advault-test-'.$clickId,
+                networkTxId: 'playndgain-test-'.$clickId,
                 clickId: $clickId,
                 payout: (float) $offer->payout,
                 status: 'credited',

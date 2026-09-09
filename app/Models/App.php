@@ -44,8 +44,11 @@ class App extends Model
     protected static function booted(): void
     {
         static::creating(function (self $app): void {
-            // ponytail: same max+1 approach as Publisher::$pub_id.
-            $app->app_id ??= (static::withTrashed()->max('app_id') ?? self::FIRST_APP_ID - 1) + 1;
+            // Same max+1 approach as Publisher::$pub_id. The ID is unique across
+            // every publisher, so the lookup must leave the publisher scope —
+            // scoped, it saw only this publisher's apps and re-issued an ID
+            // another publisher already held.
+            $app->app_id ??= (static::withoutGlobalScopes()->withTrashed()->max('app_id') ?? self::FIRST_APP_ID - 1) + 1;
             $app->secret_key ??= Str::random(40);
         });
     }

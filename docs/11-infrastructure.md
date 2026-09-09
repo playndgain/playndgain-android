@@ -49,9 +49,9 @@ MySQL 8.4 is also still an LTS and is the conservative fallback if the host's pa
 
 | Domain | Serves |
 |---|---|
-| `advault.io` | Static marketing site + `/docs` + Laravel panels |
-| `wall.advault.io` | Offerwall only |
-| `api.advault.io` | Postback endpoints only |
+| `playndgain.com` | Static marketing site + `/docs` + Laravel panels |
+| `wall.playndgain.com` | Offerwall only |
+| `api.playndgain.com` | Postback endpoints only |
 
 Three server blocks, one machine, one certificate covering all three.
 
@@ -61,8 +61,8 @@ Three server blocks, one machine, one certificate covering all three.
 
 ```nginx
 server {
-    server_name advault.io;
-    root /var/www/advault/public;
+    server_name playndgain.com;
+    root /var/www/playndgain/public;
     index index.php;
 
     location / {
@@ -102,8 +102,8 @@ Cleared on every deploy, because cached HTML references hashed asset filenames t
 
 ```nginx
 server {
-    server_name wall.advault.io;
-    root /var/www/advault/public;
+    server_name wall.playndgain.com;
+    root /var/www/playndgain/public;
 
     limit_req_zone $binary_remote_addr zone=wall:20m rate=60r/m;
     limit_req zone=wall burst=20 nodelay;
@@ -148,9 +148,9 @@ Redis + Horizon.
 Separate supervisors, not one pool. A ten-minute catalogue sync must never sit in front of a conversion postback — that is the entire reason for the split.
 
 ```ini
-; /etc/supervisor/conf.d/advault-horizon.conf
-[program:advault-horizon]
-command=php /var/www/advault/artisan horizon
+; /etc/supervisor/conf.d/playndgain-horizon.conf
+[program:playndgain-horizon]
+command=php /var/www/playndgain/artisan horizon
 autostart=true
 autorestart=true
 stopwaitsecs=3600
@@ -164,7 +164,7 @@ user=www-data
 ## 4. Scheduler
 
 ```
-* * * * * cd /var/www/advault && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /var/www/playndgain && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 | Task | Frequency |
@@ -178,6 +178,12 @@ user=www-data
 | `logs:prune` | Daily 04:00 |
 | `horizon:snapshot` | Every 5 min |
 | `backup:run` | Daily 02:00 |
+| `withdrawals:request-monthly` | 1st of the month 00:10 |
+| `payouts:reconcile-statements` | Daily 03:05 |
+
+`withdrawals:request-monthly` writes last month's payout statements and opens the withdrawals in one run — [06-ledger-payouts.md](06-ledger-payouts.md) §9. After deploying the statements migration, run `php artisan payouts:backfill-statements --dry-run`, then without the flag, once: it writes a statement for every historical month with ledger activity and links the withdrawals that already paid them. Rerunning is a no-op; `--publisher=10042` limits either command to one account. Withdrawals requested *inside* the month they were paying for (from before payouts were monthly) cannot reach that month by the normal rule; `--link-through=2026-08` lets them settle statements up to that month on the real run — the last such request in a month settles it, earlier ones appear as the carried line. One-time use. Follow it with `php artisan payouts:reconcile-statements` — a failure names the publisher and the row; inspect the ledger and the withdrawal, then re-run the backfill for that publisher.
+
+Before the migration, check how many duplicate destinations the dedupe will remove: `SELECT publisher_id, type, COUNT(*) FROM payment_methods GROUP BY 1,2 HAVING COUNT(*) > 1;` — the Active row (else the newest) is kept, the rest are deleted with an `audit_logs` row each (`payment_method.deduplicated`).
 
 `postbacks:replay-chargebacks` is not in this table either. It is a repair for chargebacks refused by the old not-active gate, it moves money and fires publisher callbacks, and there is nothing recurring for it to do — run it by hand, `--dry-run` first.
 

@@ -5,12 +5,16 @@ namespace App\Filament\Publisher\Resources\OfferClicks;
 use App\Enums\DeviceType;
 use App\Filament\Publisher\Resources\OfferClicks\Pages\ListOfferClicks;
 use App\Filament\Publisher\Resources\PublisherScopedResource;
+use App\Filament\Support\AppColumns;
 use App\Models\OfferClick;
 use BackedEnum;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -31,25 +35,60 @@ class OfferClickResource extends PublisherScopedResource
 {
     protected static ?string $model = OfferClick::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCursorArrowRays;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-mouse-pointer-click';
 
-    protected static ?int $navigationSort = 6;
+    protected static string|\UnitEnum|null $navigationGroup = 'Activity';
+
+    protected static ?int $navigationSort = 21;
 
     protected static ?string $navigationLabel = 'Offerwall clicks';
+
+    protected static ?string $recordTitleAttribute = 'click_id';
 
     public static function form(Schema $schema): Schema
     {
         return $schema->components([]);
     }
 
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema->columns(1)->components([
+            Section::make('Click')->columnSpanFull()->columns(3)->schema([
+                TextEntry::make('click_id')->label('Click ID')->copyable(),
+                TextEntry::make('offer.name')->label('Offer')->placeholder('Embedded wall')
+                    ->state(fn (OfferClick $record): ?string => $record->offer?->name),
+                TextEntry::make('app.name')->label('App'),
+                TextEntry::make('end_user_id')->label('End user')->copyable(),
+                TextEntry::make('created_at')->label('Clicked')->dateTime(),
+                TextEntry::make('converted_at')->label('Converted')->dateTime()->placeholder('—'),
+            ]),
+
+            Section::make('Visitor')->columnSpanFull()->columns(3)->schema([
+                TextEntry::make('ip')
+                    ->label('IP')
+                    ->state(fn (OfferClick $record): string => self::ip($record))
+                    ->copyable(),
+                TextEntry::make('country')->placeholder('—'),
+                TextEntry::make('device_type')->label('Device')->badge()->placeholder('—'),
+                TextEntry::make('os')->label('OS')->placeholder('—'),
+                TextEntry::make('browser')->placeholder('—'),
+                TextEntry::make('user_agent')->label('User agent')->placeholder('—')->columnSpanFull(),
+            ]),
+        ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['app:id,name,anonymize_ip', 'offer:id,name']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with([AppColumns::eager('anonymize_ip'), 'offer:id,name']))
             ->columns([
                 TextColumn::make('created_at')->label('Time')->dateTime()->sortable(),
-                TextColumn::make('app.name')->label('App')->limit(18),
-                TextColumn::make('click_id')->label('Click ID')->copyable()->limit(14)->searchable(),
+                AppColumns::show(),
+                TextColumn::make('click_id')->label('Click ID')
+                    ->copyable()
+                    ->copyableState(fn (?string $state): ?string => $state)
+                    ->limit(14)
+                    ->searchable(),
                 // A click with no offer is an embedded partner wall open (docs/03 §2).
                 // The supplier name is ours; the publisher sees that it was
                 // the iframe, not which company hosted it.
@@ -99,7 +138,9 @@ class OfferClickResource extends PublisherScopedResource
                         ->when($data['from'] ?? null, fn (Builder $q, string $date) => $q->whereDate('created_at', '>=', $date))
                         ->when($data['until'] ?? null, fn (Builder $q, string $date) => $q->whereDate('created_at', '<=', $date))),
             ])
-            ->recordActions([])
+            ->recordActions([
+                ViewAction::make()->slideOver()->modalWidth(Width::TwoExtraLarge),
+            ])
             ->toolbarActions([])
             ->defaultSort('created_at', 'desc');
     }
@@ -109,6 +150,12 @@ class OfferClickResource extends PublisherScopedResource
         return [
             'index' => ListOfferClicks::route('/'),
         ];
+    }
+
+    /** @return array<int, string> */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['click_id', 'end_user_id'];
     }
 
     public static function canCreate(): bool

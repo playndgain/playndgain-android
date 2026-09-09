@@ -8,33 +8,73 @@ use App\Models\Network;
 use App\Models\Offer;
 
 /**
- * Invoked directly rather than through the route so the queries behind the
- * counters are exercised against the real schema rather than trusted.
+ * Invoked directly rather than through the route so the one query left behind
+ * the page is exercised against the real schema rather than trusted.
  *
- * Payouts are pinned instead of left to the factory's randomFloat: the average
- * is a figure the payout calculator multiplies by and prints on screen, so the
- * test has to prove which rows it came from, not merely that a number arrived.
+ * The page used to print four figures — live offers, countries, active demand
+ * partners, callback delivery — and most of this file used to be about the
+ * sample floors and fallbacks that kept them honest. They are gone, and gone on
+ * purpose: see LandingController's docblock and LandingContent::proofs(). What
+ * these tests now hold in place is the property that replaced them, which is
+ * that the front door states capabilities and cannot print a count of anything.
  */
-it('counts only what it can defend', function () {
+it('ships the rule count and no other statistic', function () {
     $live = Network::factory()->create(['status' => NetworkStatus::Active]);
     Network::factory()->create(['status' => NetworkStatus::Disabled]);
 
-    Offer::factory()->for($live)->create(['countries' => ['US', 'EG'], 'payout' => 1.25]);
-    Offer::factory()->for($live)->create(['countries' => ['EG', 'DE'], 'payout' => 2.75]);
-    Offer::factory()->for($live)->create(['status' => OfferStatus::Inactive, 'countries' => ['FR'], 'payout' => 99.00]);
+    Offer::factory()->for($live)->create(['countries' => ['US', 'EG']]);
+    Offer::factory()->for($live)->create(['countries' => ['EG', 'DE']]);
+    Offer::factory()->for($live)->create(['status' => OfferStatus::Inactive, 'countries' => ['FR']]);
 
     FraudRule::query()->insert([
         ['key' => 'dupe', 'name' => 'Duplicate', 'description' => 'x', 'stage' => 'click', 'enabled' => true, 'action' => 'block'],
         ['key' => 'geo', 'name' => 'Geo', 'description' => 'x', 'stage' => 'click', 'enabled' => false, 'action' => 'block'],
     ]);
 
-    $stats = app(LandingController::class)()->getData()['stats'];
+    // Two live offers across three countries on one active network, and none of
+    // those six numbers reaches the page. Only the enabled rules do, because the
+    // fraud card names them.
+    expect(app(LandingController::class)()->getData()['stats'])->toBe(['fraud_rules' => 1]);
+});
 
-    expect($stats)->toBe([
-        'offers' => 2,
-        'countries' => 3,   // US, EG, DE — deduped across the JSON column
-        'networks' => 1,
-        'fraud_rules' => 1,
-        'avg_payout' => 2.0, // the two live offers only; the $99 inactive one is not on the wall
+it('states capabilities in the proof band rather than counters', function () {
+    $live = Network::factory()->create(['status' => NetworkStatus::Active]);
+    Offer::factory()->count(13)->for($live)->create(['countries' => ['US', 'EG']]);
+
+    $page = $this->get('/')->assertOk();
+
+    // The four things the band claims, none of which has a denominator.
+    $page->assertSee('One integration')
+        ->assertSee('Your brand')
+        ->assertSee('Signed callbacks')
+        ->assertSee('Paid monthly')
+        ->assertSee('Clearing on the 1st');
+
+    // And the labels the counters used to carry. "Demand partners live" is the
+    // one that matters most: a count of partners on a public surface is an
+    // invitation to work out who they are (AGENTS.md).
+    $page->assertDontSee('Live offers')
+        ->assertDontSee('Countries')
+        ->assertDontSee('Demand partners live')
+        ->assertDontSee('Callbacks delivered')
+        ->assertDontSee('data-metric', false);
+});
+
+it('states the terms from the settings table', function () {
+    $terms = app(LandingController::class)()->getData()['terms'];
+
+    // Seeded defaults, formatted without trailing zeros: "20", not "20.00".
+    // The revenue share is not among them on purpose: it is a per-publisher
+    // commercial term and never reaches a public page.
+    expect($terms)->toBe([
+        'hold_days' => '30',
+        'min_payout' => '20',
     ]);
+});
+
+it('puts the minimum payout in the proof band and the terms strip, from settings', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('from $20.')
+        ->assertSee('Minimum payout');
 });

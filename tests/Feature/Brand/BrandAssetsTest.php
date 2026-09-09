@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Config;
  * nothing. That is the failure class this file exists for: the assets are
  * asserted to be non-empty and actually linked, not just to exist.
  */
+it('uses the brand mark as the house network logo', function () {
+    expect(file_get_contents(public_path('img/networks/house.svg')))
+        ->toBe(file_get_contents(public_path('favicon.svg')));
+});
+
 it('ships a favicon set that is not empty', function (string $file, int $minimumBytes) {
     $path = public_path($file);
 
@@ -44,7 +49,7 @@ it('links the favicon set from the marketing layout', function () {
 });
 
 it('gives both panels a favicon and a mark that still says which panel it is', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $this->actingAs(User::factory()->admin()->create([
         'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
@@ -67,10 +72,14 @@ it('gives both panels a favicon and a mark that still says which panel it is', f
 it('renders one mark per brand surface with no duplicate gradient ids', function () {
     $html = $this->get('/')->assertSuccessful()->getContent();
 
-    // Header and footer both render the mark, plus the embedded phone wall previews.
-    // The old header copy used a gradient with id="vg"; two of those on one page
-    // is an id collision the second element loses.
-    expect(substr_count((string) $html, 'M8 7.5L13 18.5L18 7.5'))->toBeGreaterThanOrEqual(2)
-        ->and(substr_count((string) $html, 'linearGradient'))->toBe(0);
-});
+    // Header, footer and the page body all render the mark — the bowl of its
+    // "P" is the signature. The tile's gradient needs an id, and the same id
+    // rendered twice on one page is a collision the second loses, so every
+    // instance mints its own and no two may match.
+    expect(substr_count((string) $html, 'M21 19H33a11 11 0 0 1 0 22H21'))->toBeGreaterThanOrEqual(2);
 
+    preg_match_all('/<linearGradient id="([^"]+)"/', (string) $html, $matches);
+
+    expect($matches[1])->not->toBeEmpty()
+        ->and(count(array_unique($matches[1])))->toBe(count($matches[1]));
+});

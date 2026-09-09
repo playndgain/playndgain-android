@@ -31,7 +31,7 @@ class TrustCloudflare
             is_string($peer)
             && is_string($visitor)
             && filter_var($visitor, FILTER_VALIDATE_IP)
-            && IpUtils::checkIp($peer, (array) config('advault.cloudflare_proxies', []))
+            && IpUtils::checkIp($peer, (array) config('playndgain.cloudflare_proxies', []))
         ) {
             $request->server->set('REMOTE_ADDR', $visitor);
         }

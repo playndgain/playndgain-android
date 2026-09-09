@@ -30,6 +30,12 @@ use Illuminate\Support\Facades\Storage;
  * and everything in it is worldwide and device-agnostic so the wall renders
  * the same on any machine and in any browser.
  *
+ * The art comes from `database/fixtures/offer-art` — committed files, each one
+ * the artwork the named app actually publishes, matched by bundle id and seller
+ * (see `demo:offer-art`). Two rows carry no app identity at all, the survey and
+ * the truncation row, so they carry no art and render the letter tile: the
+ * fallback stays on the wall where it can be seen to work.
+ *
  * A local box has no GeoLite2 on disk, so the country resolves to null — and
  * the wall is fail-closed all the way: no country, no offers, not even the
  * worldwide ones. That is why the app is created in test mode and why the URL
@@ -40,19 +46,12 @@ use Illuminate\Support\Facades\Storage;
  */
 class DemoWallSeeder extends Seeder
 {
-    private const PUBLISHER_EMAIL = 'demo@advalut.test';
+    private const PUBLISHER_EMAIL = 'demo@playndgain.test';
 
     private const APP_NAME = 'Demo Wall';
 
-    /** Gradient stops for the generated demo art — see icon(). */
-    private const ICON_COLORS = [
-        [[99, 102, 241], [168, 85, 247]],
-        [[236, 72, 153], [251, 146, 60]],
-        [[16, 185, 129], [59, 130, 246]],
-        [[245, 158, 11], [239, 68, 68]],
-        [[14, 165, 233], [99, 102, 241]],
-        [[132, 204, 22], [22, 163, 74]],
-    ];
+    /** Where the committed artwork fixtures live — see art() and installArt(). */
+    private const ART = 'database/fixtures/offer-art';
 
     /**
      * name, instructions, payout USD, categories, featured, multi-reward, goals
@@ -105,7 +104,13 @@ class DemoWallSeeder extends Seeder
             return;
         }
 
-        $user = User::query()->firstOrCreate(
+        // updateOrCreate, for the same reason the publisher below uses it: the
+        // last line of this seeder prints these credentials, and
+        // scripts/capture-landing.mjs signs in with them. firstOrCreate ignores
+        // every attribute once the row exists, so a box where the demo password
+        // had been changed kept printing a password that no longer worked and
+        // the capture run failed at the login form.
+        $user = User::query()->updateOrCreate(
             ['email' => self::PUBLISHER_EMAIL],
             [
                 'name' => 'Demo Publisher',
@@ -147,7 +152,7 @@ class DemoWallSeeder extends Seeder
         $app = App::query()->updateOrCreate(
             ['publisher_id' => $publisher->id, 'name' => self::APP_NAME],
             [
-                'url' => 'https://demo.advalut.test',
+                'url' => 'https://demo.playndgain.test',
                 'platform' => AppPlatform::All,
                 'status' => AppStatus::Active,
                 'currency_name' => 'Coins',
@@ -159,9 +164,13 @@ class DemoWallSeeder extends Seeder
             ],
         );
 
+        $art = $this->art();
+
         foreach (self::OFFERS as $i => [$name, $instructions, $payout, $categories, $featured, $multi, $goals]) {
+            $externalId = 'demo-'.($i + 1);
+
             $offer = Offer::query()->updateOrCreate(
-                ['network_id' => $network->id, 'external_id' => 'demo-'.($i + 1)],
+                ['network_id' => $network->id, 'external_id' => $externalId],
                 [
                     'name' => $name,
                     'description' => $instructions ?? $name,
@@ -182,10 +191,15 @@ class DemoWallSeeder extends Seeder
                     'status' => OfferStatus::Active,
                     'first_seen_at' => now(),
                     'last_seen_at' => now(),
+                    // Set from the manifest, not from what a previous run left
+                    // behind: an offer whose fixture was removed has to go back
+                    // to having no art, or the wall keeps serving a cached file
+                    // for an app the manifest no longer claims to have matched.
+                    'icon_url' => isset($art[$externalId]) ? 'fixture://'.$externalId : null,
                 ],
             );
 
-            $this->icon($offer);
+            $this->installArt($offer, $art[$externalId] ?? null);
         }
 
         // Test mode pins a $0.01 offer above the wall and runs a real
@@ -206,59 +220,76 @@ class DemoWallSeeder extends Seeder
     }
 
     /**
-     * A demo wall with no art is a demo of the fallback tile, not of the wall.
+     * The artwork manifest, keyed by `offers.external_id`.
      *
-     * Written straight into the icon proxy's own cache path so it is served
+     * Committed fixtures, not generated art. What stood here before drew a
+     * gradient and an initial with GD, which demonstrated the fallback tile
+     * rather than the wall — and drew it in indigo, violet and pink, which are
+     * not colours this brand owns (design.md §2). `demo:offer-art` refills the
+     * files from the stores the apps ship on and verifies each one against the
+     * bundle id and seller the manifest names; see that command.
+     *
+     * A missing or unreadable manifest is not a failure: every offer simply
+     * carries no art and renders the letter tile, which is exactly how a real
+     * offer whose network deleted its asset renders.
+     *
+     * @return array<string, string> external id => absolute fixture path
+     */
+    private function art(): array
+    {
+        $directory = base_path(self::ART);
+        $manifest = is_readable($directory.'/manifest.json')
+            ? json_decode((string) file_get_contents($directory.'/manifest.json'), true)
+            : null;
+
+        if (! is_array($manifest) || ! is_array($manifest['art'] ?? null)) {
+            return [];
+        }
+
+        $found = [];
+
+        foreach ($manifest['art'] as $externalId => $entry) {
+            $file = is_array($entry) ? ($entry['file'] ?? null) : null;
+
+            // The name reaches a filesystem path, so it has to be a plain one.
+            if (! is_string($file) || preg_match('/^[a-z0-9-]+\.jpg$/', $file) !== 1) {
+                continue;
+            }
+
+            if (is_readable($path = $directory.'/'.$file)) {
+                $found[(string) $externalId] = $path;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Puts one offer's art where the icon proxy already looks for it.
+     *
+     * Written straight into the proxy's own cache path so the wall is served
      * with no outbound request — a local box is often offline, and pointing
-     * `icon_url` at a real CDN would make the demo depend on someone else's
+     * `icon_url` at a store CDN would make the demo depend on someone else's
      * uptime. Real inventory arrives with `icon_url` set and the proxy fetches
      * it once (docs/03 §6); nothing here changes that path.
+     *
+     * Every extension the proxy will serve is cleared first, and only for this
+     * offer. OfferIconController::stored() scans png, jpg, webp then gif and
+     * returns the first hit, so a PNG left by an earlier run of this seeder
+     * would silently outrank the JPEG written here — the art would look
+     * unchanged and the reason would be invisible. Scoped to the ids this
+     * seeder owns, so nothing a network sync cached is touched.
      */
-    private function icon(Offer $offer): void
+    private function installArt(Offer $offer, ?string $fixture): void
     {
-        $path = "offer-icons/{$offer->id}.png";
+        foreach (['png', 'jpg', 'webp', 'gif'] as $extension) {
+            Storage::disk('local')->delete("offer-icons/{$offer->id}.{$extension}");
+        }
 
-        if (! extension_loaded('gd') || Storage::disk('local')->exists($path)) {
+        if ($fixture === null) {
             return;
         }
 
-        $size = 128;
-        [$from, $to] = self::ICON_COLORS[crc32($offer->name) % count(self::ICON_COLORS)];
-        $canvas = imagecreatetruecolor($size, $size);
-
-        // Vertical blend, one allocated colour per row. 128 rows is well inside
-        // a truecolor image's palette and cheaper than a per-pixel loop.
-        for ($y = 0; $y < $size; $y++) {
-            $t = $y / ($size - 1);
-            $colour = imagecolorallocate(
-                $canvas,
-                (int) round($from[0] + ($to[0] - $from[0]) * $t),
-                (int) round($from[1] + ($to[1] - $from[1]) * $t),
-                (int) round($from[2] + ($to[2] - $from[2]) * $t),
-            );
-            imageline($canvas, 0, $y, $size, $y, $colour);
-        }
-
-        // GD's built-in faces top out around 9×15px, so the initial is drawn
-        // small and resampled up — blurrier than a real glyph, and still the
-        // difference between a wall of art and a wall of flat squares.
-        $glyph = imagecreatetruecolor(11, 17);
-        imagealphablending($glyph, false);
-        imagesavealpha($glyph, true);
-        imagefill($glyph, 0, 0, imagecolorallocatealpha($glyph, 0, 0, 0, 127));
-        imagealphablending($glyph, true);
-        imagestring($glyph, 5, 1, 1, mb_strtoupper(mb_substr($offer->name, 0, 1)), imagecolorallocate($glyph, 255, 255, 255));
-
-        // Alpha has to survive the scale-up or the letter arrives inside an
-        // opaque block of its own background.
-        imagealphablending($canvas, true);
-        imagecopyresampled($canvas, $glyph, 40, 30, 0, 0, 48, 68, 11, 17);
-
-        ob_start();
-        imagepng($canvas);
-        $png = (string) ob_get_clean();
-
-        Storage::disk('local')->put($path, $png);
-        $offer->update(['icon_url' => 'seeded://'.$offer->id]);
+        Storage::disk('local')->put("offer-icons/{$offer->id}.jpg", (string) file_get_contents($fixture));
     }
 }

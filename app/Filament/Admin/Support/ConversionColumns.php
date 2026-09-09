@@ -3,6 +3,8 @@
 namespace App\Filament\Admin\Support;
 
 use App\Enums\ConversionStatus;
+use App\Filament\Support\AppColumns;
+use App\Filament\Tables\Columns\AppColumn;
 use App\Models\Conversion;
 use App\Services\Money\Money;
 use Filament\Tables\Columns\IconColumn;
@@ -12,6 +14,7 @@ use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use ZPMLabs\FilamentPopup\Enums\PopUpPosition;
 
 /**
  * The conversion row, defined once.
@@ -22,14 +25,21 @@ use Illuminate\Support\Facades\DB;
  */
 final class ConversionColumns
 {
-    /** @return list<TextColumn|IconColumn> */
+    /** @return list<TextColumn|IconColumn|AppColumn> */
     public static function full(): array
     {
         return [
-            TextColumn::make('trans_id')->label('TX')->searchable()->copyable()->limit(18)
+            TextColumn::make('trans_id')->label('TX')->searchable()
+                ->copyable()
+                ->copyableState(fn (?string $state): ?string => $state)
+                ->limit(18)
                 ->summarize(Count::make()->label('Conversions')),
-            TextColumn::make('publisher.pub_id')->label('Pub')->prefix('#')->sortable(),
-            TextColumn::make('app.name')->label('App')->limit(20),
+            // Click the pub number for who they are, without leaving the
+            // ledger you were reading. The full account is one more click
+            // away inside the card.
+            TextColumn::make('publisher.pub_id')->label('Pub')->prefix('#')->sortable()
+                ->popup(PublisherPopup::class, PopUpPosition::BottomLeft, ['width' => 'sm', 'trigger' => 'click']),
+            AppColumns::show(),
             ...self::forPublisherContext(),
         ];
     }

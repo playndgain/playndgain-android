@@ -36,7 +36,10 @@
         <span class="ad-user__mark" aria-hidden="true">{{ $initials }}</span>
         <div class="ad-user__body">
             <span class="ad-user__name">{{ $user->name }}</span>
-            @if (filled($user->email))
+            {{-- Same guard the company line below already uses: a value that
+                 repeats the name is noise, not a second fact. An account whose
+                 name IS their email prints it once, in the name line. --}}
+            @if (filled($user->email) && $user->email !== $user->name)
                 <span class="ad-user__email"
                       role="button"
                       tabindex="0"

@@ -65,7 +65,7 @@
                                 <span class="num" dir="ltr">{{ $row['at']?->format('Y-m-d') }}</span>
 
                                 {{-- Text, never colour. Green and red mean money
-                                     direction and nothing else on any AdVault
+                                     direction and nothing else on any PLAYNDGAIN
                                      surface (design.md §2), and a wall of green
                                      "Credited" pills would spend the one signal
                                      the product reserves. --}}

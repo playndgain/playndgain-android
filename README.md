@@ -1,10 +1,15 @@
-# AdVault
+# PLAYNDGAIN
 
-Offerwall aggregator. Pulls offer catalogues from partner ad networks, serves them
-on a hosted offerwall that publishers embed, receives conversion postbacks, pays a
-revenue share, and fires a signed S2S postback back to the publisher.
+A rewarded offerwall for app and game publishers. PLAYNDGAIN pulls offer
+catalogues from partner ad networks, serves them on a hosted wall that a
+publisher embeds in their product, receives conversion postbacks, keeps an
+append-only ledger, pays a revenue share, and fires a signed S2S postback back
+to the publisher so they can credit their player. The arithmetic behind every
+cent is a row the publisher can read.
 
 **The specification is the source of truth — start at [docs/00-overview.md](docs/00-overview.md).**
+The visual system is [design.md](design.md); the tokens it describes ship from
+[`resources/css/tokens.css`](resources/css/tokens.css).
 
 ---
 
@@ -20,8 +25,12 @@ The canonical version table is [docs/11-infrastructure.md](docs/11-infrastructur
 |---|---|---|
 | Admin panel | `/admin` | Filament v5 panel |
 | Publisher panel | `/dashboard` | Filament v5 panel |
-| Offerwall | `/wall`, `/click/{id}`, `/postback/{driver}` | Blade + Alpine *(phase 2)* |
-| Landing + docs | `/`, `/docs/*` | Blade + Alpine + GSAP *(phase 6)* |
+| The wall (iframe) | `/wall`, `/click/{id}`, `/postback/{driver}` | Blade + Alpine, its own bundle |
+| Landing + docs | `/`, `/docs/*`, `/legal/*` | Blade + Alpine |
+
+All four wear one brand from one token file. `design.md` is the short version;
+the rule that outranks the rest is that every public page renders completely
+with JavaScript disabled.
 
 ## Local setup
 
@@ -30,30 +39,45 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate:fresh --seed
+php artisan db:seed --class=DemoWallSeeder   # a publisher, an app, and a wall to look at
+npm ci && npm run build
 ```
 
 The admin seeder prints a generated password once. There is no default password.
 
 **Admin 2FA is required by default** (`docs/00-overview.md` §8 — that panel moves
-money and bans accounts). `ADVAULT_REQUIRE_ADMIN_2FA=false` turns the *requirement*
-off for local development; two-factor auth stays available on both panels either
-way. The variable defaults to `true`, so forgetting it in production is safe, and
-the test suite pins it to `true` regardless of your `.env`.
+money and bans accounts). `PLAYNDGAIN_REQUIRE_ADMIN_2FA=false` turns the
+*requirement* off for local development; two-factor auth stays available on both
+panels either way. The variable defaults to `true`, so forgetting it in production
+is safe, and the test suite pins it to `true` regardless of your `.env`.
 
-**Set `ADVAULT_DEV_COUNTRY` or your local offerwall is empty.** Every request on
+**Set `PLAYNDGAIN_DEV_COUNTRY` or your local wall is empty.** Every request on
 your machine arrives from `127.0.0.1`, no GeoIP database will ever place it, and
 the wall fails closed on an address it cannot place (`docs/03-offerwall.md` §2) —
 so `/wall` renders "we could not confirm your device" and no offers. Set it to a
-country your seeded inventory targets (`ADVAULT_DEV_COUNTRY=EG` matches the demo
-seeder) and private addresses resolve there, including from a phone on the same
-wifi. Public addresses still go through the real databases, the variable is read
-only while `APP_ENV=local`, and the test suite pins it blank regardless of your
-`.env`.
+country your seeded inventory targets (`PLAYNDGAIN_DEV_COUNTRY=US` matches the
+demo seeder) and private addresses resolve there, including from a phone on the
+same wifi. Public addresses still go through the real databases, the variable is
+read only while `APP_ENV=local`, and the test suite pins it blank regardless of
+your `.env`.
 
-`.env` expects MySQL on 3306 and Redis on 6379. Local dev on **MariaDB is fine** —
-the schema uses nothing MySQL-only — but CI and production run MySQL 9.7, and the
+`.env` expects MySQL on 3306 and Redis on 6379, with databases named
+`playndgain` and `playndgain_test`. Local dev on **MariaDB is fine** — the schema
+uses nothing MySQL-only — but CI and production run MySQL 9.7, and the
 concurrent-duplicate tests in phase 1 are meant to run against the production
 engine, not a lookalike.
+
+## Brand and design
+
+- `resources/css/tokens.css` — the single token file: colour, type roles, shape,
+  depth, motion. Imported by the site, the wall and the Filament theme.
+- `resources/css/fonts.css` / `fonts-wall.css` — the self-hosted faces
+  (Newsreader and Manrope, OFL; files in `public/fonts`). The wall loads lighter
+  cuts than the site. No font CDN anywhere.
+- `resources/views/components/brand-mark.blade.php` — the lockup, once.
+  `php scripts/make-favicons.php` regenerates the icon set from the same outline.
+- `app/Services/Wall/WallContext::DEFAULT_THEME` — the wall's Midnight palette;
+  `App\Support\LandingWall::themes()` holds the four presets the landing shows.
 
 ## Checks
 
@@ -64,8 +88,8 @@ composer test      # Pest
 composer ci        # all three, as CI runs them
 ```
 
-Tests run against `advalut_test` on MySQL/MariaDB, **not SQLite** — see the comment
-in `phpunit.xml`.
+Tests run against `playndgain_test` on MySQL/MariaDB, **not SQLite** — see the
+comment in `phpunit.xml`.
 
 ### Working on Windows
 
@@ -87,7 +111,7 @@ checklist.
 sudo -u www-data deploy/deploy.sh
 ```
 
-**`deploy/nginx/wall.advault.io.conf` clears `X-Frame-Options` and does it on
+**`deploy/nginx/wall.playndgain.com.conf` clears `X-Frame-Options` and does it on
 purpose.** The wall is an iframe on publisher domains; framing headers applied
 across all three server blocks break every integration at once, and the failure
 is invisible from our side. `tests/Feature/Security/SecurityChecklistTest.php`
@@ -106,10 +130,10 @@ look good.
 
 - [x] **Phase 0 — Foundation.** Scaffold, both panels, full schema, models, tenant
       scoping, policies, seeders, CI.
-- [x] **Phase 1 — Money path.** Nine drivers, sync with the catalogue-collapse
+- [x] **Phase 1 — Money path.** Network drivers, sync with the catalogue-collapse
       guard, postback ingress, DB-level idempotency, append-only ledger, outgoing
       postbacks with the retry ladder, chargebacks, nightly reconciliation.
-- [x] **Phase 2 — Offerwall.** Wall, HMAC, geo and device, eligibility, Redis
+- [x] **Phase 2 — The wall.** Wall, HMAC, geo and device, eligibility, Redis
       cache, UUID clicks, RTL/Arabic, consent gate, rate limits, test mode and a
       test offer that fires a real conversion, icon proxy.
 - [x] **Phase 3 — Fraud engine.** Pipeline, IP intelligence, every pre-click and
@@ -119,9 +143,9 @@ look good.
       and exports.
 - [x] **Phase 5 — Publisher panel.** Everything in `docs/08`, including the
       offers inventory, one-time secret handover, sessions and preferences.
-- [x] **Phase 6 — Marketing & docs.** Tokens, three bundles with the no-GSAP
-      assertion, the Trace, landing, legal and company pages, contact form, docs
-      with search, five snippets, Lighthouse budget in CI.
+- [x] **Phase 6 — Marketing & docs.** Tokens, the bundles, landing, legal and
+      company pages, contact form, docs with search, five snippets, Lighthouse
+      budget in CI.
 - [ ] **Phase 7 — Launch readiness.** Code-shaped parts done: security checklist
       as a test, load-test script, deploy artifacts, retention, alerting, health.
       The rest is operator work — real network credentials, the production box,

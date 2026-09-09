@@ -80,6 +80,41 @@ it('does not reveal a ban when the password is wrong', function () {
     $this->assertGuest();
 });
 
+it('refuses a suspended publisher at the publisher panel login', function () {
+    Filament::setCurrentPanel('publisher');
+
+    $publisher = Publisher::factory()->create(['status' => PublisherStatus::Suspended]);
+
+    Livewire::test(PublisherLogin::class)
+        ->fillForm([
+            'email' => $publisher->user->email,
+            'password' => 'password',
+        ])
+        ->call('authenticate')
+        ->assertHasFormErrors(['email'])
+        ->assertSee('This account has been suspended')
+        ->assertSee(Identity::supportEmail());
+
+    $this->assertGuest();
+});
+
+it('does not reveal a suspension when the password is wrong', function () {
+    Filament::setCurrentPanel('publisher');
+
+    $publisher = Publisher::factory()->create(['status' => PublisherStatus::Suspended]);
+
+    Livewire::test(PublisherLogin::class)
+        ->fillForm([
+            'email' => $publisher->user->email,
+            'password' => 'wrong-password',
+        ])
+        ->call('authenticate')
+        ->assertHasFormErrors(['email'])
+        ->assertDontSee('This account has been suspended');
+
+    $this->assertGuest();
+});
+
 it('refuses a publisher at the admin panel login', function () {
     Filament::setCurrentPanel('admin');
 

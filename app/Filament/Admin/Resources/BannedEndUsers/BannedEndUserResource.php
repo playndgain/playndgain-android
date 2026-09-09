@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\BannedEndUsers;
 
 use App\Enums\BannedBy;
 use App\Filament\Admin\Resources\BannedEndUsers\Pages\ListBannedEndUsers;
+use App\Filament\Support\AppColumns;
 use App\Models\AuditLog;
 use App\Models\BannedEndUser;
 use BackedEnum;
@@ -38,10 +39,10 @@ class BannedEndUserResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['publisher:id,pub_id', 'app:id,name']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['publisher:id,pub_id', AppColumns::eager()]))
             ->columns([
                 TextColumn::make('publisher.pub_id')->label('Pub')->prefix('#'),
-                TextColumn::make('app.name')->label('App')->placeholder('all apps'),
+                AppColumns::show()->placeholder('all apps'),
                 TextColumn::make('end_user_id')->label('End user')->searchable()->copyable(),
                 TextColumn::make('banned_by')->label('By')->badge()
                     ->color(fn (BannedBy $state): string => $state === BannedBy::System ? 'warning' : 'gray'),

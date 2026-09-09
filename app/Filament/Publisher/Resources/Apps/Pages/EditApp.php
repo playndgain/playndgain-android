@@ -10,7 +10,6 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Str;
 
 class EditApp extends EditRecord
@@ -25,8 +24,8 @@ class EditApp extends EditRecord
             PublisherTestPostbackAction::make(),
             Action::make('regenerate_secret')
                 ->label('Regenerate secret')
-                ->icon(Heroicon::OutlinedKey)
-                ->color('danger')
+                ->icon('lucide-key-round')
+                ->color('warning')
                 ->requiresConfirmation()
                 ->modalHeading('Regenerate the secret key?')
                 ->modalDescription('Every signature you already compute with the old key stops verifying the moment you confirm. Signed wall URLs and postback signatures both break until you deploy the new one.')

@@ -53,7 +53,7 @@ it('does not let a publisher rewrite network blocks by saving the app', function
 });
 
 it('lets an admin turn a network off on the same form', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     Filament::setCurrentPanel('admin');
 
     $keep = Network::factory()->create(['name' => 'Keep Co']);

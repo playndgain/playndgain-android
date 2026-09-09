@@ -8,6 +8,7 @@ use App\Enums\SyncStatus;
 use App\Filament\Admin\Resources\Networks\Pages\EditNetwork;
 use App\Filament\Admin\Resources\Networks\Pages\ListNetworks;
 use App\Filament\Admin\Resources\Offers\OfferResource;
+use App\Filament\Support\InitialsChip;
 use App\Jobs\SyncNetworkOffersJob;
 use App\Models\AuditLog;
 use App\Models\Network;
@@ -202,10 +203,18 @@ class NetworkResource extends Resource
                     ->getStateUsing(fn (Network $record): ?string => filled($record->logo_path)
                         ? asset((string) $record->logo_path)
                         : null)
+                    // A network with no logo on file, or one whose file has
+                    // gone, falls back to a letter chip rather than a hole or
+                    // the browser's broken-image glyph. Admin-only surface, so
+                    // the network's own name is the right source here.
+                    ->defaultImageUrl(fn (Network $record): string => InitialsChip::for($record->name))
                     // Contained, not cropped: these are supplied marks with
                     // their own aspect ratios, and a circular crop of a
                     // wordmark is a smudge.
-                    ->extraImgAttributes(['class' => 'object-contain']),
+                    ->extraImgAttributes(fn (Network $record): array => [
+                        'class' => 'object-contain',
+                        'onerror' => "this.onerror=null;this.src='".InitialsChip::for($record->name)."'",
+                    ]),
                 TextColumn::make('name')->searchable()->sortable()->description(fn (Network $record): string => $record->driver),
                 TextColumn::make('status')->badge()->color(fn (NetworkStatus $state): string => match ($state) {
                     NetworkStatus::Active => 'success',

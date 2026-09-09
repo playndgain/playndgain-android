@@ -61,7 +61,7 @@ class ActivityStats extends StatsOverviewWidget
                 ->color($processing > 0 ? 'info' : 'gray'),
             Stat::make('Chargebacks (30d)', number_format($chargebacks))
                 ->description($chargebacks > 0 ? 'See which conversions reversed' : 'None')
-                ->color($chargebacks > 0 ? 'danger' : 'gray')
+                ->color($chargebacks > 0 ? 'loss' : 'gray')
                 ->url(TransactionResource::getUrl(parameters: [
                     'tableFilters' => ['status' => ['value' => ConversionStatus::Reversed->value]],
                 ])),

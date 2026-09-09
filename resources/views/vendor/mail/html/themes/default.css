@@ -1,20 +1,36 @@
-/* AdVault mail theme — same tokens as resources/css/tokens.css.
-   Email clients cannot load that file, so the hex values are copied here.
-   Green and red stay reserved for money direction, never chrome. */
+/* PLAYNDGAIN mail theme — "Ink & Amber", the same tokens as
+   resources/css/site-tokens.css. A mail client cannot load that file, so each
+   value is copied here with its token name beside it. Change the token there,
+   change it here.
+
+   The card: an ink header band (the mark, and for the app's own mails an
+   eyebrow, a headline and a money metric) over a paper body, on the ink page
+   ground. Money is only ever shown on ink — gain-500 on white is 2.7:1 and
+   there is no darker gain token — so the paper body never carries a figure.
+
+   Contrast, verified against site-tokens.css values:
+     fog-300  #C3C7D6 on ink-900  #11131F  12.5:1   hero title / mark
+     fog-500  #8B90A8 on ink-950  #0A0B14   6.5:1   footer
+     gain-300 #6EE7A8 on ink-900  #11131F  12.9:1   the metric
+     coal-600 #535873 on paper-0  #FFFFFF   7.3:1   body copy
+     coal-700 #3A3E52 on paper-100 #ECECF4  8.7:1   panel copy
+     amber-700 #B45309 on paper-0 #FFFFFF   4.6:1   links
+     on-amber #1A1000 on amber-400 #FFB020 12.0:1   button
+     coal-900 #0C0D1A on loss-500 #E5484D   4.9:1   error button */
 
 body,
 body *:not(html):not(style):not(br):not(tr):not(code) {
     box-sizing: border-box;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'Sora', system-ui, -apple-system, 'Segoe UI', sans-serif; /* --font-sans */
     position: relative;
 }
 
 body {
     -webkit-text-size-adjust: none;
-    background-color: #08090A;
-    color: #E9ECF1;
+    background-color: #0A0B14; /* ink-950 */
+    color: #535873; /* coal-600 */
     height: 100%;
-    line-height: 1.5;
+    line-height: 1.6;
     margin: 0;
     padding: 0;
     width: 100% !important;
@@ -24,64 +40,100 @@ p,
 ul,
 ol,
 blockquote {
-    line-height: 1.5;
+    line-height: 1.6;
     text-align: start;
 }
 
 a {
-    color: #F5A524;
+    color: #B45309; /* amber-700 */
+    text-decoration: underline;
 }
 
 a img {
     border: none;
 }
 
+/* ── Type on paper ─────────────────────────────────────────────────────── */
+
 h1 {
-    color: #E9ECF1;
-    font-size: 20px;
-    font-weight: bold;
-    letter-spacing: -0.3px;
-    margin-top: 0;
-    text-align: start;
+    color: #0C0D1A; /* coal-900 */
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin: 0 0 16px;
+    text-align: left;
 }
 
 h2 {
-    color: #E9ECF1;
-    font-size: 16px;
-    font-weight: bold;
-    margin-top: 0;
-    text-align: start;
+    color: #0C0D1A; /* coal-900 */
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    margin: 24px 0 10px;
+    text-align: left;
 }
 
 h3 {
-    color: #E9ECF1;
-    font-size: 14px;
-    font-weight: bold;
-    margin-top: 0;
+    color: #0C0D1A; /* coal-900 */
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 20px 0 8px;
     text-align: left;
 }
 
 p {
-    color: #A2ABB8;
-    font-size: 15px;
-    line-height: 1.55em;
-    margin-top: 0;
+    color: #535873; /* coal-600 */
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 0 16px;
+    overflow-wrap: anywhere;
     text-align: left;
+    word-break: break-word;
 }
 
 p.sub {
-    font-size: 12px;
+    font-size: 13px;
+}
+
+strong {
+    color: #0C0D1A; /* coal-900 */
+    font-weight: 600;
+}
+
+ul, ol {
+    color: #535873; /* coal-600 */
+    font-size: 16px;
+    margin: 0 0 16px;
+    padding-left: 20px;
+}
+
+li {
+    margin: 0 0 6px;
+}
+
+code {
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; /* --font-mono */
+    font-size: 14px;
+    color: #0C0D1A; /* coal-900 */
+    background-color: #ECECF4; /* paper-100 */
+    border-radius: 6px;
+    padding: 1px 6px;
 }
 
 img {
     max-width: 100%;
 }
 
+/* ── Frame ─────────────────────────────────────────────────────────────── */
+
 .wrapper {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    background-color: #08090A;
+    background-color: #0A0B14; /* ink-950 */
     margin: 0;
     padding: 0;
     width: 100%;
@@ -96,121 +148,266 @@ img {
     width: 100%;
 }
 
-.header {
-    padding: 0 0 28px;
-    text-align: center;
-}
-
-.header a {
-    color: #E9ECF1;
-    font-size: 17px;
-    font-weight: bold;
-    letter-spacing: -0.3px;
-    text-decoration: none;
-}
-
-.logo {
-    height: 26px;
-    max-height: 26px;
-    width: 26px;
-    vertical-align: middle;
-}
-
-.body {
-    -premailer-cellpadding: 0;
-    -premailer-cellspacing: 0;
-    -premailer-width: 100%;
-    background-color: #08090A;
-    border-bottom: hidden;
-    border-top: hidden;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-}
-
 .inner-body {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
-    -premailer-width: 570px;
-    background-color: #14171B;
-    border-color: #262B33;
-    border-radius: 8px;
-    border-width: 1px;
+    -premailer-width: 560px;
     margin: 0 auto;
     padding: 0;
-    width: 570px;
+    table-layout: fixed;
+    width: 560px;
 }
 
 .inner-body a {
-    word-break: break-all;
+    word-break: break-word;
 }
 
+/* The ink band: mark row, then the optional hero. A 1px ink-700 hairline
+   on the outside edges and a top highlight, the way ink cards get depth on
+   the site — ink cards never cast shadows on ink. */
+.header-cell {
+    background-color: #11131F; /* ink-900 */
+    border-color: #262A40; /* ink-700 */
+    border-style: solid;
+    border-width: 3px 1px 0;
+    border-top-color: #FFB020; /* amber-400: the one accent, as the card's top edge */
+    border-radius: 24px 24px 0 0;
+    padding: 28px 36px 24px;
+}
+
+.hero-cell {
+    background-color: #11131F; /* ink-900 */
+    border-color: #262A40; /* ink-700 */
+    border-style: solid;
+    border-width: 0 1px;
+    padding: 0 36px 32px;
+}
+
+.content-cell {
+    background-color: #FFFFFF; /* paper-0 */
+    border-radius: 0 0 24px 24px;
+    max-width: 100vw;
+    padding: 36px 36px 32px;
+}
+
+/* ── The mark ──────────────────────────────────────────────────────────── */
+
+.mark-tile {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background-color: #FFB020; /* amber-400 */
+    background-image: linear-gradient(135deg, #FFC554 0%, #F28C1A 100%); /* amber-300 → amber-500 */
+    text-align: center;
+    vertical-align: middle;
+}
+
+.mark-glyph {
+    display: block;
+    color: #1A1000; /* on-amber */
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 28px;
+    text-align: center;
+}
+
+.mark-word-cell {
+    padding-left: 10px;
+    vertical-align: middle;
+}
+
+.mark-word {
+    color: #F4F5FA; /* fog-50 */
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+/* ── The hero band ─────────────────────────────────────────────────────── */
+
+.eyebrow {
+    color: #FFB020; /* amber-400 */
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    margin: 0 0 12px;
+    text-transform: uppercase;
+}
+
+.eyebrow-danger {
+    color: #F49A9D; /* loss-300: a failure, on ink */
+}
+
+.hero-title {
+    color: #F4F5FA; /* fog-50 */
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    margin: 0;
+}
+
+.hero-amount {
+    color: #6EE7A8; /* gain-300: credited money, on ink */
+    font-size: 40px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: 24px 0 0;
+}
+
+.hero-amount-label {
+    color: #8B90A8; /* fog-500 */
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin: 8px 0 0;
+}
+
+/* ── Subcopy and footer ────────────────────────────────────────────────── */
+
 .subcopy {
-    border-top: 1px solid #262B33;
-    margin-top: 28px;
-    padding-top: 24px;
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 100%;
+    border-top: 1px solid #DFDFEA; /* paper-200 */
+    margin-top: 24px;
+    width: 100%;
+}
+
+.subcopy-cell {
+    padding-top: 20px;
 }
 
 .subcopy p {
-    color: #6E7784;
+    color: #535873; /* coal-600 */
     font-size: 13px;
+    line-height: 1.55;
+    margin: 0;
 }
 
 .footer {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
-    -premailer-width: 570px;
+    -premailer-width: 560px;
     margin: 0 auto;
     padding: 0;
     text-align: center;
-    width: 570px;
+    width: 560px;
+}
+
+.footer-cell {
+    padding: 28px 16px 0;
 }
 
 .footer p {
-    color: #6E7784;
+    color: #8B90A8; /* fog-500 */
     font-size: 12px;
+    line-height: 1.5;
+    margin: 0;
     text-align: center;
 }
 
+.footer-links {
+    margin-bottom: 12px !important;
+}
+
+.footer-dot {
+    color: #5F6478; /* fog-600: decorative */
+    padding: 0 10px;
+}
+
+.footer-note {
+    margin-top: 6px !important;
+}
+
 .footer a {
-    color: #6E7784;
+    color: #8B90A8; /* fog-500 */
     text-decoration: underline;
 }
+
+/* After `.footer a` on purpose: same specificity, so order decides. */
+.footer-links a {
+    color: #C3C7D6; /* fog-300 */
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* ── Markdown tables ───────────────────────────────────────────────────── */
 
 .table table {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    margin: 30px auto;
+    margin: 24px auto;
     width: 100%;
 }
 
 .table th {
-    border-bottom: 1px solid #262B33;
-    color: #E9ECF1;
+    border-bottom: 1px solid #C9CAD9; /* paper-300 */
+    color: #0C0D1A; /* coal-900 */
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
     margin: 0;
-    padding-bottom: 8px;
+    padding: 0 0 8px;
+    text-align: left;
+    text-transform: uppercase;
 }
 
 .table td {
-    border-bottom: 1px solid #262B33;
-    color: #A2ABB8;
+    border-bottom: 1px solid #DFDFEA; /* paper-200 */
+    color: #535873; /* coal-600 */
     font-size: 15px;
-    line-height: 18px;
+    line-height: 1.4;
     margin: 0;
     padding: 10px 0;
 }
 
-.content-cell {
-    max-width: 100vw;
-    padding: 36px 32px;
+/* ── The fact ledger ───────────────────────────────────────────────────── */
+
+.facts {
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 100%;
+    margin: 8px 0 24px;
+    width: 100%;
 }
+
+.facts-label {
+    border-bottom: 1px solid #DFDFEA; /* paper-200 */
+    color: #535873; /* coal-600 */
+    font-size: 14px;
+    line-height: 1.4;
+    padding: 12px 16px 12px 0;
+    vertical-align: top;
+}
+
+.facts-value {
+    border-bottom: 1px solid #DFDFEA; /* paper-200 */
+    color: #0C0D1A; /* coal-900 */
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+    padding: 12px 0;
+    text-align: right;
+    vertical-align: top;
+}
+
+/* ── Button ────────────────────────────────────────────────────────────── */
 
 .action {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
     -premailer-width: 100%;
-    margin: 30px auto;
+    margin: 28px auto;
     padding: 0;
     text-align: center;
     width: 100%;
@@ -219,58 +416,53 @@ img {
 
 .button {
     -webkit-text-size-adjust: none;
-    border-radius: 6px;
+    border-radius: 999px; /* --radius-pill */
     display: inline-block;
-    font-size: 14px;
-    font-weight: bold;
-    letter-spacing: -0.1px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
     overflow: hidden;
+    padding: 15px 28px;
     text-decoration: none;
 }
 
 .button-blue,
-.button-primary {
-    background-color: #F5A524;
-    border-bottom: 10px solid #F5A524;
-    border-left: 22px solid #F5A524;
-    border-right: 22px solid #F5A524;
-    border-top: 10px solid #F5A524;
-    color: #08090A;
-}
-
+.button-primary,
 .button-green,
 .button-success {
-    background-color: #2FBF71;
-    border-bottom: 10px solid #2FBF71;
-    border-left: 22px solid #2FBF71;
-    border-right: 22px solid #2FBF71;
-    border-top: 10px solid #2FBF71;
-    color: #08090A;
+    background-color: #FFB020; /* amber-400 */
+    background-image: linear-gradient(135deg, #FFC554 0%, #F28C1A 100%); /* amber-300 → amber-500 */
+    color: #1A1000; /* on-amber */
 }
 
 .button-red,
 .button-error {
-    background-color: #E5484D;
-    border-bottom: 10px solid #E5484D;
-    border-left: 22px solid #E5484D;
-    border-right: 22px solid #E5484D;
-    border-top: 10px solid #E5484D;
-    color: #E9ECF1;
+    background-color: #E5484D; /* loss-500 */
+    color: #0C0D1A; /* coal-900 */
 }
 
+/* ── Panel: a tile on paper with the amber rule ────────────────────────── */
+
 .panel {
-    border-left: #F5A524 solid 3px;
-    margin: 21px 0;
+    -premailer-cellpadding: 0;
+    -premailer-cellspacing: 0;
+    -premailer-width: 100%;
+    margin: 4px 0 20px;
+    width: 100%;
 }
 
 .panel-content {
-    background-color: #1A1E24;
-    color: #A2ABB8;
-    padding: 16px;
+    background-color: #ECECF4; /* paper-100 */
+    border-left: 3px solid #FFB020; /* amber-400 */
+    border-radius: 14px; /* --radius-sm */
+    color: #3A3E52; /* coal-700 */
+    padding: 16px 20px;
 }
 
 .panel-content p {
-    color: #A2ABB8;
+    color: #3A3E52; /* coal-700 */
+    font-size: 15px;
+    line-height: 1.55;
 }
 
 .panel-item {

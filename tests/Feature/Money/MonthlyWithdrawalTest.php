@@ -86,7 +86,7 @@ it('ignores publishers who are not approved', function () {
 
 it('emails the publisher and ops when the payout rules fail', function () {
     Mail::fake();
-    Setting::set('alert_emails', json_encode(['ops@advault.io']));
+    Setting::set('alert_emails', json_encode(['ops@playndgain.com']));
 
     $publisher = monthlyPayable('100.000000', withMethod: false);
 
@@ -100,7 +100,7 @@ it('emails the publisher and ops when the payout rules fail', function () {
     });
 
     Mail::assertQueued(MonthlyPayoutErrorsMail::class, function (MonthlyPayoutErrorsMail $mail) use ($publisher): bool {
-        return $mail->hasTo('ops@advault.io')
+        return $mail->hasTo('ops@playndgain.com')
             && collect($mail->failures)->contains(
                 fn (array $row): bool => $row['pub_id'] === $publisher->pub_id
                     && str_contains($row['reason'], 'payment method'),
@@ -110,7 +110,7 @@ it('emails the publisher and ops when the payout rules fail', function () {
 
 it('emails when there is no default method even if another method exists', function () {
     Mail::fake();
-    Setting::set('alert_emails', json_encode(['ops@advault.io']));
+    Setting::set('alert_emails', json_encode(['ops@playndgain.com']));
 
     $publisher = monthlyPayable();
     PaymentMethod::query()->where('publisher_id', $publisher->id)->update(['is_default' => false]);

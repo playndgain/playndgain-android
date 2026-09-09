@@ -1,12 +1,12 @@
 ---
 title: Privacy policy
-description: What AdVault collects, why, who receives it, and how an end user gets it back or erased.
+description: What PLAYNDGAIN collects, why, who receives it, and how an end user gets it back or erased.
 note: Drafted from the product specification (docs/00 §8, docs/03 §4) to describe what the system actually does. It has not been reviewed by counsel. Before launch a lawyer must review it and add the operating entity, its address, its data-protection contact, and the transfer mechanism used for non-EU networks.
 ---
 
-Last updated: 2026-08-16
+Last updated: 2026-09-01
 
-AdVault is an offerwall aggregator. Publishers embed our offerwall in their own app or site, their users complete offers supplied by partner advertising networks, and we pay the publisher a share of what the advertiser paid us.
+PLAYNDGAIN is a rewarded offerwall. Publishers embed our wall in their own app or game, their players complete offers supplied by partner advertising networks, and we pay the publisher for each verified conversion.
 
 That shape decides this policy. There are two different groups of people in it and they are not treated the same:
 
@@ -79,7 +79,7 @@ Click and conversion rows are kept for as long as the money they represent can s
 
 **The offerwall sets no cookies at all.** It is stateless by design: no session, no cookie, no CSRF token. It runs inside an iframe on someone else's domain and authenticates with the app ID, the user ID and a signature instead. Nothing about the wall needs a cookie, so it does not have one.
 
-**This marketing site** sets one first-party session cookie, and only when you submit the contact form, because the form carries a CSRF token. **The documentation** stores your light/dark preference in `localStorage`. Neither is used for tracking and neither leaves this origin.
+**This marketing site** sets one first-party session cookie, and only when you submit a form — the contact form or the newsletter box in the footer — because the form carries a CSRF token. **The documentation** keeps the position of its sidebar in `sessionStorage` for the length of the tab, and nothing else. Neither is used for tracking and neither leaves this origin.
 
 There are no third-party scripts on this site. Fonts are self-hosted rather than fetched from a font CDN, which is a deliberate choice on a site that talks about privacy.
 

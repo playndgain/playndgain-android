@@ -15,8 +15,17 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // The wall is stateless by specification (docs/03): its routes are
+        // registered outside the `web` group so no session starts and no CSRF
+        // token is demanded — a consent POST from inside a publisher's iframe
+        // cannot carry one. Every other public route keeps the default group.
+        then: fn () => require base_path('routes/wall.php'),
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Trust upstream proxies (Valet, Herd, Cloudflare, Nginx, ALB) so
+        // $request->isSecure(), client IP, and forwarded protocol/port are recognized.
+        $middleware->trustProxies(at: '*');
+
         // Before anything reads `$request->ip()` — wall geo, ProxyCheck,
         // rate limiters, fraud events. Must be global: the `wall` group is
         // session-less and never inherits the `web` stack.
@@ -28,6 +37,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // verification during tests, so no feature test would catch it.
         $middleware->preventRequestForgery(except: [
             'postback/*',
+            // JSON-RPC from a coding assistant, which has no session to carry
+            // a token. The server is read-only over public pages.
+            'mcp',
         ]);
 
         // The offerwall is stateless by specification (docs/03): no session, no
@@ -54,8 +66,12 @@ return Application::configure(basePath: dirname(__DIR__))
         // the wrong thing to put there. It gets the same dead-end screen as
         // every other refusal. Registered here rather than in the controllers
         // because the 400 is thrown by `WallGate`, which all of them call.
+        //
+        // A 404 gets the same treatment: an app id or offer that does not exist
+        // is a stale link, and the framework's own error page inside someone
+        // else's iframe reads as their site being broken.
         $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
-            if ($e->getStatusCode() !== 400 || ! $request->routeIs('wall', 'wall.*')) {
+            if (! in_array($e->getStatusCode(), [400, 404], true) || ! $request->routeIs('wall', 'wall.*')) {
                 return null;
             }
 
@@ -64,7 +80,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     'context' => null,
                     'title' => __('wall.notice.invalid.title'),
                     'body' => __('wall.notice.invalid.body'),
-                ], 400)
+                ], $e->getStatusCode())
                 ->header('Cache-Control', 'private, no-store');
         });
     })->create();

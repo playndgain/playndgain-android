@@ -23,8 +23,10 @@ use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Js;
 
 /**
  * The tuning instrument — docs/07 §7.
@@ -44,6 +46,8 @@ class FraudRuleResource extends Resource
     protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    private const DESCRIPTION_LIMIT = 72;
 
     public static function form(Schema $schema): Schema
     {
@@ -72,7 +76,24 @@ class FraudRuleResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('key')->searchable()->copyable(),
-                TextColumn::make('name')->searchable()->description(fn (FraudRule $record): string => $record->description),
+                TextColumn::make('name')
+                    ->searchable()
+                    ->description(fn (FraudRule $record): string => str($record->description)->limit(self::DESCRIPTION_LIMIT))
+                    ->extraCellAttributes(function (FraudRule $record): array {
+                        $description = $record->description;
+
+                        if (blank($description) || str($description)->length() <= self::DESCRIPTION_LIMIT) {
+                            return [];
+                        }
+
+                        return [
+                            'x-tooltip' => '{
+                                content: '.Js::from($description).',
+                                theme: $store.theme,
+                                allowHTML: false,
+                            }',
+                        ];
+                    }),
                 TextColumn::make('stage')->badge(),
                 SelectColumn::make('action')->options(FraudAction::class)->rules(['required']),
                 ToggleColumn::make('enabled')
@@ -91,6 +112,10 @@ class FraudRuleResource extends Resource
             ->filters([
                 SelectFilter::make('stage')->options(FraudStage::class),
                 SelectFilter::make('action')->options(FraudAction::class),
+                TernaryFilter::make('enabled')
+                    ->placeholder('All')
+                    ->trueLabel('On')
+                    ->falseLabel('Off'),
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([])

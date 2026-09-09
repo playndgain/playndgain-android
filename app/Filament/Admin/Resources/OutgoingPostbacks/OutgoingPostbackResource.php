@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\OutgoingPostbacks;
 use App\Enums\OutgoingPostbackKind;
 use App\Enums\OutgoingPostbackStatus;
 use App\Filament\Admin\Resources\OutgoingPostbacks\Pages\ListOutgoingPostbacks;
+use App\Filament\Support\AppColumns;
 use App\Models\OutgoingPostback;
 use App\Services\Money\ConversionProcessor;
 use BackedEnum;
@@ -15,6 +16,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -40,14 +42,22 @@ class OutgoingPostbackResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('Attempt')->columns(2)->schema([
-                TextEntry::make('url')->label('URL (redacted)')->columnSpanFull(),
+        return $schema->columns(1)->components([
+            Section::make('Delivery')->columnSpanFull()->columns(3)->schema([
+                TextEntry::make('status')->badge(),
+                TextEntry::make('kind')->badge(),
+                TextEntry::make('app.name')->label('App'),
+                TextEntry::make('conversion.trans_id')->label('Conversion')->copyable()->placeholder('—'),
                 TextEntry::make('http_status')->label('HTTP status')->placeholder('—'),
                 TextEntry::make('duration_ms')->label('Duration')->suffix(' ms')->placeholder('—'),
+                TextEntry::make('attempt'),
                 TextEntry::make('next_retry_at')->label('Next retry')->dateTime()->placeholder('—'),
+            ]),
+
+            Section::make('Attempt')->columnSpanFull()->schema([
+                TextEntry::make('url')->label('URL (redacted)'),
                 TextEntry::make('error')->placeholder('—'),
-                TextEntry::make('response_body')->label('Response body')->placeholder('(empty)')->columnSpanFull(),
+                TextEntry::make('response_body')->label('Response body')->placeholder('(empty)'),
             ]),
         ]);
     }
@@ -55,11 +65,15 @@ class OutgoingPostbackResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['conversion:id,trans_id', 'app:id,name']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['conversion:id,trans_id', AppColumns::eager()]))
             ->columns([
                 TextColumn::make('created_at')->label('Sent')->dateTime()->sortable(),
-                TextColumn::make('conversion.trans_id')->label('Conversion')->copyable()->limit(16)->searchable(),
-                TextColumn::make('app.name')->label('App')->limit(18),
+                TextColumn::make('conversion.trans_id')->label('Conversion')
+                    ->copyable()
+                    ->copyableState(fn (?string $state): ?string => $state)
+                    ->limit(16)
+                    ->searchable(),
+                AppColumns::show(),
                 TextColumn::make('kind')->badge()
                     ->color(fn (OutgoingPostbackKind $state): string => $state === OutgoingPostbackKind::Reversal ? 'danger' : 'gray'),
                 TextColumn::make('attempt')->numeric(),
@@ -87,7 +101,7 @@ class OutgoingPostbackResource extends Resource
                 // The infolist above is only reachable through this. A modal
                 // rather than a page: there is nothing on the detail worth a URL
                 // of its own, and a page would be a second file to keep in step.
-                ViewAction::make(),
+                ViewAction::make()->slideOver()->modalWidth(Width::TwoExtraLarge),
                 Action::make('resend')
                     ->label('Re-send')
                     ->icon(Heroicon::OutlinedArrowPath)

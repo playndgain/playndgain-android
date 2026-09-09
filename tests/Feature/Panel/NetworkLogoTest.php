@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Config;
  * failure would have been invisible until someone opened the page.
  */
 beforeEach(function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $this->actingAs(User::factory()->admin()->create([
         'two_factor_secret' => 'JBSWY3DPEHPK3PXP',

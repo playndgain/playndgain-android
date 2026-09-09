@@ -3,13 +3,14 @@
 use App\Enums\AppPlatform;
 use App\Enums\AppStatus;
 use App\Models\App;
+use App\Models\Conversion;
 use App\Models\Publisher;
 use App\Models\User;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Config;
 
 it('renders an app as an identity cell, platform mark, and status pill', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $publisher = Publisher::factory()->create(['company_name' => 'Iberia Media']);
     $publisher->user->update([
@@ -47,6 +48,28 @@ it('renders an app as an identity cell, platform mark, and status pill', functio
         ->assertSee('Clicks 7d');
 });
 
+it('shows the same app identity on the conversions table', function () {
+    Config::set('playndgain.require_admin_2fa', false);
+
+    $app = App::factory()->create([
+        'name' => 'Rewards Box',
+        'url' => 'https://rewards.box/wall',
+    ]);
+    Conversion::factory()->create(['app_id' => $app->id]);
+
+    $this->actingAs(User::factory()->admin()->create([
+        'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
+        'two_factor_recovery_codes' => ['aaaa-bbbb'],
+    ]));
+
+    $this->get('/admin/conversions')
+        ->assertSuccessful()
+        ->assertSee('Rewards Box')
+        ->assertSee('#'.$app->app_id)
+        ->assertSee('rewards.box')
+        ->assertSee('ad-user', escape: false);
+});
+
 it('lists the same app chrome on the publisher apps table', function () {
     $publisher = Publisher::factory()->create();
     App::factory()->create([
@@ -74,7 +97,7 @@ it('labels each app status for the admin table', function (AppStatus $status, st
         ->and($status->getIcon())->toBe($icon);
 })->with([
     [AppStatus::Pending, 'Pending', 'warning', Heroicon::OutlinedClock],
-    [AppStatus::Active, 'Active', 'info', Heroicon::OutlinedCheckBadge],
+    [AppStatus::Active, 'Active', 'success', Heroicon::OutlinedCheckBadge],
     [AppStatus::Paused, 'Paused', 'gray', Heroicon::OutlinedPauseCircle],
-    [AppStatus::Rejected, 'Rejected', 'gray', Heroicon::OutlinedNoSymbol],
+    [AppStatus::Rejected, 'Rejected', 'danger', Heroicon::OutlinedNoSymbol],
 ]);

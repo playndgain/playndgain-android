@@ -29,7 +29,7 @@ use Illuminate\Support\Str;
  */
 final class TestPostbackService
 {
-    public const TEST_USER_ID = 'advault-test-user';
+    public const TEST_USER_ID = 'playndgain-test-user';
 
     /**
      * @return array{ok: bool, status: ?int, body: string, duration_ms: int, url: string}
@@ -80,7 +80,7 @@ final class TestPostbackService
             'app_id' => $app->id,
             'publisher_id' => $app->publisher_id,
             'end_user_id' => $endUserId !== '' ? $endUserId : self::TEST_USER_ID,
-            'offer_name' => 'AdVault test offer',
+            'offer_name' => 'PLAYNDGAIN test offer',
             'revenue' => $payout,
             'payout' => $payout,
             'rev_share_applied' => '100.00',
@@ -94,7 +94,7 @@ final class TestPostbackService
         // Relations, not a save: MacroResolver reads `app->app_id` and the
         // secret through them. `external_id` is `0` so `{offer_id}` is present
         // — an empty campaign id is what made some handlers look up null.
-        $offer = new Offer(['external_id' => '0', 'name' => 'AdVault test offer']);
+        $offer = new Offer(['external_id' => '0', 'name' => 'PLAYNDGAIN test offer']);
 
         $conversion->setRelation('app', $app);
         $conversion->setRelation('offer', $offer);

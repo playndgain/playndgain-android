@@ -121,7 +121,7 @@ A partner ad network we pull offers from.
 
 Networks are **seeded as `disabled`** with empty credentials. An admin activates one by pasting credentials and hitting *Test connection*.
 
-The seed covers the **five launch partners** — AdGate, Admantum, Monlix, Adscend Media, Notik — each with its mark in `public/img/networks/`, plus **AdVault (house)**, which has no API at all: it is the home for offers we sell ourselves, added by hand in the admin panel ([02 §6](02-network-adapters.md)), and it sorts below every partner because house inventory fills a gap rather than outranking a supplier.
+The seed covers the **five launch partners** — AdGate, Admantum, Monlix, Adscend Media, Notik — each with its mark in `public/img/networks/`, plus **PLAYNDGAIN (house)**, which has no API at all: it is the home for offers we sell ourselves, added by hand in the admin panel ([02 §6](02-network-adapters.md)), and it sorts below every partner because house inventory fills a gap rather than outranking a supplier.
 
 Two rules decide what is in that list, and they are different rules. A network is only seeded once its driver can talk to the real API — a row an admin can enable that then syncs nothing reads as a broken network rather than a missing one. And it is only seeded once there is an account behind it: Adswedmedia and Lootably have working, fixture-tested drivers and are deliberately absent, because a row for a network we have no credentials for is an invitation to switch on something that cannot earn. Adding one later is a row, not a deploy.
 
@@ -452,7 +452,7 @@ Key/value, cached. Not a migration column per setting.
 | `default_rev_share` | `70.00` |
 | `default_hold_days` | `30` | Unused leftover. Clearing is not days-based. |
 | `default_min_payout` | `20.00` |
-| `platform_name` | `AdVault` |
+| `platform_name` | `PLAYNDGAIN` |
 | `support_email` | — |
 | `signups_enabled` | `true` |
 | `auto_approve_publishers` | `false` |

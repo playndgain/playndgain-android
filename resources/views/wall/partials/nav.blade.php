@@ -2,6 +2,7 @@
     /** @var \App\Services\Wall\WallContext $context */
     /** @var string $active */
     $params = $context->params();
+    $hasPartners = \App\Services\Wall\PartnerWall::available($context->app);
 @endphp
 
 {{-- The app-nav: under 640px it replaces the header's tab strip (one nav per
@@ -23,12 +24,14 @@
         <span>{{ __('wall.tabs.history') }}</span>
     </a>
 
-    <a class="wall-nav__item @if ($active === 'partners') is-on @endif"
-       @if ($active === 'partners') aria-current="page" @endif
-       href="{{ route('wall.partners') }}?{{ $params }}">
-        <svg class="wall-nav__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
-        <span>{{ __('wall.tabs.partners') }}</span>
-    </a>
+    @if ($hasPartners)
+        <a class="wall-nav__item @if ($active === 'partners') is-on @endif"
+           @if ($active === 'partners') aria-current="page" @endif
+           href="{{ route('wall.partners') }}?{{ $params }}">
+            <svg class="wall-nav__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
+            <span>{{ __('wall.tabs.partners') }}</span>
+        </a>
+    @endif
 
     <button type="button" class="wall-nav__item" data-menu x-cloak>
         <svg class="wall-nav__icon" aria-hidden="true"><use href="#ic-menu"/></svg>

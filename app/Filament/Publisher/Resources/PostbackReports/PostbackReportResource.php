@@ -5,6 +5,7 @@ namespace App\Filament\Publisher\Resources\PostbackReports;
 use App\Enums\OutgoingPostbackStatus;
 use App\Filament\Publisher\Resources\PostbackReports\Pages\ListPostbackReports;
 use App\Filament\Publisher\Support\CurrentPublisher;
+use App\Filament\Support\AppColumns;
 use App\Models\OutgoingPostback;
 use App\Services\Money\ConversionProcessor;
 use BackedEnum;
@@ -16,6 +17,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -37,9 +39,11 @@ class PostbackReportResource extends Resource
 {
     protected static ?string $model = OutgoingPostback::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaperAirplane;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-send';
 
-    protected static ?int $navigationSort = 7;
+    protected static string|\UnitEnum|null $navigationGroup = 'Activity';
+
+    protected static ?int $navigationSort = 22;
 
     protected static ?string $navigationLabel = 'Postback reports';
 
@@ -56,16 +60,23 @@ class PostbackReportResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('Attempt')->columns(2)->schema([
-                TextEntry::make('url')->label('Resolved URL')->columnSpanFull()
-                    ->helperText('The signature is masked. Everything else is exactly what we requested.'),
+        return $schema->columns(1)->components([
+            Section::make('Delivery')->columnSpanFull()->columns(3)->schema([
+                TextEntry::make('status')->badge(),
+                TextEntry::make('app.name')->label('App'),
+                TextEntry::make('conversion.click_id')->label('Click ID')->copyable()->placeholder('—'),
                 TextEntry::make('http_status')->label('HTTP status')->placeholder('no response'),
                 TextEntry::make('duration_ms')->label('Duration')->suffix(' ms')->placeholder('—'),
                 TextEntry::make('attempt'),
                 TextEntry::make('next_retry_at')->label('Next retry')->dateTime()->placeholder('not retrying'),
-                TextEntry::make('error')->placeholder('—')->columnSpanFull(),
-                TextEntry::make('response_body')->label('Response body')->placeholder('(empty)')->columnSpanFull(),
+                TextEntry::make('created_at')->label('Sent')->dateTime(),
+            ]),
+
+            Section::make('Attempt')->columnSpanFull()->schema([
+                TextEntry::make('url')->label('Resolved URL')
+                    ->helperText('The signature is masked. Everything else is exactly what we requested.'),
+                TextEntry::make('error')->placeholder('—'),
+                TextEntry::make('response_body')->label('Response body')->placeholder('(empty)'),
             ]),
         ]);
     }
@@ -73,17 +84,16 @@ class PostbackReportResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['app:id,name', 'conversion:id,trans_id,click_id']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with([AppColumns::eager(), 'conversion:id,trans_id,click_id']))
             ->columns([
                 TextColumn::make('id')->label('#')->sortable(),
-                TextColumn::make('status')->badge()->color(fn (OutgoingPostbackStatus $state): string => match ($state) {
-                    OutgoingPostbackStatus::Success => 'success',
-                    OutgoingPostbackStatus::Retrying => 'warning',
-                    OutgoingPostbackStatus::Failed => 'danger',
-                    OutgoingPostbackStatus::Queued => 'gray',
-                }),
-                TextColumn::make('app.name')->label('App')->limit(18),
-                TextColumn::make('conversion.click_id')->label('Click ID')->limit(14)->copyable()->placeholder('—'),
+                TextColumn::make('status')->badge(),
+                AppColumns::show(),
+                TextColumn::make('conversion.click_id')->label('Click ID')
+                    ->copyable()
+                    ->copyableState(fn (?string $state): ?string => $state)
+                    ->limit(14)
+                    ->placeholder('—'),
                 TextColumn::make('url')->label('URL')->limit(60)->wrap(),
                 TextColumn::make('http_status')->label('HTTP')->placeholder('—'),
                 TextColumn::make('attempt')->numeric(),
@@ -100,7 +110,7 @@ class PostbackReportResource extends Resource
                         ->when($data['until'] ?? null, fn (Builder $q, string $date) => $q->whereDate('created_at', '<=', $date))),
             ])
             ->recordActions([
-                ViewAction::make(),
+                ViewAction::make()->slideOver()->modalWidth(Width::TwoExtraLarge),
                 Action::make('resend')
                     ->label('Re-send')
                     ->icon(Heroicon::OutlinedArrowPath)
@@ -140,7 +150,7 @@ class PostbackReportResource extends Resource
 
                         Notification::make()
                             ->title($queued ? 'Queued' : 'Nothing to send')
-                            ->status($queued ? 'success' : 'warning')
+                            ->status($queued ? 'info' : 'warning')
                             ->send();
                     }),
             ])

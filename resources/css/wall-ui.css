@@ -1,147 +1,186 @@
-/* Shared offerwall chrome — imported by the wall entry and the Filament theme
-   so the publisher live preview paints with the same rules as /wall.
-   Do not add Tailwind here; wall.css owns the scoped source. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Shared offerwall chrome — imported by the wall entry (wall.css) and by the
+   Filament theme, so the publisher's live preview and the landing's hero card
+   paint with the same rules as /wall. Do not add Tailwind here; wall.css owns
+   the scoped source.
+
+   The wall wears the publisher's brand. Six custom properties are the only
+   inputs — --wall-primary, --wall-on-primary, --wall-bg, --wall-card,
+   --wall-text, --wall-radius — and every other colour on this surface is a
+   color-mix() of them, so nothing below may depend on a hue the publisher did
+   not pick. There is no wallpaper and no frosted glass: surfaces are flat,
+   edges are hairlines, and the page reads through structure and type. Since
+   2026-09-02 the wall shares the site's system (design.md v3): Sora as the
+   one face with weight carrying the hierarchy, pills for chips, tabs, buttons
+   and the balance, the publisher's radius for cards, tiles and inputs, the
+   site's motion tokens, and one glow — the publisher's colour, under the
+   primary action.
+
+   Where the accent is spent (and nowhere else): the balance pill, the
+   letter in an offer's tile and the app mark, the primary action of a
+   screen ("Start this offer", "Show more", the way back from a dead end),
+   the active tab, the featured rail's reward pill, the list's lead edge,
+   and the credited amount in history.
+   This replaces the earlier rule that the chrome spent none of the accent —
+   the board paints its wall exactly this way, and a wall that never shows the
+   publisher's colour is a wall that does not look like theirs.
+
+   Written with logical properties throughout, because the same stylesheet
+   serves the RTL Arabic wall: a single `dir="rtl"` on <html> mirrors it.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── Derived palette ─────────────────────────────────────────────────────────
    Named once here instead of repeating a color-mix at every use site. The
-   two-declaration fallback the rest of the file used to carry does not work on
-   a custom property — a custom property stores an unsupported function as a
-   token stream and only fails when it is substituted — so the fallback for a
-   browser without color-mix is one @supports block at the end of this section
-   rather than sixteen duplicated hexes. ── */
+   fallback for a browser without color-mix is the @supports block at the end
+   of this section rather than duplicated hexes throughout. ── */
 
 .wall {
-  --wall-line: color-mix(in srgb, var(--wall-text) 14%, transparent);
-  --wall-line-strong: color-mix(in srgb, var(--wall-text) 24%, transparent);
-  --wall-muted: color-mix(in srgb, var(--wall-text) 70%, transparent);
-  --wall-faint: color-mix(in srgb, var(--wall-text) 52%, transparent);
-  --wall-raise: color-mix(in srgb, var(--wall-text) 5%, var(--wall-card));
-  /* The ink system. Filled chrome that is not a payout — focus rings, the
-     detail CTA, the skip link — stays the text colour carrying the page
-     colour. The publisher's primary is spent where the reference spends
-     accent: the reward pill, the featured rail edge, the selected chip. */
+  /* Lines composite over whatever they sit on, so they are mixed with
+     transparent rather than with the page. */
+  --wall-line: color-mix(in srgb, var(--wall-text) 10%, transparent);
+  --wall-line-soft: color-mix(in srgb, var(--wall-text) 6%, transparent);
+  --wall-line-strong: color-mix(in srgb, var(--wall-text) 18%, transparent);
+
+  /* Two greys for what is not the headline. Both are mixed into the page
+     colour, not transparent, so they are the same everywhere they appear and
+     their contrast can be checked once: 64% clears 4.5:1 against both the
+     midnight and the daylight card. */
+  --wall-muted: color-mix(in srgb, var(--wall-text) 74%, var(--wall-bg));
+  --wall-faint: color-mix(in srgb, var(--wall-text) 64%, var(--wall-bg));
+
+  /* Surface steps. Hover is one step toward the text, press one step toward
+     the page, the tile a touch lighter than the row it sits on. */
+  --wall-raise: color-mix(in srgb, var(--wall-text) 4%, var(--wall-card));
+  --wall-press: color-mix(in srgb, var(--wall-bg) 35%, var(--wall-card));
+  --wall-tile: color-mix(in srgb, var(--wall-text) 8%, var(--wall-card));
+
+  /* The ink pair still exists for the one control that must read on any
+     palette before the page has painted: the skip link. */
   --wall-ink: var(--wall-text);
   --wall-on-ink: var(--wall-bg);
-  --wall-primary-soft: color-mix(in srgb, var(--wall-primary) 16%, var(--wall-card));
-  --wall-primary-deep: color-mix(in srgb, var(--wall-primary) 78%, var(--wall-text));
+
+  --wall-primary-soft: color-mix(in srgb, var(--wall-primary) 14%, var(--wall-card));
+  --wall-primary-hover: color-mix(in srgb, var(--wall-primary) 88%, var(--wall-text));
+
+  /* The primary fill is a two-stop gradient of the publisher's colour, the
+     way the site's amber is, and the one glow on the wall is that colour
+     under the primary action. */
+  --wall-primary-hi: color-mix(in srgb, var(--wall-primary) 84%, white);
+  --wall-primary-lo: color-mix(in srgb, var(--wall-primary) 82%, black);
+  --wall-primary-fill: linear-gradient(135deg, var(--wall-primary-hi), var(--wall-primary-lo));
+  --wall-glow: 0 0 0 1px color-mix(in srgb, var(--wall-primary) 25%, transparent), 0 16px 40px -20px color-mix(in srgb, var(--wall-primary) 55%, transparent);
+  --wall-glow-hover: 0 0 0 1px color-mix(in srgb, var(--wall-primary) 35%, transparent), 0 22px 56px -22px color-mix(in srgb, var(--wall-primary) 65%, transparent);
+
+  /* Cards take the publisher's radius. Controls inside them take six-tenths
+     of it and the sheets nearly twice, so the scale stays theirs at 0px as
+     much as at 20px. Chips, tabs, buttons and the balance are pills. */
+  --wall-inner-radius: calc(var(--wall-radius) * 0.6);
+  --wall-outer-radius: calc(var(--wall-radius) * 1.8);
+  --wall-pill: 999px;
+
+  /* The site's motion tokens where they are on the page, the same values
+     where they are not: fast for interaction, unhurried for entrances,
+     quicker for exits. */
+  --wall-ease: var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+  --wall-ease-in: var(--ease-in, cubic-bezier(0.4, 0, 1, 1));
+  --wall-dur: var(--motion-fast, 150ms);
+  --wall-dur-slow: var(--motion-base, 260ms);
+  --wall-dur-enter: var(--motion-enter, 640ms);
+  --wall-dur-exit: var(--motion-exit, 200ms);
+  --wall-stagger: var(--motion-stagger, 85ms);
 
   background-color: var(--wall-bg);
   color: var(--wall-text);
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   box-sizing: border-box;
   isolation: isolate;
   min-block-size: 100dvh;
   margin: 0;
-  padding: 8px;
+  padding: 0;
 }
 
-/* Golden-hour wallpaper behind the glass pane. The url() has to live on
-   `background-image` itself: a `url()` inside a custom property, then layered
-   with a gradient via `var()`, computes to `none` and the photograph never
-   paints. Tint stays on the pane, not on this layer. */
-.wall::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-color: var(--wall-bg);
-  background-image: url('../img/wall-atmosphere.webp');
-  background-size: cover;
-  background-position: center;
+.wall *,
+.wall *::before,
+.wall *::after {
+  box-sizing: inherit;
 }
 
-.wall-pane {
-  position: relative;
-  z-index: 1;
-  min-block-size: calc(100dvh - 16px);
-  max-inline-size: 60rem;
-  margin-inline: auto;
-  border-radius: 22px;
-  border: 1px solid var(--wall-line);
+/* Native scrollbars pick `color-scheme` and ignore the publisher palette.
+   Thin, mixed from the same line token as the hairlines, so the offer sheet
+   and the page do not grow a second chrome. */
+.wall,
+.offer-dialog__body,
+.wall-menu,
+.wall-preview__scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wall-line-strong) transparent;
 }
-
-/* Frost lives on a pseudo, not the pane: `backdrop-filter` on the pane itself
-   would become a containing block and pin the mobile nav to the catalogue
-   instead of the viewport. */
-.wall-pane::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: color-mix(in srgb, var(--wall-bg) 88%, transparent);
-  pointer-events: none;
+.wall::-webkit-scrollbar,
+.offer-dialog__body::-webkit-scrollbar,
+.wall-menu::-webkit-scrollbar,
+.wall-preview__scroll::-webkit-scrollbar {
+  width: 6px;
 }
-
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .wall-pane::before {
-    background: color-mix(in srgb, var(--wall-bg) 48%, transparent);
-    -webkit-backdrop-filter: blur(22px) saturate(1.3);
-    backdrop-filter: blur(22px) saturate(1.3);
-  }
-
-  .wall--light .wall-pane::before {
-    background: color-mix(in srgb, var(--wall-bg) 38%, transparent);
-  }
+.wall::-webkit-scrollbar-track,
+.offer-dialog__body::-webkit-scrollbar-track,
+.wall-menu::-webkit-scrollbar-track,
+.wall-preview__scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-@media (min-width: 640px) {
-  .wall {
-    padding: 16px;
-  }
-
-  .wall-pane {
-    min-block-size: calc(100dvh - 32px);
-    border-radius: 28px;
-  }
-
-  .wall-header {
-    inset-block-start: 16px;
-    border-start-start-radius: 28px;
-    border-start-end-radius: 28px;
-  }
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .wall-pane::before {
-    background: color-mix(in srgb, var(--wall-bg) 82%, transparent);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+.wall::-webkit-scrollbar-thumb,
+.offer-dialog__body::-webkit-scrollbar-thumb,
+.wall-menu::-webkit-scrollbar-thumb,
+.wall-preview__scroll::-webkit-scrollbar-thumb {
+  background: var(--wall-line-strong);
+  border-radius: var(--wall-pill);
 }
 
 @supports not (color: color-mix(in srgb, #000, #fff)) {
   .wall {
-    --wall-line: #2a2f38;
-    --wall-line-strong: #3a414c;
-    --wall-muted: #9aa3b0;
-    --wall-faint: #7d8593;
-    --wall-raise: var(--wall-card);
+    --wall-line: #262a40;
+    --wall-line-soft: #1d2033;
+    --wall-line-strong: #343954;
+    --wall-muted: #c3c7d6;
+    --wall-faint: #a6abbe;
+    --wall-raise: #1a1d2e;
+    --wall-press: #0e1020;
+    --wall-tile: #1f2337;
     --wall-primary-soft: var(--wall-card);
-    --wall-primary-deep: var(--wall-primary);
+    --wall-primary-hover: var(--wall-primary);
+    --wall-primary-hi: var(--wall-primary);
+    --wall-primary-lo: var(--wall-primary);
+    --wall-primary-fill: var(--wall-primary);
+    --wall-glow: none;
+    --wall-glow-hover: none;
   }
   .wall--light {
-    --wall-line: #dfe3ea;
-    --wall-line-strong: #c4cad4;
-    --wall-muted: #5a6472;
-    --wall-faint: #767f8d;
+    --wall-line: #dfdfea;
+    --wall-line-soft: #ececf4;
+    --wall-line-strong: #c9cad9;
+    --wall-muted: #3a3e52;
+    --wall-faint: #535873;
+    --wall-raise: #ececf4;
+    --wall-press: #e4e4ee;
+    --wall-tile: #e6e7f0;
   }
 }
 
-/* Archivo ships no Arabic cut (resources/css/tokens.css), so the RTL wall uses
-   the reader's own system face rather than a fourth webfont on a 3G phone.
-   Tracking is zeroed with it: negative letter-spacing breaks the joins that
-   Arabic script is made of. */
+/* Sora ships no Arabic cut, so the RTL wall uses the reader's own system
+   faces — for the display slots too, through the inherited token — rather
+   than a second webfont on a 3G phone. Tracking is zeroed with it:
+   letter-spacing breaks the joins Arabic script is made of. */
 [dir='rtl'] .wall {
+  --font-display: system-ui, 'Segoe UI', 'Noto Sans Arabic', 'Geeza Pro', sans-serif;
   font-family: system-ui, 'Segoe UI', 'Noto Sans Arabic', 'Geeza Pro', 'Tahoma', sans-serif;
 }
-[dir='rtl'] .wall :where(h1, h2, .wall-reward__currency, .wall-tag, .wall-header__title) {
+[dir='rtl'] .wall :where(h1, h2, .offer__h, .offer-warn__h, .wall-terms dt, .wall-reward__currency, .wall-reward__upto, .wall-history__currency, .wall-launch__kicker, .wall-card__meta, .wall-header__title, .wall-topbar__title, .wall-topbar__name, .wall-menu__name, .wall-menu__title, .wall-catalogue__title, .wall-rail__title) {
   letter-spacing: normal;
-  font-variation-settings: normal;
+  text-transform: none;
 }
 
 [x-cloak] {
@@ -175,43 +214,55 @@
   z-index: 10;
   padding: 10px 14px;
   font-weight: 600;
-  border-radius: var(--wall-radius);
+  border-radius: var(--wall-pill);
   background: var(--wall-ink);
   color: var(--wall-on-ink);
 }
 
+/* ── Frame ──────────────────────────────────────────────────────────────── */
+
 /* The wall is an iframe of unknown width. Below ~1000px it is a phone; above,
-   it is a panel someone embedded wide, and full-bleed cards stop scanning.
-   60rem rather than 72: the grid tops out at two columns, and two columns
-   across 72rem are two banners, not two cards. */
+   it is a panel someone embedded wide, and full-bleed rows stop scanning. The
+   column tops out at 60rem — two columns across 72rem are two banners, not
+   two cards — and grows a hairline on each side once the frame is wider than
+   it, so it reads as a column rather than as content that gave up. */
+.wall-pane {
+  position: relative;
+  z-index: 1;
+  min-block-size: 100dvh;
+  max-inline-size: 60rem;
+  margin-inline: auto;
+  background: var(--wall-bg);
+}
+
+@media (min-width: 61rem) {
+  .wall-pane {
+    border-inline: 1px solid var(--wall-line);
+  }
+}
+
 .wall-shell {
   max-inline-size: 60rem;
   margin-inline: auto;
   padding-inline: 14px;
 }
 
-/* ── Header ─────────────────────────────────────────────────────────────── */
-
-.wall-header {
-  position: sticky;
-  inset-block-start: 8px;
-  z-index: 5;
-  padding-block: 12px 10px;
-  background: var(--wall-bg);
-  border-block-end: 1px solid var(--wall-line);
-  border-start-start-radius: 22px;
-  border-start-end-radius: 22px;
+@media (min-width: 640px) {
+  .wall-shell {
+    padding-inline: 18px;
+  }
 }
 
-/* Translucent only where it will actually blur. A semi-transparent header on a
-   browser without backdrop-filter is not a subtle effect, it is a list of
-   cards showing through the search field. */
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .wall-header {
-    background: color-mix(in srgb, var(--wall-bg) 70%, transparent);
-    -webkit-backdrop-filter: blur(16px) saturate(1.3);
-    backdrop-filter: blur(16px) saturate(1.3);
-  }
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+/* Opaque and hairlined, never translucent: a semi-transparent header is a
+   list of rows showing through the search field. */
+.wall-header {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 5;
+  background: var(--wall-bg);
+  border-block-end: 1px solid var(--wall-line);
 }
 
 /* The detail page's header holds one back link and nothing else. */
@@ -222,60 +273,105 @@
 .wall-header__row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 8px 12px;
+  gap: 6px 12px;
+  padding-block: 14px 12px;
 }
 
 .wall-header__lede {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
   min-inline-size: 0;
 }
 
+/* What names a section: Sora, bold and tight — weight names it. */
 .wall-header__title {
-  font-family: var(--font-display);
-  font-variation-settings: 'wdth' 112;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.022em;
   margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 /* Live count. Filtering something to nothing has to be visible before the user
    decides the wall is broken. */
 .wall-header__count {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--wall-faint);
   white-space: nowrap;
 }
 
-/* ── Top bar: the app's name, the user's balance, the menu ──────────────── */
+/* ── Top bar: the app's currency, the sections, the balance ─────────────── */
 
 .wall-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-block-end: 10px;
+  min-block-size: 56px;
+  padding-block: 10px;
 }
 
 .wall-topbar__brand {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  gap: 10px;
   min-inline-size: 0;
 }
-.wall-topbar__brand .brand-mark {
+
+.wall-topbar__mark {
   flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--wall-primary);
+  background: var(--wall-tile);
+  border-radius: var(--wall-inner-radius);
+}
+
+.wall-topbar__lockup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-inline-size: 0;
+}
+
+.wall-topbar__name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The app's own word for its currency under the name. The platform's
+   name is not here: the wall is theirs. */
+.wall-topbar__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--wall-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wall-topbar__end {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 14px;
   min-inline-size: 0;
 }
 
@@ -286,51 +382,49 @@
   gap: 8px;
 }
 
-/* The balance the publisher passed in, as a bordered chip: it is the user's
-   money, shown, but it is not inventory — so it is an outline, never the ink
-   fill the offers' own actions carry. */
+/* The balance the publisher passed in, as the one filled pill in the header:
+   it is the user's money, in the publisher's colour. */
 .wall-balance {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-block-size: 34px;
-  padding-inline: 11px;
-  font-size: 13.5px;
+  gap: 4px;
+  min-block-size: 28px;
+  padding-inline: 12px;
+  font-size: 12px;
   font-weight: 700;
-  border: 1px solid var(--wall-line);
-  border-radius: 999px;
-  background: var(--wall-card);
+  color: var(--wall-on-primary);
+  background: var(--wall-primary-fill);
+  border-radius: var(--wall-pill);
+  box-shadow: var(--wall-glow);
 }
 .wall-balance__icon {
-  inline-size: 15px;
-  block-size: 15px;
-  fill: currentColor;
-  color: var(--wall-muted);
+  display: none;
 }
 
-/* 38px of hit area around an 18px glyph — the icon is the label, the button
+/* 34px of hit area around a 16px glyph — the icon is the label, the button
    is the target. Hidden until Alpine boots (x-cloak): with JS off there is
    no sheet to open, and a dead button is worse than no button. */
 .wall-menu-button {
   display: grid;
   place-items: center;
-  inline-size: 38px;
-  block-size: 38px;
+  inline-size: 36px;
+  block-size: 36px;
   padding: 0;
-  color: var(--wall-text);
-  background: var(--wall-card);
+  color: var(--wall-muted);
+  background: transparent;
   border: 1px solid var(--wall-line);
-  border-radius: 999px;
+  border-radius: var(--wall-pill);
   cursor: pointer;
-  transition: border-color 0.16s ease, background-color 0.16s ease;
+  transition: border-color var(--wall-dur) ease, background-color var(--wall-dur) ease, color var(--wall-dur) ease;
 }
 .wall-menu-button:hover {
+  color: var(--wall-text);
   border-color: var(--wall-line-strong);
   background: var(--wall-raise);
 }
 .wall-menu-button__icon {
-  inline-size: 18px;
-  block-size: 18px;
+  inline-size: 16px;
+  block-size: 16px;
   fill: currentColor;
 }
 
@@ -340,6 +434,55 @@
   .wall-menu-button {
     display: none;
   }
+}
+
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
+
+/* Pills, with the active section tinted in the publisher's colour — the
+   site's active nav item. The glyphs stay in the markup for the app-nav's
+   sake and are not drawn here: three words need no pictures. */
+.wall-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-inline-size: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.wall-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.wall-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 32px;
+  padding-inline: 13px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wall-faint);
+  text-decoration: none;
+  border-radius: var(--wall-pill);
+  white-space: nowrap;
+  transition: color var(--wall-dur) ease, background-color var(--wall-dur) ease, box-shadow var(--wall-dur) ease;
+}
+
+.wall-tab:hover {
+  color: var(--wall-text);
+  background: var(--wall-raise);
+}
+
+.wall-tab.is-on {
+  color: var(--wall-text);
+  font-weight: 700;
+  background: var(--wall-primary-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wall-primary) 35%, transparent);
+}
+
+.wall-tab__icon {
+  display: none;
 }
 
 /* ── Search ─────────────────────────────────────────────────────────────── */
@@ -358,27 +501,26 @@
      and an iframe that zooms is a bug the publisher sees, not us. */
   font: inherit;
   font-size: 16px;
-  block-size: 36px;
-  padding-inline: 34px 34px;
+  block-size: 38px;
+  padding-inline: 36px 36px;
   color: inherit;
-  background: var(--wall-card);
-  border: 1px solid transparent;
-  border-radius: 999px;
+  background: var(--wall-bg);
+  border: 1px solid var(--wall-line);
+  border-radius: var(--wall-pill);
   outline: none;
-  box-shadow: 0 0 0 1px var(--wall-line);
-  transition: box-shadow 0.16s ease;
+  transition: border-color var(--wall-dur) ease;
 }
 .wall-search input::placeholder {
   color: var(--wall-faint);
 }
 .wall-search input:hover {
-  box-shadow: 0 0 0 1px var(--wall-line-strong);
+  border-color: var(--wall-line-strong);
 }
 .wall-search:focus-within .wall-search__icon {
   color: var(--wall-text);
 }
 .wall-search input:focus {
-  box-shadow: 0 0 0 2px var(--wall-ink);
+  border-color: var(--wall-primary);
 }
 /* Native decorations are removed because the field already carries its own
    icon and its own clear button — WebKit's would sit on top of ours. */
@@ -391,24 +533,23 @@
 .wall-search__icon {
   position: absolute;
   inset-block-start: 50%;
-  inset-inline-start: 12px;
+  inset-inline-start: 14px;
   translate: 0 -50%;
-  inline-size: 15px;
-  block-size: 15px;
+  inline-size: 14px;
+  block-size: 14px;
   color: var(--wall-faint);
   pointer-events: none;
-  transition: color 0.16s ease;
+  transition: color var(--wall-dur) ease;
 }
 
+/* Segmented, hairlined: the selected device is a filled tile, not a tint. */
 .wall-devices {
   display: inline-flex;
   flex: none;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  background: var(--wall-raise);
+  align-items: stretch;
   border: 1px solid var(--wall-line);
-  border-radius: 999px;
+  border-radius: var(--wall-pill);
+  overflow: hidden;
 }
 
 .wall-devices__btn {
@@ -417,24 +558,27 @@
   justify-content: center;
   min-inline-size: 36px;
   min-block-size: 36px;
-  padding-inline: 8px;
+  padding-inline: 11px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
-  color: var(--wall-muted);
+  color: var(--wall-faint);
   background: transparent;
   border: 0;
-  border-radius: 999px;
+  border-inline-start: 1px solid var(--wall-line);
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.16s ease, background-color 0.16s ease;
+  transition: color var(--wall-dur) ease, background-color var(--wall-dur) ease;
+}
+.wall-devices__btn:first-child {
+  border-inline-start: 0;
 }
 .wall-devices__btn:hover {
   color: var(--wall-text);
 }
 .wall-devices__btn.is-on {
-  color: var(--wall-primary);
-  background: var(--wall-primary-soft);
+  color: var(--wall-on-primary);
+  background: var(--wall-primary-fill);
 }
 
 .wall-devices__icon {
@@ -444,51 +588,89 @@
 }
 
 /* 32px of hit area around a 12px glyph — the icon is the label, the button is
-   the target. Sized to the compact field, not the old 42px bar. */
+   the target. */
 .wall-clear {
   position: absolute;
   inset-block-start: 50%;
-  inset-inline-end: 1px;
+  inset-inline-end: 4px;
   translate: 0 -50%;
   display: grid;
   place-items: center;
   inline-size: 32px;
   block-size: 32px;
   padding: 0;
-  color: var(--wall-muted);
+  color: var(--wall-faint);
   background: none;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--wall-pill);
   cursor: pointer;
-  /* `scale`, not `transform`: the button is centred with the `translate`
-     property, and a transform here would compose with it and shove the button
-     a full height up on hover. */
-  transition: color 0.18s ease, scale 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: color var(--wall-dur) ease;
 }
 .wall-clear:hover {
   color: var(--wall-text);
-  scale: 1.12;
 }
 .wall-clear svg {
   inline-size: 12px;
   block-size: 12px;
 }
 
+/* ── Filters: one row ───────────────────────────────────────────────────── */
+
+/* The category chips and the device group, together, in one capsule. They
+   answer the same question — which of these offers are for me — and they
+   used to sit at opposite ends of the page. The device group is pinned at
+   the end and the chips scroll under it. */
+.wall-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-inline-size: 0;
+  margin-block: 4px 12px;
+  padding: 4px 6px;
+  background: var(--wall-card);
+  border: 1px solid var(--wall-line);
+  border-radius: var(--wall-outer-radius);
+}
+
+.wall-filters .wall-chips {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding-block: 0;
+  padding-inline-end: 10px;
+}
+
+/* The group is opaque and the chips scroll beneath it. Transparent, the last
+   chip of the scroller showed through the device buttons — two controls in
+   the same pixels. */
+.wall-filters .wall-devices {
+  flex: none;
+  position: relative;
+  z-index: 1;
+  background: var(--wall-card);
+}
+/* A hairline before it, so the two groups read as two groups rather than as
+   one row of eleven controls. The gap it sits in is the scroller's runway. */
+.wall-filters .wall-devices::before {
+  content: '';
+  position: absolute;
+  inset-block: 6px;
+  inset-inline-start: -6px;
+  inline-size: 1px;
+  background: var(--wall-line);
+}
+
 /* ── Category chips ─────────────────────────────────────────────────────── */
 
-/* No edge-fade mask. A static one dims the first chip even when the scroller
-   is already at its start, and the only mask that knows the scroll position
-   needs a scroll-timeline. The chip clipped by the edge is the affordance. */
+/* Outlined, individually. No edge-fade mask: a static one dims the first chip
+   even when the scroller is already at its start. The chip clipped by the
+   edge is the affordance. */
 .wall-chips {
   display: flex;
-  gap: 4px;
-  margin-block-start: 10px;
-  padding: 4px;
+  gap: 6px;
+  padding-block: 10px 12px;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   scrollbar-width: none;
-  background: var(--wall-raise);
-  border-radius: 999px;
 }
 .wall-chips::-webkit-scrollbar {
   display: none;
@@ -500,33 +682,37 @@
   align-items: center;
   gap: 6px;
   min-block-size: 32px;
-  padding-inline: 12px;
+  padding-inline: 13px;
   font: inherit;
-  font-size: 13px;
-  color: var(--wall-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--wall-faint);
   background: transparent;
-  border: 0;
-  border-radius: 999px;
+  border: 1px solid var(--wall-line);
+  border-radius: var(--wall-pill);
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
-  transition: color 0.16s ease, background-color 0.16s ease;
+  transition: color var(--wall-dur) ease, background-color var(--wall-dur) ease, border-color var(--wall-dur) ease;
 }
 .wall-chip:hover {
   color: var(--wall-text);
+  border-color: var(--wall-line-strong);
 }
-/* Soft accent, not a filled ink pill: the selected filter has to be findable
-   at a glance without competing with the reward CTAs below it. Weight still
-   changes so the state survives a monochrome display. */
+/* The selected filter takes the publisher's own colour, filled, with the
+   foreground the layout already derived to be legible on it. It used to fill
+   with the text colour, which made the one piece of state on the page the one
+   place the wall's own colour was absent. Still a fill and not only a hue, so
+   the state survives a monochrome display. */
 .wall-chip.is-on {
-  color: var(--wall-primary);
-  font-weight: 700;
-  background: var(--wall-primary-soft);
+  color: var(--wall-on-primary);
+  background: var(--wall-primary-fill);
+  border-color: transparent;
 }
 
 .wall-chip__icon {
-  inline-size: 14px;
-  block-size: 14px;
+  inline-size: 13px;
+  block-size: 13px;
   flex: none;
   fill: currentColor;
 }
@@ -536,7 +722,7 @@
 /* A real <select> in a real <form>. The wall's rank/reveal state is a filter
    and a filter may hide DOM nodes; a *sort* done with CSS `order` or a shuffled
    Alpine index makes visual order diverge from DOM and focus order, which is a
-   keyboard bug design.md §7 does not permit. So it submits. */
+   keyboard bug. So it submits. */
 .wall-sort {
   display: flex;
   align-items: center;
@@ -551,38 +737,34 @@
 .wall-sort__select {
   appearance: none;
   -webkit-appearance: none;
-  min-block-size: 36px;
+  min-block-size: 38px;
   padding-block: 6px;
-  padding-inline: 12px 28px;
+  padding-inline: 14px 30px;
   font: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--wall-text);
-  background-color: var(--wall-card);
+  background-color: var(--wall-bg);
   background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
     linear-gradient(135deg, currentColor 50%, transparent 50%);
   background-size: 5px 5px, 5px 5px;
   background-position: right 13px center, right 9px center;
   background-repeat: no-repeat;
   background-clip: padding-box;
-  /* Shadow, not `border`: Windows still etches a native select edge after
-     `appearance: none`, and that groove is what made this control look
-     cheaper than the search field beside it. */
-  border: 1px solid transparent;
-  border-radius: 999px;
+  border: 1px solid var(--wall-line);
+  border-radius: var(--wall-pill);
   outline: none;
-  box-shadow: 0 0 0 1px var(--wall-line);
   cursor: pointer;
-  transition: color 0.16s ease, box-shadow 0.16s ease;
+  transition: border-color var(--wall-dur) ease;
 }
 [dir='rtl'] .wall-sort__select {
   background-position: left 9px center, left 13px center;
 }
 .wall-sort__select:hover {
-  color: var(--wall-text);
-  box-shadow: 0 0 0 1px var(--wall-line-strong);
+  border-color: var(--wall-line-strong);
 }
 .wall-sort__select:focus {
-  box-shadow: 0 0 0 2px var(--wall-ink);
+  border-color: var(--wall-primary);
 }
 /* The list itself is painted by the platform, and on a dark wall the default is
    a white sheet of white-on-white options. */
@@ -591,56 +773,7 @@
   background: var(--wall-card);
 }
 
-/* ── Tabs ───────────────────────────────────────────────────────────────── */
-
-/* Icon pills in the top bar. The selected section is a filled primary pill
-   so it is findable at a glance; category chips below stay the softer tint. */
-.wall-tabs {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-inline-size: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.wall-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.wall-tab {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-block-size: 34px;
-  padding-inline: 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--wall-muted);
-  text-decoration: none;
-  border-radius: 999px;
-  white-space: nowrap;
-  transition: color 0.16s ease, background-color 0.16s ease;
-}
-
-.wall-tab:hover {
-  color: var(--wall-text);
-  background: var(--wall-raise);
-}
-
-.wall-tab.is-on {
-  color: var(--wall-on-primary);
-  font-weight: 700;
-  background: var(--wall-primary);
-}
-
-.wall-tab__icon {
-  inline-size: 15px;
-  block-size: 15px;
-  flex: none;
-  fill: currentColor;
-}
+/* ── Partner tab ────────────────────────────────────────────────────────── */
 
 /* The partner's wall fills what is left of ours. It scrolls internally, the
    same contract we ask of our own publishers. */
@@ -648,18 +781,18 @@
   inline-size: 100%;
   block-size: calc(100vh - 128px);
   min-block-size: 420px;
-  border: 0;
+  border: 1px solid var(--wall-line);
   border-radius: var(--wall-radius);
   background: var(--wall-card);
 }
 
-/* Partner catalogue. Same material as an offer card: hairline, quiet type,
-   no glow. The logo gets a flush stage so a wordmark can sit at size. */
+/* Partner catalogue. Same material as an offer row: a hairline panel, quiet
+   type. The logo gets a flat stage so a wordmark can sit at size. */
 .wall-launch-wrap {
   display: grid;
   grid-template-columns: repeat(auto-fill, 18.5rem);
   justify-content: start;
-  gap: 12px;
+  gap: 10px;
   padding-block: 4px 28px;
 }
 
@@ -672,19 +805,16 @@
   background: var(--wall-card);
   border: 1px solid var(--wall-line);
   border-radius: var(--wall-radius);
-  transition:
-    border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: border-color var(--wall-dur) ease, background-color var(--wall-dur) ease, translate var(--wall-dur-slow) var(--wall-ease);
 }
 
 .wall-launch:hover {
-  border-color: var(--wall-primary);
-  box-shadow: inset 0 0 0 1px var(--wall-primary);
+  border-color: var(--wall-line-strong);
+  background: var(--wall-raise);
 }
 
 .wall-launch:active {
-  transform: scale(0.985);
+  background: var(--wall-press);
 }
 
 .wall-launch__stage {
@@ -692,12 +822,8 @@
   place-items: center;
   aspect-ratio: 16 / 9;
   padding: 22px 24px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--wall-primary) 11%, var(--wall-raise)),
-      var(--wall-raise)
-    );
+  background: var(--wall-tile);
+  border-block-end: 1px solid var(--wall-line-soft);
 }
 
 .wall-launch__stage img {
@@ -708,36 +834,35 @@
 
 .wall-launch__letter {
   font-family: var(--font-display);
-  font-variation-settings: 'wdth' 112;
   font-size: 42px;
   font-weight: 700;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
-  color: var(--wall-muted);
+  color: var(--wall-primary);
 }
 
 .wall-launch__meta {
   display: flex;
   flex-direction: column;
   align-items: start;
-  gap: 3px;
+  gap: 4px;
   padding: 14px 16px 15px;
 }
 
 .wall-launch__kicker {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--wall-faint);
 }
 
 .wall-launch__name {
   font-family: var(--font-display);
-  font-variation-settings: 'wdth' 112;
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.25;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .wall-launch__go {
@@ -745,10 +870,10 @@
   align-items: center;
   gap: 2px;
   margin-block-start: 8px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--wall-muted);
-  transition: color 0.16s ease;
+  transition: color var(--wall-dur) ease;
 }
 
 .wall-launch:hover .wall-launch__go {
@@ -759,7 +884,7 @@
   inline-size: 14px;
   block-size: 14px;
   fill: currentColor;
-  transition: translate 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: translate var(--wall-dur) var(--wall-ease);
 }
 
 .wall-launch:hover .wall-launch__go svg {
@@ -776,9 +901,9 @@
 
 /* ── App-nav: the tab strip's mobile form ────────────────────────────────── */
 
-/* Hidden on wide frames, where the header's underline tabs already are the
-   nav. Under 640px the strip collapses into this fixed bar — one nav per
-   breakpoint, never both — and the wall reads like the app it is. */
+/* Hidden on wide frames, where the header's tabs already are the nav. Under
+   640px the strip collapses into this fixed bar — one nav per breakpoint,
+   never both — and the wall reads like the app it is. */
 .wall-nav {
   display: none;
 }
@@ -786,27 +911,16 @@
 @media (max-width: 639px) {
   .wall-nav {
     position: fixed;
-    inset-block-end: 8px;
-    inset-inline: 8px;
+    inset-block-end: 0;
+    inset-inline: 0;
     z-index: 6;
     display: flex;
-    max-inline-size: calc(60rem - 16px);
+    max-inline-size: 60rem;
     margin-inline: auto;
     border-block-start: 1px solid var(--wall-line);
-    border-end-start-radius: 22px;
-    border-end-end-radius: 22px;
     background: var(--wall-bg);
     /* The home indicator's strip is the bar's own padding, not the list's. */
     padding-block-end: env(safe-area-inset-bottom, 0px);
-  }
-
-  /* Translucent only where it will actually blur — the header's own rule. */
-  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-    .wall-nav {
-      background: color-mix(in srgb, var(--wall-bg) 86%, transparent);
-      -webkit-backdrop-filter: blur(16px) saturate(1.3);
-      backdrop-filter: blur(16px) saturate(1.3);
-    }
   }
 
   /* The strip it replaces. The links live here now, as plain anchors. */
@@ -814,22 +928,8 @@
     display: none;
   }
 
-  /* The list's end and the footer have to clear the fixed bar. */
-  .wall-main {
-    padding-block-end: 84px;
-  }
-  .wall-footer {
-    padding-block-end: 84px;
-  }
-
-  /* Opaque on a phone. 82% + blur lets the filter row scroll through the
-     chip strip and read as two bars in one slot — the thing a sticky
-     header is there to prevent. */
-  .wall-header {
-    background: var(--wall-bg);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+  /* The list's end and the footer clear the fixed bar — declared at the end
+     of the file, after the base rules whose shorthands would reset it. */
 
   .wall-partner__frame {
     block-size: calc(100dvh - 200px);
@@ -847,7 +947,7 @@
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  min-block-size: 52px;
+  min-block-size: 50px;
   padding-block: 7px 6px;
   font: inherit;
   font-size: 10px;
@@ -857,55 +957,93 @@
   background: none;
   border: 0;
   cursor: pointer;
-  transition: color 0.16s ease;
+  transition: color var(--wall-dur) ease;
 }
 .wall-nav__item:hover {
   color: var(--wall-text);
 }
-/* Text and weight, never a tint: the active section is state, not inventory. */
+/* The active section: a mark in the publisher's colour at the bar's edge, the
+   icon tinted with it, and the label in full-strength text at a heavier
+   weight. The state used to be weight and text colour alone, which left the
+   accent absent from the one piece of chrome that is on screen the whole
+   time — and left it reading exactly like every other offerwall.
+
+   The label carries the state on its own, so a publisher whose accent sits
+   close to their background loses the decoration and keeps the meaning. */
 .wall-nav__item.is-on {
+  position: relative;
   color: var(--wall-text);
   font-weight: 700;
 }
+.wall-nav__item.is-on::before {
+  content: '';
+  position: absolute;
+  inset-block-start: -1px;
+  inset-inline: 22%;
+  block-size: 2px;
+  border-radius: var(--wall-pill);
+  background: var(--wall-primary);
+}
 .wall-nav__icon {
-  inline-size: 20px;
-  block-size: 20px;
+  inline-size: 18px;
+  block-size: 18px;
   fill: currentColor;
+}
+.wall-nav__item.is-on .wall-nav__icon {
+  color: var(--wall-primary);
+  fill: var(--wall-primary);
 }
 
 /* ── The menu sheet ─────────────────────────────────────────────────────── */
 
-/* Same native-<dialog> contract as the offer sheet: bottom sheet on a phone,
-   a centred card above it. Only destinations that exist live here. */
+/* End-edge drawer. Same present/dismiss path as the offer sheet: fade the
+   backdrop, slide the pane from the inline-end. */
 .wall-menu {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inset-inline-start: auto;
+  inline-size: min(18rem, 86vw);
+  max-inline-size: 18rem;
+  block-size: 100dvh;
+  max-block-size: 100dvh;
+  margin: 0;
   padding: 0;
   border: 0;
+  border-inline-start: 1px solid var(--wall-line);
+  border-radius: 0;
   color: var(--wall-text);
   background: var(--wall-bg);
+  overflow: auto;
+  translate: 100% 0;
+  opacity: 1;
+  transition: translate var(--wall-dur-slow) var(--wall-ease);
+}
+[dir='rtl'] .wall-menu {
+  translate: -100% 0;
+}
+.wall-menu[open] {
+  display: flex;
+  flex-direction: column;
+}
+.wall-menu[open].is-in {
+  translate: 0 0;
+}
+.wall-menu[open].is-out {
+  translate: 100% 0;
+  transition-duration: var(--wall-dur-exit);
+  transition-timing-function: var(--wall-ease-in);
+}
+[dir='rtl'] .wall-menu[open].is-out {
+  translate: -100% 0;
 }
 .wall-menu::backdrop {
-  background: rgb(0 0 0 / 0.62);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  background: rgb(0 0 0 / 0.6);
+  opacity: 0;
+  transition: opacity var(--wall-dur-slow) var(--wall-ease);
 }
-
-@media (max-width: 599px) {
-  .wall-menu {
-    inline-size: 100%;
-    max-inline-size: 100%;
-    margin: auto auto 0;
-    border-start-start-radius: calc(var(--wall-radius) * 1.6);
-    border-start-end-radius: calc(var(--wall-radius) * 1.6);
-    border-block-start: 1px solid var(--wall-line);
-  }
-}
-@media (min-width: 600px) {
-  .wall-menu {
-    inline-size: min(22rem, calc(100vw - 32px));
-    margin: auto;
-    border: 1px solid var(--wall-line);
-    border-radius: calc(var(--wall-radius) * 1.4);
-  }
+.wall-menu[open].is-in::backdrop {
+  opacity: 1;
 }
 
 .wall-menu__head {
@@ -913,191 +1051,191 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 16px 12px;
+  padding: 14px 14px 12px;
+  border-block-end: 1px solid var(--wall-line);
 }
-.wall-menu__title {
+.wall-menu__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-inline-size: 0;
+}
+.wall-menu__mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
   font-family: var(--font-display);
-  font-variation-settings: 'wdth' 112;
   font-size: 16px;
   font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--wall-primary);
+  background: var(--wall-tile);
+  border-radius: var(--wall-inner-radius);
+}
+.wall-menu__lockup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-inline-size: 0;
+}
+.wall-menu__name {
+  font-size: 14px;
+  font-weight: 700;
   letter-spacing: -0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wall-menu__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--wall-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .wall-menu__head .offer-dialog__close {
   flex: none;
 }
 
+.wall-menu__nav {
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+}
+
 .wall-menu__list {
   margin: 0;
-  padding: 0 0 10px;
+  padding: 8px 0 12px;
   list-style: none;
+  border-block-start: 1px solid var(--wall-line);
+  margin-block-start: auto;
 }
 .wall-menu__item {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: inherit;
   text-decoration: none;
-  border-block-start: 1px solid var(--wall-line);
-  transition: background-color 0.16s ease;
+  border: 0;
+  background: transparent;
+  transition: background-color var(--wall-dur) ease, color var(--wall-dur) ease;
 }
 .wall-menu__item:hover {
   background: var(--wall-raise);
 }
+.wall-menu__item.is-on {
+  color: var(--wall-text);
+  background: var(--wall-primary-soft);
+}
+.wall-menu__item.is-on .wall-menu__icon {
+  color: var(--wall-primary);
+}
 .wall-menu__icon {
-  inline-size: 18px;
-  block-size: 18px;
+  inline-size: 16px;
+  block-size: 16px;
   flex: none;
   fill: currentColor;
-  color: var(--wall-muted);
-}
-
-/* ── Featured rail ──────────────────────────────────────────────────────── */
-
-/* A scroll region, not a carousel: no autoplay, no timer. The browser already
-   operates the track with a wheel, a swipe, a trackpad and the arrow keys.
-   The next control is an enhancement; the visible scrollbar is the affordance
-   that works with JS off. */
-.wall-rail {
-  margin-block-end: 22px;
-}
-
-.wall-rail__h,
-.wall-catalogue__h {
-  margin: 0;
-  font-family: var(--font-display);
-  font-variation-settings: 'wdth' 112;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.022em;
-  color: var(--wall-text);
-}
-
-.wall-rail__h {
-  margin-block-end: 10px;
-}
-
-.wall-rail__frame {
-  position: relative;
-}
-
-.wall-rail__track {
-  display: flex;
-  gap: 10px;
-  margin: 0;
-  padding: 2px 0 12px;
-  list-style: none;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline-start: 0;
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--wall-text) 28%, transparent) transparent;
-  overscroll-behavior-inline: contain;
-}
-
-.wall-rail__track::-webkit-scrollbar {
-  block-size: 5px;
-}
-.wall-rail__track::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--wall-text) 28%, transparent);
-  border-radius: 999px;
-}
-
-.wall-rail__track > li {
-  flex: none;
-  scroll-snap-align: start;
-  inline-size: min(10.75rem, 72vw);
-}
-
-@media (max-width: 639px) {
-  .wall-rail__track > li {
-    /* Two compact tiles in view. 76vw was one poster and a sliver. */
-    inline-size: min(9.25rem, 42vw);
-  }
-}
-
-.wall-rail__next {
-  position: absolute;
-  inset-block-start: calc(50% - 8px);
-  inset-inline-end: 0;
-  translate: 0 -50%;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  inline-size: 36px;
-  block-size: 36px;
-  padding: 0;
-  color: var(--wall-primary);
-  background: color-mix(in srgb, var(--wall-bg) 88%, transparent);
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.wall-rail__next span,
-.wall-rail__next span::after {
-  display: block;
-  inline-size: 7px;
-  block-size: 7px;
-  border-block-start: 2px solid currentColor;
-  border-inline-end: 2px solid currentColor;
-  rotate: 45deg;
-}
-.wall-rail__next span::after {
-  content: '';
-  margin-inline-start: 4px;
-  margin-block-start: -9px;
-}
-[dir='rtl'] .wall-rail__next span,
-[dir='rtl'] .wall-rail__next span::after {
-  rotate: -45deg;
+  color: var(--wall-faint);
 }
 
 /* ── Grid ───────────────────────────────────────────────────────────────── */
 
 .wall-main {
-  padding-block: 14px 32px;
+  padding-block: 12px 32px;
   /* The header is sticky, so the skip link's target has to clear it: top bar,
-     tab strip, chip row, and the padding around them. */
-  scroll-margin-block-start: 150px;
+     chip row, and the padding around them. */
+  scroll-margin-block-start: 120px;
 }
 
+/* Search and sort on one line. There were three control strips between the
+   top bar and the first offer — categories, then search, then devices and
+   sort. Two of them have moved into the header's single filter row and this
+   is what is left. */
 .wall-catalogue {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px 12px;
-  margin-block-end: 12px;
+  margin-block: 18px 8px;
 }
 
-.wall-catalogue__lede {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-inline-size: 0;
+.wall-catalogue__title,
+.wall-rail__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
-.wall-tools {
+.wall-catalogue__title {
+  flex: 1 1 8rem;
+  min-inline-size: 8rem;
+}
+
+.wall-catalogue__tools {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: 8px;
+  flex: 1 1 16rem;
   min-inline-size: 0;
 }
 
-@media (max-width: 639px) {
-  .wall-tools {
-    flex: 1 1 100%;
-    justify-content: space-between;
-  }
-  .wall-search {
-    flex: 1 1 100%;
-    max-inline-size: none;
-  }
+.wall-catalogue__tools .wall-search {
+  flex: 1 1 11rem;
+  max-inline-size: none;
+}
+
+/* Only ever drawn while a filter is on, so it is never a restatement of a
+   list length the user can see. */
+.wall-count {
+  margin: 0 0 2px;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--wall-faint);
+}
+
+/* Featured pins, as a snap-scroll strip above the list. The same offers
+   stay in the list with the lead mark, so a filter that hides a rail card
+   does not hide the pin. */
+.wall-rail {
+  margin-block-start: 4px;
+}
+
+.wall-rail__title {
+  margin-block-end: 10px;
+}
+
+.wall-rail__scroller {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 4px;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.wall-rail__scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.wall-rail__scroller > li {
+  flex: none;
+  scroll-snap-align: start;
+  inline-size: 8rem;
 }
 
 .wall-grid {
@@ -1109,36 +1247,25 @@
   list-style: none;
 }
 
-/* Two columns, and never three. A card carries an icon, a name, a two-line
-   instruction and a reward pill; at a third of a wide frame the instruction
-   clips after four words and the pill collides with the name. Two is the
-   widest the card's own contents stay legible at. */
-@media (min-width: 640px) {
-  .wall-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* A wall can hold 100 cards on a mid-range Android. Skipping layout and paint
+/* A wall can hold 100 rows on a mid-range Android. Skipping layout and paint
    for the ones below the fold is the cheapest win available here, and the
    intrinsic size keeps the scrollbar honest. */
 .wall-grid > li {
-  container-type: inline-size;
   content-visibility: auto;
-  /* Tracks the card's real minimum — tile plus the wrapped reward row on a
-     narrow card. A placeholder shorter than the card makes the scrollbar
-     lie and the list jump as the user scrolls into it. */
-  contain-intrinsic-size: auto 120px;
+  contain-intrinsic-size: auto 96px;
 }
 
-/* ── Card ───────────────────────────────────────────────────────────────── */
+/* ── Row ────────────────────────────────────────────────────────────────── */
 
+/* A plate in the catalogue: the publisher's card colour, a hairline, and
+   their radius. The figure still sits on one edge so payouts compare down
+   a column. */
 .wall-card {
   position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
   padding: 12px;
   text-decoration: none;
   color: inherit;
@@ -1146,93 +1273,100 @@
   border: 1px solid var(--wall-line);
   border-radius: var(--wall-radius);
   block-size: 100%;
-  /* One duration and one curve for every property the card animates, so hover
-    arrives as a single movement. 0.22s is long enough to be seen and short
-    enough that a pointer crossing three cards does not leave a wake. */
-  transition:
-    border-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color var(--wall-dur) ease, border-color var(--wall-dur) ease;
 }
 
-/* Hover is the accent edge — the same card, a primary border. Lift and a
-   growing tile would spend motion the reference does not use, and on a dark
-   theme a rising card reads as selected rather than pointed at. */
 .wall-card:hover {
-  border-color: var(--wall-primary);
-  box-shadow: inset 0 0 0 1px var(--wall-primary);
+  background: var(--wall-raise);
+  border-color: var(--wall-line-strong);
 }
 /* Real press feedback. A tap that produces no visible change on a 3G
    connection reads as a tap that did not register. */
 .wall-card:active {
-  transform: scale(0.985);
+  background: var(--wall-press);
 }
 
-/* The card, not the viewport. A 400px preview column on a wide dashboard
-   and a phone are the same squeeze: the nowrap reward pill ate the name.
-   Wrapping the pill under the body keeps the ledger on the inline-end edge. */
-@container (max-width: 400px) {
-  .wall-card:not(.wall-card--rail) {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-    gap: 8px 12px;
+@media (hover: hover) and (pointer: fine) {
+  .wall-launch:hover {
+    translate: 0 -2px;
+    border-color: var(--wall-line-strong);
   }
-
-  .wall-card:not(.wall-card--rail) .wall-tile {
-    grid-row: span 2;
-  }
-
-  .wall-card:not(.wall-card--rail) .wall-card__end {
-    justify-self: end;
-  }
-
-  .wall-reward--cta {
-    min-block-size: 32px;
-    padding-block: 5px;
-    padding-inline: 10px;
+  .wall-button:hover {
+    translate: 0 -2px;
   }
 }
 
-/* The featured strip: a vertical card with a primary edge at rest, so the
-   rail is visibly not the grid even before the heading is read. */
+/* A pinned offer carries the publisher's colour on its leading edge. An inset
+   shadow rather than a border, so the mark costs no layout and the row's
+   words stay on the same axis as every other row's. The mark travels with the
+   offer rather than with the strip it used to live in, which is what keeps a
+   filtered list honest about what is pinned. */
+.wall-card--lead::after {
+  content: '';
+  position: absolute;
+  inset-block: 12px;
+  inset-inline-start: 2px;
+  inline-size: 3px;
+  border-radius: var(--wall-pill);
+  background: var(--wall-primary);
+}
+
 .wall-card--rail {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 10px;
-  padding: 12px;
-  border-color: var(--wall-primary);
+  gap: 8px;
+  padding: 10px;
+  inline-size: 8rem;
 }
+
 .wall-card--rail .wall-tile {
   inline-size: 100%;
   block-size: auto;
   aspect-ratio: 1;
 }
+
+.wall-card--rail .wall-tile__letter {
+  font-size: 26px;
+}
+
 .wall-card--rail .wall-card__name {
-  white-space: nowrap;
+  font-size: 12px;
 }
+
+.wall-card--rail .wall-card__note {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 10.5px;
+}
+
 .wall-card--rail .wall-card__end {
-  margin-block-start: auto;
-  justify-content: center;
+  min-inline-size: 0;
   inline-size: 100%;
-}
-.wall-card--rail .wall-reward--cta {
-  inline-size: auto;
-  max-inline-size: 100%;
-  flex-wrap: wrap;
-  padding-inline: 10px;
+  justify-content: center;
 }
 
-@media (max-width: 639px) {
-  .wall-card--rail {
-    gap: 8px;
-    padding: 8px;
-  }
+.wall-card--rail .wall-reward {
+  align-items: center;
+  inline-size: 100%;
+  padding: 6px 8px;
+  text-align: center;
+  color: var(--wall-on-primary);
+  background: var(--wall-primary-fill);
+  border-radius: var(--wall-pill);
 }
 
-/* Visible on keyboard focus, on every card, without exception — the wall is
-   navigable with a keyboard or it is not accessible. */
+.wall-card--rail .wall-reward__value {
+  font-size: 12px;
+}
+
+.wall-card--rail .wall-reward__currency,
+.wall-card--rail .wall-reward__upto {
+  color: var(--wall-on-primary);
+}
+
+/* Visible on keyboard focus, on every control, without exception — the wall
+   is navigable with a keyboard or it is not accessible. */
 .wall-card:focus-visible,
 .wall-launch:focus-visible,
 .wall-tab:focus-visible,
@@ -1240,58 +1374,56 @@
 .wall-clear:focus-visible,
 .wall-button:focus-visible,
 .wall-devices__btn:focus-visible,
-.wall-rail__next:focus-visible,
 .wall-menu-button:focus-visible,
 .wall-nav__item:focus-visible,
 .wall-menu__item:focus-visible,
+.offer-dialog__close:focus-visible,
+.offer-back:focus-visible,
 .wall-skip:focus-visible {
-  outline: 3px solid var(--wall-ink);
+  outline: 2px solid var(--wall-primary);
   outline-offset: 2px;
 }
 
-/* ── Icon: fixed box so a slow icon cannot shift the card ───────────────── */
+/* ── Tile: a fixed box, so a slow icon cannot shift the row ─────────────── */
 
 .wall-tile {
   position: relative;
   flex: none;
-  inline-size: 56px;
-  block-size: 56px;
+  inline-size: 34px;
+  block-size: 34px;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: calc(var(--wall-radius) * 0.75);
-  background: var(--wall-raise);
-  box-shadow: inset 0 0 0 1px var(--wall-line);
+  border-radius: var(--wall-inner-radius);
+  background: var(--wall-tile);
 }
 /* The detail view's hero tile — the same box, one size up. */
 .wall-tile--xl {
-  inline-size: 72px;
-  block-size: 72px;
+  inline-size: 56px;
+  block-size: 56px;
 }
 .wall-tile--xl .wall-tile__letter {
-  font-size: 28px;
+  font-size: 26px;
 }
 /* The history row's tile — the same box, one size down. A history row is a
    record and not an advert, so the art stops leading it. */
 .wall-tile--sm {
-  inline-size: 40px;
-  block-size: 40px;
+  inline-size: 28px;
+  block-size: 28px;
 }
 .wall-tile--sm .wall-tile__letter {
-  font-size: 16px;
+  font-size: 13px;
 }
 
-.wall-tile__letter,
-.wall-tile__img {
-  transition: scale 0.22s ease;
-}
+/* The letter is the offer's initial, bold, in the publisher's colour: what
+   stands in for a store icon until the proxied image loads over it. */
 .wall-tile__letter {
   font-family: var(--font-display);
-  font-variation-settings: 'wdth' 112;
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 700;
+  line-height: 1;
   text-transform: uppercase;
-  color: var(--wall-muted);
+  color: var(--wall-primary);
 }
 .wall-tile__img {
   position: absolute;
@@ -1306,59 +1438,98 @@
 .wall-card__body {
   min-inline-size: 0;
 }
-.wall-card__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  min-inline-size: 0;
-}
 .wall-card__name {
   display: block;
-  flex: 1 1 7rem;
   min-inline-size: 0;
-  font-weight: 700;
-  font-size: 14.5px;
+  font-weight: 600;
+  font-size: 14px;
   line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* One line on the grid — the reference card is a single clipped sentence.
-   Two lines on the rail, where the card is tall enough to hold them.
-   The -webkit- prefixes are the only syntax that ships everywhere today;
-   `line-clamp` unprefixed is there for the browsers that have moved on. */
+/* One line — the board's row is a single clipped sentence with the device
+   after it. The -webkit- prefixes are the only syntax that ships everywhere
+   today; `line-clamp` unprefixed is there for the browsers that have moved on. */
 .wall-card__note {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  margin-block-start: 3px;
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--wall-muted);
-  overflow: hidden;
-}
-.wall-card--rail .wall-card__note {
   -webkit-line-clamp: 2;
   line-clamp: 2;
+  margin-block-start: 2px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--wall-faint);
+  overflow: hidden;
 }
 
-/* ── Card facts: what it runs on, and whether anybody is doing it ───────── */
+.wall-grid .wall-tile {
+  inline-size: 56px;
+  block-size: 56px;
+}
 
-/* Muted and small on purpose. These are the two facts a card could not
-   otherwise answer, and neither one may compete with the reward pill — the
-   whole layout is built so payouts stack on one axis and everything else stays
-   quieter than they are. */
-.wall-facts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 10px;
-  margin-block-start: 5px;
-  font-size: 11.5px;
+.wall-grid .wall-tile__letter {
+  font-size: 26px;
+}
+
+/* ── Meta: everything that is not the name, the note or the figure ──────── */
+
+/* One line, one voice. This used to be two outlined pill badges, a strip of
+   device glyphs and a headcount, four separately-styled things on a row whose
+   only loud element is meant to be the payout. They are now one muted line
+   with a separator between the parts, so the row has a single quiet band
+   under the name and the figure has no competition.
+
+   The separator is a pseudo-element rather than a border, so it never lands
+   at the start of a wrapped line. */
+/* A block of inline parts rather than a flex row, so it clips with an ellipsis
+   at the ledger column instead of wrapping. A wrapped meta line puts its
+   separator at the start of the second line, which reads as a bullet nobody
+   asked for, and it makes the rows different heights — which is the one thing
+   a column of figures cannot survive. */
+.wall-card__meta {
+  display: block;
+  margin-block-start: 3px;
+  font-size: 10.5px;
+  line-height: 1.4;
   color: var(--wall-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wall-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.wall-card__meta > * + *::before {
+  content: '·';
+  margin-inline: 6px;
+  color: var(--wall-line-strong);
+}
+
+/* Marks the offer the wall itself put at the top. Not a pill and not a
+   colour on its own: the leading edge on the row already carries the accent,
+   so here it is only a weight. */
+.wall-card__meta-item:first-child {
+  font-weight: 600;
+  color: var(--wall-muted);
+}
+
+/* ── Facts: what it runs on, and whether anybody is doing it ────────────── */
+
+/* Shared with the detail screen, where they sit on their own and keep their
+   own separators. Inside the meta line the group is one part of it. */
+.wall-facts {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  vertical-align: middle;
+  font-size: inherit;
+  color: inherit;
 }
 
 .wall-facts__item {
@@ -1366,115 +1537,138 @@
   align-items: center;
   gap: 4px;
 }
-.wall-facts__item + .wall-facts__item {
-  padding-inline-start: 10px;
-  border-inline-start: 1px solid var(--wall-line-strong);
+.wall-facts__item + .wall-facts__item::before {
+  content: '·';
+  margin-inline-end: 3px;
+  color: var(--wall-line-strong);
 }
 
 .wall-facts__icon {
-  inline-size: 13px;
-  block-size: 13px;
+  inline-size: 12px;
+  block-size: 12px;
   flex: none;
   fill: currentColor;
 }
 
-/* Tags sit in the flow rather than floating on the card's edge: most offers
-   carry none, so the row costs nothing when it is absent, and a card with two
-   of them no longer stacks badges on top of each other. */
-.wall-tags {
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-/* Sits next to the title. Soft primary so it is a badge and not a second CTA. */
-.wall-tag {
-  padding: 2px 7px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  border-radius: 999px;
-  color: var(--wall-primary);
-  background: var(--wall-primary-soft);
-}
-.wall-tag--accent {
-  color: var(--wall-on-primary);
-  background: var(--wall-primary);
+/* On the detail screen the facts are a line of their own again. */
+.offer__facts .wall-facts {
+  margin-block-start: 4px;
+  font-size: 10.5px;
+  color: var(--wall-faint);
 }
 
 /* ── Reward ─────────────────────────────────────────────────────────────── */
 
-/* On the card it is a filled pill minted from the publisher's accent — the
-   loudest element, and the thing the user is scanning for. On the detail
-   screen it stays a ledger figure (`.offer__reward`), so the number the user
-   tapped is still the number they land on. Never colour alone: it carries
-   the currency name as text. */
+/* A ledger figure, flush to the row's end: bold, tabular, with the currency
+   in small capitals beside it. Not a pill and not a colour — the figure is
+   the loudest thing on the row by being the only bold number on it. Never
+   colour alone: it carries the currency name as text. */
+/* A fixed inline size, so every figure on the list shares one inline-end
+   edge whatever the name beside it is doing. That single axis is the whole
+   point of the row: the user compares payouts by glance down a column
+   instead of by reading eleven differently-placed numbers. */
 .wall-card__end {
   flex: none;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  min-inline-size: 5.5rem;
 }
 
 .wall-reward {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 1px;
+  gap: 0;
   text-align: end;
-}
-
-.wall-reward--cta {
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-block-size: 36px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--wall-primary), var(--wall-primary-deep));
-  color: var(--wall-on-primary);
-  text-align: center;
   white-space: nowrap;
-}
-.wall-reward--cta .wall-reward__upto,
-.wall-reward--cta .wall-reward__currency {
-  color: inherit;
-  opacity: 0.86;
-}
-.wall-reward--cta .wall-reward__value {
-  font-size: 13.5px;
 }
 
 /* "Up to", only on multi-step offers: the steps pay separately, so the
-   headline is a ceiling rather than a promise, and the card has to say so. */
+   headline is a ceiling rather than a promise, and the row has to say so. */
 .wall-reward__upto {
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--wall-faint);
 }
 
-.wall-reward__row {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-}
+/* The one loud thing on the row. Stacked over its currency rather than beside
+   it, so the digits themselves line up rather than the end of the word after
+   them — the currency name is the same on every row and carries no
+   information, while the number carries all of it. */
 .wall-reward__value {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.01em;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  /* A figure reads the same in both directions: "+6,125" keeps its sign
+     in front on the Arabic wall too. */
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 .wall-reward__currency {
   font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--wall-muted);
+  color: var(--wall-faint);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+/* Two kinds and no more. The ghost is the default: hairline, the text
+   colour, a surface on hover. The primary is the publisher's colour filled,
+   and a screen has at most one of them — the thing that screen exists to
+   make easy. */
+.wall-button {
+  flex: 1 1 auto;
+  min-inline-size: 8rem;
+  min-block-size: 40px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+  color: var(--wall-text);
+  background: transparent;
+  border: 1px solid var(--wall-line-strong);
+  border-radius: var(--wall-pill);
+  cursor: pointer;
+  transition: background-color var(--wall-dur) ease, border-color var(--wall-dur) ease, color var(--wall-dur) ease, box-shadow var(--wall-dur) ease, translate var(--wall-dur) var(--wall-ease);
+}
+.wall-button:active {
+  translate: 0 0;
+}
+.wall-button:hover {
+  background: var(--wall-card);
+  border-color: color-mix(in srgb, var(--wall-text) 32%, transparent);
+}
+.wall-button:active {
+  background: var(--wall-press);
+}
+
+.wall-button.offer__go,
+.wall-more .wall-button,
+.wall-empty .wall-button,
+.wall-panel--center .wall-actions > .wall-button:first-child {
+  color: var(--wall-on-primary);
+  background: var(--wall-primary-fill);
+  border-color: transparent;
+  box-shadow: var(--wall-glow);
+}
+.wall-button.offer__go:hover,
+.wall-more .wall-button:hover,
+.wall-empty .wall-button:hover,
+.wall-panel--center .wall-actions > .wall-button:first-child:hover {
+  background: var(--wall-primary-fill);
+  border-color: transparent;
+  box-shadow: var(--wall-glow-hover);
+  filter: brightness(1.05);
 }
 
 /* ── Reveal window ──────────────────────────────────────────────────────── */
@@ -1486,7 +1680,7 @@
 .wall-more {
   display: flex;
   justify-content: center;
-  padding-block: 20px 4px;
+  padding-block: 18px 4px;
 }
 .wall-more .wall-button {
   flex: none;
@@ -1498,19 +1692,20 @@
 }
 .wall-more__count {
   padding: 1px 7px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   border-radius: 999px;
-  color: var(--wall-muted);
-  background: var(--wall-raise);
+  color: inherit;
+  background: color-mix(in srgb, var(--wall-on-primary) 14%, transparent);
 }
 
 /* ── Offer detail ───────────────────────────────────────────────────────── */
 
 /* A native <dialog>: the focus trap, the Esc key and the backdrop are the
    three things a hand-rolled modal gets wrong, and all three are free here.
-   Bottom sheet on a phone, centred card above it — a 40rem box floating in the
-   middle of a 360px frame is a desktop modal someone shipped to a phone. */
+   Bottom sheet on a phone, a hairlined card above it. The one shadow on the
+   wall is here, because a sheet with no depth over a page of the same colour
+   is a page that got a second header. */
 .offer-dialog {
   padding: 0;
   border: 0;
@@ -1519,10 +1714,11 @@
   max-block-size: 92dvh;
   overflow: hidden;
   opacity: 0;
-  translate: 0 18px;
+  translate: 0 8px;
+  box-shadow: 0 40px 100px -40px rgb(0 0 0 / 0.8);
   transition:
-    opacity 0.24s ease,
-    translate 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--wall-dur-slow) var(--wall-ease),
+    translate var(--wall-dur-slow) var(--wall-ease);
 }
 .offer-dialog[open] {
   display: flex;
@@ -1532,16 +1728,17 @@
   opacity: 1;
   translate: 0 0;
 }
+/* Leaving is quicker than arriving. */
 .offer-dialog[open].is-out {
   opacity: 0;
-  translate: 0 18px;
+  translate: 0 6px;
+  transition-duration: var(--wall-dur-exit);
+  transition-timing-function: var(--wall-ease-in);
 }
 .offer-dialog::backdrop {
-  background: rgb(0 0 0 / 0.62);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  background: rgb(0 0 0 / 0.6);
   opacity: 0;
-  transition: opacity 0.24s ease;
+  transition: opacity var(--wall-dur-slow) ease;
 }
 .offer-dialog[open].is-in::backdrop {
   opacity: 1;
@@ -1552,13 +1749,13 @@
     inline-size: 100%;
     max-inline-size: 100%;
     margin: auto auto 0;
-    border-start-start-radius: calc(var(--wall-radius) * 1.6);
-    border-start-end-radius: calc(var(--wall-radius) * 1.6);
+    border-start-start-radius: var(--wall-outer-radius);
+    border-start-end-radius: var(--wall-outer-radius);
     border-block-start: 1px solid var(--wall-line);
-    translate: 0 36px;
+    translate: 0 16px;
   }
   .offer-dialog[open].is-out {
-    translate: 0 36px;
+    translate: 0 12px;
   }
 }
 @media (min-width: 600px) {
@@ -1566,7 +1763,7 @@
     inline-size: min(38rem, calc(100vw - 32px));
     margin: auto;
     border: 1px solid var(--wall-line);
-    border-radius: calc(var(--wall-radius) * 1.4);
+    border-radius: var(--wall-outer-radius);
   }
 }
 
@@ -1587,32 +1784,26 @@
      see. `clip` removes the overflow without making the other axis scrollable. */
   overflow-x: clip;
   overscroll-behavior: contain;
-  padding: 4px 16px 0;
+  padding: 2px 18px 0;
 }
 
 .offer-dialog__close {
   display: grid;
   place-items: center;
-  inline-size: 34px;
-  block-size: 34px;
+  inline-size: 32px;
+  block-size: 32px;
   padding: 0;
   cursor: pointer;
   color: var(--wall-muted);
   border: 1px solid var(--wall-line);
-  border-radius: 999px;
-  background: var(--wall-card);
-}
-.offer-dialog__close {
-  transition:
-    color 0.18s ease,
-    border-color 0.18s ease,
-    background-color 0.18s ease,
-    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: var(--wall-pill);
+  background: transparent;
+  transition: color var(--wall-dur) ease, border-color var(--wall-dur) ease, background-color var(--wall-dur) ease;
 }
 .offer-dialog__close:hover {
   color: var(--wall-text);
   border-color: var(--wall-line-strong);
-  transform: scale(1.08);
+  background: var(--wall-card);
 }
 .offer-dialog__close svg {
   inline-size: 12px;
@@ -1634,37 +1825,41 @@
   min-inline-size: 0;
 }
 .offer__name {
-  font-family: var(--font-display);
-  font-variation-settings: 'wdth' 112;
   margin: 0;
-  font-size: 20px;
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.022em;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 .offer__cats {
-  margin: 4px 0 0;
-  font-size: 12px;
+  margin: 3px 0 0;
+  font-size: 11.5px;
   color: var(--wall-faint);
 }
-/* The same figure as the card's, one size up, so the number the user tapped
+/* The same figure as the row's, two sizes up, so the number the user tapped
    is the number they land on — a different treatment here reads as a
    different number. */
 .offer__reward {
-  margin: 10px 0 0;
-  align-items: flex-start;
+  margin: 8px 0 0;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
   text-align: start;
 }
 .offer__reward .wall-reward__value {
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 .offer__reward .wall-reward__currency {
-  font-size: 10.5px;
+  font-size: 10px;
 }
 
 .offer__lead {
   margin: 16px 0 0;
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.55;
   color: var(--wall-muted);
 }
@@ -1673,58 +1868,39 @@
   margin-block-start: 22px;
 }
 .offer__h {
-  margin: 0 0 9px;
-  font-size: 11px;
+  margin: 0 0 8px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--wall-faint);
 }
 
-/* The steps as a milestone rail: numbered ink nodes on a connecting line,
-   what each one pays flush at the inline-end. An ordered list because the
+/* The steps as a hairline list: a bold number in the publisher's colour,
+   the step, and what it pays flush at the end. An ordered list because the
    order is the information — and the per-step figures are converted from the
-   same USD the headline came from, so they add up to it. The rail reads as
-   the progress track these offers are sold with, but survives eleven steps
-   and a narrow sheet, which a horizontal bar of dots never does. */
+   same USD the headline came from, so they add up to it. */
 .offer-steps {
-  position: relative;
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  counter-reset: step;
-}
-/* The track, drawn once behind the whole list: from the first node's centre
-   to the last's. Nodes paint over it; the line alone would be a divider. */
-.offer-steps::before {
-  content: '';
-  position: absolute;
-  inset-inline-start: 13px;
-  inset-block: 24px;
-  inline-size: 2px;
-  background: var(--wall-line-strong);
+  border-block-start: 1px solid var(--wall-line);
 }
 .offer-step {
-  position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding-block: 9px;
+  grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding-block: 10px;
+  border-block-end: 1px solid var(--wall-line-soft);
 }
 .offer-step__n {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  inline-size: 26px;
-  block-size: 26px;
-  font-size: 11.5px;
+  font-family: var(--font-display);
+  font-size: 14px;
   font-weight: 700;
-  border-radius: 50%;
-  color: var(--wall-on-ink);
-  background: var(--wall-ink);
+  color: var(--wall-primary);
+  font-variant-numeric: lining-nums tabular-nums;
 }
 .offer-step__name {
   font-size: 13.5px;
@@ -1739,7 +1915,7 @@
 
 .offer__foot {
   margin: 9px 0 0;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--wall-faint);
 }
 
@@ -1748,6 +1924,7 @@
   padding-inline-start: 18px;
   display: grid;
   gap: 5px;
+  list-style: disc;
   font-size: 13px;
   line-height: 1.5;
   color: var(--wall-muted);
@@ -1757,32 +1934,29 @@
    corners are rounded on the first and last row rather than by clipping the
    whole box: a flag tooltip lives in here, and `overflow: hidden` would cut it
    off mid-word. */
+/* Hairline rows, not a filled table. The list this screen came from is rows
+   on the page ground separated by lines; a boxed grid here would be a second
+   system on the screen the user reached from the first. */
 .offer-facts {
   margin: 0;
   display: grid;
-  gap: 1px;
-  border: 1px solid var(--wall-line);
-  border-radius: var(--wall-radius);
-  background: var(--wall-line);
+  gap: 0;
+  border: 0;
+  border-block-start: 1px solid var(--wall-line);
+  border-radius: 0;
+  background: transparent;
 }
 .offer-facts > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 14px;
-  padding: 10px 12px;
-  background: var(--wall-card);
-}
-.offer-facts > div:first-child {
-  border-start-start-radius: calc(var(--wall-radius) - 1px);
-  border-start-end-radius: calc(var(--wall-radius) - 1px);
-}
-.offer-facts > div:last-child {
-  border-end-start-radius: calc(var(--wall-radius) - 1px);
-  border-end-end-radius: calc(var(--wall-radius) - 1px);
+  padding: 10px 0;
+  background: transparent;
+  border-block-end: 1px solid var(--wall-line-soft);
 }
 .offer-facts dt {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--wall-faint);
 }
 .offer-facts dd {
@@ -1819,20 +1993,18 @@
   font-size: 10.5px;
   font-weight: 700;
   color: var(--wall-muted);
-  background: var(--wall-raise);
-  border-radius: 3px;
+  background: var(--wall-tile);
+  border-radius: 2px;
   box-shadow: 0 0 0 1px var(--wall-line);
-  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .offer-flag:hover {
-  transform: translateY(-2px) scale(1.15);
   z-index: 2;
 }
 .offer-flag img {
   inline-size: 21px;
   block-size: 16px;
   object-fit: cover;
-  border-radius: 3px;
+  border-radius: 2px;
   /* A hairline, because half the world's flags are white at the edge and
      would otherwise dissolve into a light theme's panel. */
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--wall-text) 22%, transparent);
@@ -1840,8 +2012,7 @@
 
 /* The overflow chip. It is the only one that is a number, so it is the only
    one that is not a flag — and the only one whose tooltip is a list, sitting
-   at the end of a row that ends at the panel's edge. Centred it would hang
-   half outside; anchored to its own end edge it opens inward. */
+   at the end of a row that ends at the panel's edge. */
 .offer-flag--more {
   padding-inline: 6px;
 }
@@ -1875,13 +2046,11 @@
   left: 50%;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.18s ease, translate 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity var(--wall-dur) ease, translate var(--wall-dur) var(--wall-ease);
 }
 .offer-flag::after {
   content: attr(data-tip);
   z-index: 3;
-  /* The `+25` chip is a figure and wears the mono face; the list of country
-     names hanging off it is prose and must not inherit it. */
   font-family: var(--font-sans);
   translate: -50% 4px;
   max-inline-size: 12rem;
@@ -1895,8 +2064,7 @@
   color: var(--wall-text);
   background: var(--wall-raise);
   border: 1px solid var(--wall-line-strong);
-  border-radius: calc(var(--wall-radius) * 0.6);
-  box-shadow: 0 8px 22px -10px rgb(0 0 0 / 0.8);
+  border-radius: var(--wall-inner-radius);
 }
 /* The notch. One rotated square, sitting on the tooltip's own border. */
 .offer-flag::before {
@@ -1923,21 +2091,25 @@
 
 /* Four static lines, immediately before the CTA. They are true of every offer
    on the wall and each one is a real support ticket, so they sit on the last
-   screen the user reads rather than in a help page nobody opens. Bordered
-   rather than tinted with the accent: the accent means payout here. */
+   screen the user reads rather than in a help page nobody opens. A hairline
+   panel, not a tinted one: the accent means action here. */
+/* The one boxed thing on the screen, and it keeps its box: this is the block
+   that decides whether a completion is credited, and it earns the enclosure
+   the rest of the page gave up. Tinted with the publisher's colour rather
+   than outlined in a grey that reads as another table. */
 .offer-warn {
   margin-block-start: 18px;
   padding: 12px 14px;
-  border: 1px solid var(--wall-line);
+  border: 1px solid color-mix(in srgb, var(--wall-primary) 22%, transparent);
   border-radius: var(--wall-radius);
-  background: var(--wall-raise);
+  background: var(--wall-primary-soft);
 }
 
 .offer-warn__h {
   margin: 0 0 6px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--wall-faint);
 }
@@ -1945,9 +2117,14 @@
 .offer-warn ul {
   margin: 0;
   padding-inline-start: 17px;
+  list-style: disc;
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--wall-muted);
+}
+.offer-notes li::marker,
+.offer-warn li::marker {
+  color: var(--wall-faint);
 }
 
 /* ── The CTA, pinned ────────────────────────────────────────────────────── */
@@ -1963,16 +2140,12 @@
 .offer__cta {
   position: sticky;
   inset-block-end: 0;
-  /* The gap the fade below sits over. Without it the fade paints across the
-     last line of whatever precedes the CTA — and once the reader has scrolled
-     to the end, that line is not coming back. */
   margin-block-start: 20px;
   padding-block: 12px 22px;
   background: var(--wall-bg);
 }
 /* Inside the sheet the body has no bottom padding — the CTA is the edge.
-   The old negative margin pulled the button past that edge and the dialog
-   clipped it. Safe-area is for the phone sheet sitting on a home indicator. */
+   Safe-area is for the phone sheet sitting on a home indicator. */
 .offer-dialog .offer__cta {
   margin-block-end: 0;
   padding-block-end: calc(16px + env(safe-area-inset-bottom, 0px));
@@ -1989,23 +2162,18 @@
   background: linear-gradient(to top, var(--wall-bg), transparent);
 }
 
-/* The one thing this page exists to make easy. Full width, filled with ink,
-   and the only element on it that is.
-   Qualified by .wall-button on purpose: the shared button rule is further down
-   this file, and at equal specificity it would repaint this one hollow. */
+/* The one thing this page exists to make easy. Full width, filled with the
+   publisher's colour, and the only element on it that is. */
 .wall-button.offer__go {
   display: block;
-  color: var(--wall-on-ink);
-  background: var(--wall-ink);
-  border-color: var(--wall-ink);
-}
-.wall-button.offer__go:hover {
-  background: color-mix(in srgb, var(--wall-ink) 86%, var(--wall-on-ink));
+  min-block-size: 44px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .offer__terms {
   margin: 10px 0 0;
-  font-size: 11.5px;
+  font-size: 11px;
   line-height: 1.45;
   text-align: center;
   color: var(--wall-faint);
@@ -2020,17 +2188,15 @@
   font-weight: 600;
   text-decoration: none;
   color: var(--wall-muted);
-}
-.offer-back {
-  transition: color 0.18s ease;
+  transition: color var(--wall-dur) ease;
 }
 .offer-back:hover {
   color: var(--wall-text);
 }
 .offer-back svg {
-  inline-size: 15px;
-  block-size: 15px;
-  transition: translate 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+  inline-size: 14px;
+  block-size: 14px;
+  transition: translate var(--wall-dur) var(--wall-ease);
 }
 .offer-back:hover svg {
   translate: -3px 0;
@@ -2042,33 +2208,46 @@
   scale: -1 1;
 }
 
-/* ── Panels: consent, notices, empty states ─────────────────────────────── */
+/* ── Panels: consent, notices ───────────────────────────────────────────── */
 
+/* A hairlined panel in the middle of the frame: the bold line names what
+   happened, the regular one explains it, and the buttons say what can be
+   done. */
 .wall-panel {
-  max-inline-size: 34rem;
-  margin-inline: auto;
-  padding: 40px 18px;
+  /* Inset on phones, never flush: a 30rem panel is wider than a 390px frame,
+     and a hairline drawn on the frame's own edge reads as no panel at all. */
+  max-inline-size: min(30rem, calc(100% - 28px));
+  margin: 16px auto;
+  padding: 24px 18px 20px;
+  border: 1px solid var(--wall-line);
+  border-radius: var(--wall-outer-radius);
+}
+@media (min-width: 640px) {
+  .wall-panel {
+    margin-block: 28px;
+    padding: 26px 20px 22px;
+  }
 }
 .wall-panel--center {
   text-align: center;
 }
 .wall-panel__title {
-  font-family: var(--font-display);
-  font-variation-settings: 'wdth' 112;
   margin: 0 0 8px;
-  font-size: 21px;
+  font-family: var(--font-display);
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.022em;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 .wall-panel__lede {
   margin: 0;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.55;
   color: var(--wall-muted);
 }
 .wall-panel__note {
-  margin-block-start: 18px;
-  font-size: 12px;
+  margin-block-start: 16px;
+  font-size: 11.5px;
   line-height: 1.5;
   color: var(--wall-faint);
 }
@@ -2076,76 +2255,56 @@
 /* One term per row, hairline-separated: the consent screen is a list of
    answers to three questions, and it should read as one. */
 .wall-terms {
-  margin: 22px 0;
-  font-size: 14px;
+  margin: 20px 0;
+  font-size: 13.5px;
   line-height: 1.5;
-  border: 1px solid var(--wall-line);
-  border-radius: var(--wall-radius);
-  background: var(--wall-card);
-  padding: 4px 14px;
+  border-block-start: 1px solid var(--wall-line);
 }
 .wall-terms dt {
-  font-size: 11px;
+  padding-block-start: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--wall-faint);
-  padding-block-start: 12px;
 }
 .wall-terms dd {
   margin: 3px 0 0;
-  padding-block-end: 12px;
+  padding-block-end: 11px;
   color: var(--wall-text);
-}
-.wall-terms dd + dt {
-  border-block-start: 1px solid var(--wall-line);
+  border-block-end: 1px solid var(--wall-line-soft);
 }
 
-/* Two buttons, one weight. Accept and Decline are the same control with
-   different labels — docs/03 §4 calls the alternative a dark pattern. */
+/* Accept and Decline are the same control with different labels — the
+   consent form carries no primary on purpose; the alternative is a dark
+   pattern. The notice screens do lead with one: there the first button is
+   the way out. */
 .wall-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
 }
-
-.wall-button {
-  flex: 1 1 auto;
-  min-inline-size: 8rem;
-  min-block-size: 46px;
-  padding: 11px 16px;
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
-  color: var(--wall-text);
-  background: var(--wall-card);
-  border: 1.5px solid var(--wall-line-strong);
-  border-radius: var(--wall-radius);
-  cursor: pointer;
-  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+/* Room between what happened and what can be done about it. On the consent
+   screen the form follows the terms list's own 20px margin and the two
+   collapse into one, so both screens land on the same distance. */
+.wall-panel .wall-actions {
+  margin-block-start: 20px;
 }
-.wall-button:hover {
-  background: var(--wall-raise);
-  border-color: var(--wall-ink);
-}
-.wall-button:active {
-  transform: scale(0.985);
+.wall-panel--center .wall-actions {
+  justify-content: center;
 }
 
 /* ── History ────────────────────────────────────────────────────────────── */
 
-/* A record, not a wall: rows on a hairline rather than cards with borders and
-   hover states. Nothing here is clickable, so nothing here may look it. */
+/* A record, not a wall: rows on a hairline rather than cards with hover
+   states. Nothing here is clickable, so nothing here may look it. */
 .wall-history {
   margin: 0;
   padding: 0;
   list-style: none;
   border: 1px solid var(--wall-line);
   border-radius: var(--wall-radius);
-  background: var(--wall-card);
   overflow: hidden;
 }
 
@@ -2154,7 +2313,7 @@
   align-items: center;
   gap: 12px;
   padding: 11px 13px;
-  border-block-start: 1px solid var(--wall-line);
+  border-block-start: 1px solid var(--wall-line-soft);
 }
 .wall-history__row:first-child {
   border-block-start: 0;
@@ -2167,7 +2326,7 @@
 
 .wall-history__name {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   line-height: 1.3;
   overflow: hidden;
@@ -2181,13 +2340,12 @@
   align-items: center;
   gap: 3px 8px;
   margin-block-start: 3px;
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--wall-faint);
 }
 
-/* Text, never colour. Green and red mean money direction and nothing else on
-   any AdVault surface (design.md §2), and a list of green "Credited" pills
-   would spend the one signal the product reserves. */
+/* Text, never colour. A status is a word; a list of coloured "Credited"
+   pills would spend the one signal this screen reserves for the money. */
 .wall-history__status {
   font-weight: 600;
   color: var(--wall-muted);
@@ -2196,126 +2354,137 @@
 .wall-history__reason {
   display: block;
   margin-block-start: 3px;
-  font-size: 11.5px;
+  font-size: 11px;
   line-height: 1.4;
   color: var(--wall-faint);
 }
 
-/* The credited amount is the green thing, because it is money. `gain` is a
-   fixed system token and not a theme property — money direction does not
-   belong to the publisher's palette — so it carries its own light value rather
-   than a color-mix of a colour we did not choose. */
-.wall {
-  --wall-gain: #2fbf71;
-}
-.wall--light {
-  --wall-gain: #127a45;
-}
-
+/* The credited amount is the one thing in the publisher's colour here,
+   because it is the one thing that is money. */
 .wall-history__reward {
   flex: none;
   display: flex;
   align-items: baseline;
   gap: 4px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  color: var(--wall-gain);
+  color: var(--wall-primary);
 }
 /* Never colour alone, here either: the figure says what it is in. */
 .wall-history__currency {
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--wall-muted);
+  color: var(--wall-faint);
 }
 
 /* ── Empty states ───────────────────────────────────────────────────────── */
 
 /* Two of them, and they are not the same message. The server one names the
    country and the device; the filtered one names the search and offers a way
-   out of it. The icon is a landmark for the tab, not a shrug. */
+   out of it. The glyph is a landmark for the tab, not a shrug. */
 .wall-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   max-inline-size: 26rem;
   margin-inline: auto;
-  padding: 48px 20px 56px;
+  padding: 44px 20px 52px;
   text-align: center;
 }
 .wall-empty__icon {
   display: grid;
   place-items: center;
-  inline-size: 64px;
-  block-size: 64px;
-  margin-block-end: 16px;
-  color: var(--wall-primary);
-  background: var(--wall-primary-soft);
-  border-radius: 999px;
+  inline-size: 40px;
+  block-size: 40px;
+  margin-block-end: 14px;
+  color: var(--wall-faint);
+  border: 1px solid var(--wall-line);
+  border-radius: var(--wall-pill);
 }
 .wall-empty__icon svg {
-  inline-size: 28px;
-  block-size: 28px;
+  inline-size: 18px;
+  block-size: 18px;
   fill: currentColor;
 }
 .wall-empty h2 {
-  margin: 0 0 8px;
-  font-size: 18px;
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 20px;
   font-weight: 700;
+  line-height: 1.1;
   letter-spacing: -0.02em;
 }
 .wall-empty p {
   margin: 0;
-  max-inline-size: 32ch;
-  font-size: 14px;
+  max-inline-size: 34ch;
+  font-size: 13.5px;
   line-height: 1.5;
   color: var(--wall-muted);
 }
 .wall-empty .wall-button {
   flex: none;
-  margin-block-start: 20px;
+  margin-block-start: 18px;
   min-inline-size: 11rem;
-  color: var(--wall-on-ink);
-  background: var(--wall-ink);
-  border-color: var(--wall-ink);
-}
-.wall-empty .wall-button:hover {
-  background: color-mix(in srgb, var(--wall-ink) 86%, var(--wall-on-ink));
-  border-color: var(--wall-ink);
 }
 
 /* ── Attribution ────────────────────────────────────────────────────────── */
 
-/* The wall wears the publisher's brand (docs/03 §5) and this is the one thing
-   on it that does not. Quiet by design: muted, small, below the fold of a full
-   list. The mark keeps its own colours — a logo recoloured per app is not the
-   logo any more. */
+/* The wall wears the publisher's brand and this is the one thing on it that
+   does not. Quiet by design: small, faint, below the fold of a full list.
+   The mark keeps its own colours — a logo recoloured per app is not the logo. */
 .wall-footer {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  gap: 7px;
-  padding: 4px 14px 26px;
+  gap: 8px;
+  padding: 4px 14px 24px;
   font-size: 11px;
   color: var(--wall-faint);
 }
+.wall-footer .brand-mark {
+  color: var(--wall-text);
+}
 .wall-footer .brand-mark-word {
-  font-size: 12px;
+  font-size: 10.5px;
+}
+
+/* Under 640px the app-nav is fixed to the bottom edge: the list's end and the
+   attribution have to clear it. After `.wall-main` and `.wall-footer` on
+   purpose — both set padding with a shorthand, and at equal specificity the
+   later declaration wins. */
+@media (max-width: 639px) {
+  .wall-main {
+    padding-block-end: 76px;
+  }
+  .wall-footer {
+    padding-block-end: 76px;
+  }
 }
 
 /* ── Loader ─────────────────────────────────────────────────────────────── */
 
-/* Covers the frame while the body is still arriving. Alpine removes it on
-   boot; this keyframe is the backstop for a bundle that never arrives, because
-   a splash nobody can dismiss is worse than a half-painted list. */
+/* Covers the frame until Alpine and the face are ready. wall.js fades it
+   out; the 6s keyframe is the backstop for a transfer that never finishes,
+   because a splash nobody can dismiss is worse than a half-painted list.
+   With JS off, a <noscript> rule hides it. */
 .wall-loader {
   position: fixed;
   inset: 0;
   z-index: 20;
+  display: grid;
+  place-items: center;
   overflow: hidden;
   background: var(--wall-bg);
+  opacity: 1;
+  transition: opacity var(--wall-dur-exit) var(--wall-ease-in);
   animation: wall-loader-out 0s 6s forwards;
+}
+.wall-loader.is-out {
+  animation: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes wall-loader-out {
@@ -2325,11 +2494,54 @@
   }
 }
 
-.wall-loader__brand {
+.wall-loader__stage {
   display: flex;
-  justify-content: center;
-  padding-block: 26px 18px;
-  animation: wall-pulse 1.4s ease-in-out infinite;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px;
+}
+.wall-loader__mark {
+  display: grid;
+  place-items: center;
+  inline-size: 48px;
+  block-size: 48px;
+  margin-block-end: 4px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--wall-primary);
+  background: var(--wall-tile);
+  border-radius: var(--wall-radius);
+}
+.wall-loader__name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.wall-loader__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wall-faint);
+}
+.wall-loader__spin {
+  inline-size: 22px;
+  block-size: 22px;
+  margin-block-start: 10px;
+  border: 2px solid var(--wall-line);
+  border-block-start-color: var(--wall-primary);
+  border-radius: var(--wall-pill);
+  animation: wall-spin var(--wall-dur-enter) linear infinite;
+}
+
+@keyframes wall-spin {
+  to {
+    rotate: 360deg;
+  }
 }
 
 /* Same geometry as .wall-grid and .wall-card, deliberately: a skeleton whose
@@ -2338,39 +2550,32 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   padding: 0;
   list-style: none;
 }
 
 .wall-skeleton__search {
-  block-size: 34px;
-  max-inline-size: 11.5rem;
-  margin-inline-start: auto;
-  border-radius: 999px;
+  block-size: 38px;
+  max-inline-size: 14rem;
+  border-radius: var(--wall-pill);
 }
 
 .wall-skeleton__chips {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   margin-block-start: 10px;
 }
 .wall-skeleton__chips span {
   block-size: 32px;
-  border-radius: 999px;
-}
-
-@media (min-width: 640px) {
-  .wall-skeleton {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  border-radius: var(--wall-pill);
 }
 
 .wall-skeleton__card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 13px;
+  gap: 12px;
   padding: 12px;
   background: var(--wall-card);
   border: 1px solid var(--wall-line);
@@ -2383,28 +2588,28 @@
 .wall-skeleton__line,
 .wall-skeleton__reward {
   display: block;
-  background: var(--wall-raise);
-  animation: wall-pulse 1.4s ease-in-out infinite;
+  background: var(--wall-tile);
+  animation: wall-pulse 1.2s ease-in-out infinite;
 }
 
 .wall-skeleton__tile {
   inline-size: 56px;
   block-size: 56px;
-  border-radius: calc(var(--wall-radius) * 0.75);
+  border-radius: var(--wall-inner-radius);
 }
 .wall-skeleton__line {
-  block-size: 10px;
-  border-radius: 999px;
+  block-size: 9px;
+  border-radius: var(--wall-pill);
 }
 .wall-skeleton__line--short {
   inline-size: 55%;
-  block-size: 8px;
-  margin-block-start: 9px;
+  block-size: 7px;
+  margin-block-start: 8px;
 }
 .wall-skeleton__reward {
-  inline-size: 5.5rem;
-  block-size: 36px;
-  border-radius: 999px;
+  inline-size: 3.25rem;
+  block-size: 19px;
+  border-radius: var(--wall-pill);
 }
 
 .offer-skeleton {
@@ -2418,8 +2623,8 @@
   gap: 14px;
 }
 .offer-skeleton__tile {
-  inline-size: 72px;
-  block-size: 72px;
+  inline-size: 56px;
+  block-size: 56px;
 }
 .offer-skeleton__lede {
   flex: 1;
@@ -2437,6 +2642,7 @@
 .offer-skeleton__go {
   inline-size: 100%;
   block-size: 44px;
+  border-radius: var(--wall-pill);
 }
 
 @keyframes wall-pulse {
@@ -2449,35 +2655,129 @@
   }
 }
 
+/* ── Preview containment ────────────────────────────────────────────────────
+   The publisher's live preview (filament/publisher/wall-preview) and the
+   landing's cards render the wall inside another page. These rules turn the
+   full-height document into a stage: no 100dvh, the header in flow instead of
+   sticky, the phone-width grid regardless of the viewport, and the app-nav
+   sitting at the bottom of the stage rather than the screen. Shared here so
+   the panel and the landing cannot drift apart. ── */
+
+.wall-preview {
+  min-width: 0;
+}
+
+.wall.wall-preview__stage {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  min-height: 0;
+  height: auto;
+  max-block-size: min(36rem, calc(100dvh - 9rem));
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--wall-line);
+  border-radius: var(--wall-radius);
+}
+
+.wall-preview__scroll {
+  flex: 0 1 auto;
+  min-block-size: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.wall-preview__stage .wall-grid,
+.wall-preview__stage .wall-skeleton {
+  grid-template-columns: 1fr;
+}
+
+.wall-preview__stage .wall-tabs,
+.wall-preview__stage .wall-menu-button {
+  display: none;
+}
+
+.wall-preview__stage .wall-header {
+  flex: none;
+  position: relative;
+  inset-block-start: auto;
+}
+
+.wall-preview__stage .wall-topbar {
+  min-block-size: 46px;
+}
+
+.wall-preview__stage .wall-filters {
+  margin-block: 0 8px;
+}
+
+.wall-preview__stage .wall-chips {
+  padding-block: 0;
+}
+
+.wall-preview__stage .wall-rail {
+  margin-block-start: 0;
+}
+
+.wall-preview__stage .wall-catalogue {
+  margin-block-start: 12px;
+}
+
+.wall-preview__stage .wall-main {
+  padding-block: 10px 10px;
+}
+
+.wall-preview__stage .wall-nav {
+  display: flex;
+  flex: none;
+  position: relative;
+  inset: auto;
+  z-index: 6;
+  border-block-start: 1px solid var(--wall-line);
+  background: var(--wall-bg);
+}
+
+.wall-preview__stage .wall-tools {
+  flex: 1 1 100%;
+  justify-content: space-between;
+}
+
+.wall-preview__stage .wall-search {
+  flex: 1 1 100%;
+  max-inline-size: none;
+}
+
+.wall-preview__stage .wall-catalogue {
+  margin-block-end: 8px;
+}
+
+.wall-preview__stage .wall-footer {
+  padding-block: 4px 12px;
+}
+
+.wall-preview__note {
+  margin: 0.7rem 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-mist-400, #7d8ca6);
+}
+
 /* ── Motion ─────────────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   .wall *,
-  .wall *::before {
+  .wall *::before,
+  .wall *::after {
     transition-duration: 0.01ms !important;
   }
-  .wall-card:hover,
-  .wall-card:active,
-  .wall-launch:hover,
-  .wall-launch:active,
-  .wall-button:active {
-    transform: none;
-  }
   .offer-back:hover svg,
-  .wall-launch:hover .wall-launch__go svg {
-    scale: none;
+  .wall-launch:hover .wall-launch__go svg,
+  a.wall-card:hover,
+  .wall-launch:hover,
+  .wall-button:hover {
     translate: none;
-  }
-  /* Not in the group above. `.wall-clear` is *centred* with the translate
-     property, so resetting `translate` here would drop the button half its
-     own height on hover — a jump for exactly the readers who asked for less
-     movement. Only its scale is decoration. */
-  .wall-clear:hover {
-    scale: none;
-  }
-  .offer-flag:hover,
-  .offer-dialog__close:hover {
-    transform: none;
   }
   /* The tooltip still appears — it is information, not decoration. It just
      stops sliding into place. */
@@ -2491,7 +2791,8 @@
   }
   /* The pulse goes; the loader's own dismissal keyframe stays, or a reader who
      asked for less motion is the one left staring at a stuck splash. */
-  .wall-loader__brand,
+  .wall-loader__title,
+  .wall-loader__spin,
   .wall-skeleton__search,
   .wall-skeleton__chips span,
   .wall-skeleton__tile,
@@ -2501,8 +2802,11 @@
     animation: none;
   }
   .offer-dialog,
-  .offer-dialog::backdrop {
+  .offer-dialog::backdrop,
+  .wall-menu,
+  .wall-menu::backdrop {
     transition: none;
     translate: none;
+    scale: none;
   }
 }

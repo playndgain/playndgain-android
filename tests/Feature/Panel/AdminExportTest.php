@@ -3,9 +3,11 @@
 use App\Enums\ConversionStatus;
 use App\Filament\Admin\Resources\Conversions\Pages\ListConversions;
 use App\Filament\Admin\Resources\LedgerEntries\Pages\ListLedgerEntries;
+use App\Filament\Admin\Resources\NewsletterSubscribers\Pages\ListNewsletterSubscribers;
 use App\Filament\Admin\Resources\Withdrawals\Pages\ListWithdrawals;
 use App\Models\Conversion;
 use App\Models\LedgerEntry;
+use App\Models\NewsletterSubscriber;
 use App\Models\Publisher;
 use App\Models\User;
 use App\Models\Withdrawal;
@@ -21,7 +23,7 @@ use Livewire\Features\SupportTesting\Testable;
  * quarter — and the stream is only rendered when someone asks for the file.
  */
 beforeEach(function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     Filament::setCurrentPanel('admin');
 
     $this->actingAs(User::factory()->admin()->create([
@@ -55,7 +57,7 @@ it('exports the ledger and the withdrawal queue with their own columns', functio
         'publisher_id' => $publisher->id,
         'amount' => '25.000000',
         'method' => 'paypal',
-        'payment_details' => json_encode(['email' => 'payee@example.com']),
+        'payment_details' => ['email' => 'payee@example.com'],
         'status' => 'requested',
         'requested_at' => now(),
     ]);
@@ -73,6 +75,35 @@ it('exports the ledger and the withdrawal queue with their own columns', functio
         // Masked exactly as the table masks it: a spreadsheet of payout
         // addresses is the one artefact of this panel worth stealing.
         ->not->toContain('payee@example.com');
+});
+
+it('never puts a working unsubscribe link beside an address that already left', function () {
+    NewsletterSubscriber::create(['email' => 'dana@example.com', 'source' => '/']);
+    NewsletterSubscriber::create([
+        'email' => 'lee@example.com',
+        'source' => '/advertise',
+        'unsubscribed_at' => now()->subDays(3),
+    ]);
+
+    // The "Subscribed only" filter is a toggle, so the operator can clear it —
+    // and then the file holds people who left. A link on one of those rows is
+    // a mailing waiting to go to somebody who asked not to get it.
+    $csv = exportedCsv(Livewire::test(ListNewsletterSubscribers::class)
+        ->filterTable('subscribed', false)
+        ->callAction('export'));
+
+    expect($csv)->toContain('dana@example.com')
+        ->toContain('lee@example.com')
+        ->toContain('unsubscribed');
+
+    $rows = array_values(array_filter(explode("\n", $csv), fn (string $line): bool => str_contains($line, '@example.com')));
+    $lee = current(array_filter($rows, fn (string $line): bool => str_contains($line, 'lee@')));
+    $dana = current(array_filter($rows, fn (string $line): bool => str_contains($line, 'dana@')));
+
+    expect($lee)->not->toContain('/newsletter/unsubscribe/')
+        // The one still on the list keeps the link the mailing has to carry.
+        ->and($dana)->toContain('/newsletter/unsubscribe/')
+        ->toContain('signature=');
 });
 
 /** Livewire renders a streamed download into the payload, base64-encoded. */

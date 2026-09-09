@@ -7,6 +7,7 @@ use App\Enums\FraudStage;
 use App\Fraud\Contracts\IpIntelligence;
 use App\Fraud\Contracts\RenderGateRule;
 use App\Fraud\FraudContext;
+use App\Fraud\IpScoreHistogram;
 use App\Fraud\MaxMindIpIntelligence;
 use App\Fraud\RuleRegistry;
 use App\Models\App;
@@ -83,6 +84,14 @@ class WallGate
         $ua = $request->userAgent();
         $agent = $this->devices->detect($ua);
         $verdict = $this->ipIntelligence->inspect($ip);
+
+        // Every impression, refused and served alike — this is the only point
+        // that sees both sides of the risk threshold, which is the whole reason
+        // the histogram is sampled here rather than off a click row or a fraud
+        // event. See IpScoreHistogram. A null score is skipped there, so this
+        // costs nothing at all until a scoring provider is configured.
+        IpScoreHistogram::record($verdict->riskScore);
+
         $override = $this->countryOverride($request, $testMode);
 
         return new WallContext(

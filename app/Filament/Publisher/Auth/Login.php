@@ -20,12 +20,18 @@ class Login extends BaseLogin
 {
     private bool $rejectedAsBanned = false;
 
+    private bool $rejectedAsSuspended = false;
+
     protected function isUserAllowedToAccessPanel(Authenticatable $user): bool
     {
         $allowed = parent::isUserAllowedToAccessPanel($user);
 
-        if (! $allowed && $user instanceof User && $user->publisher?->isBanned()) {
-            $this->rejectedAsBanned = true;
+        if (! $allowed && $user instanceof User) {
+            if ($user->publisher?->isBanned()) {
+                $this->rejectedAsBanned = true;
+            } elseif ($user->publisher?->isSuspended()) {
+                $this->rejectedAsSuspended = true;
+            }
         }
 
         return $allowed;
@@ -36,6 +42,14 @@ class Login extends BaseLogin
         if ($this->rejectedAsBanned) {
             throw ValidationException::withMessages([
                 'data.email' => __('This account has been banned. Contact :email if you believe this is a mistake.', [
+                    'email' => Identity::supportEmail(),
+                ]),
+            ]);
+        }
+
+        if ($this->rejectedAsSuspended) {
+            throw ValidationException::withMessages([
+                'data.email' => __('This account has been suspended. Contact :email if you believe this is a mistake.', [
                     'email' => Identity::supportEmail(),
                 ]),
             ]);

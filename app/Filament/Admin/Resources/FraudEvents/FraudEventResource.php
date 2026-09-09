@@ -8,11 +8,12 @@ use App\Filament\Admin\Resources\Apps\AppResource;
 use App\Filament\Admin\Resources\Conversions\ConversionResource;
 use App\Filament\Admin\Resources\FraudEvents\Pages\ListFraudEvents;
 use App\Filament\Admin\Resources\Publishers\PublisherResource;
+use App\Filament\Admin\Support\DateRangeFilter;
+use App\Filament\Support\AppColumns;
 use App\Models\FraudEvent;
 use App\Models\OfferClick;
 use BackedEnum;
 use Filament\Actions\ViewAction;
-use Filament\Forms\Components\DatePicker;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -20,7 +21,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -124,7 +124,7 @@ class FraudEventResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['publisher:id,pub_id', 'app:id,name']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['publisher:id,pub_id', AppColumns::eager()]))
             ->columns([
                 TextColumn::make('created_at')->dateTime()->sortable(),
                 TextColumn::make('rule_key')->label('Rule')->searchable()->badge(),
@@ -138,7 +138,7 @@ class FraudEventResource extends Resource
                 TextColumn::make('subject')->label('Subject')
                     ->state(fn (FraudEvent $record): string => class_basename($record->subject_type).' #'.$record->subject_id),
                 TextColumn::make('publisher.pub_id')->label('Pub')->prefix('#')->placeholder('—'),
-                TextColumn::make('app.name')->label('App')->placeholder('—')->limit(18),
+                AppColumns::show()->placeholder('—'),
                 TextColumn::make('end_user_id')->label('End user')->placeholder('—')->searchable()->limit(20),
                 TextColumn::make('context_summary')->label('Context')
                     ->state(fn (FraudEvent $record): string => is_string($record->context['reason'] ?? null)
@@ -156,11 +156,8 @@ class FraudEventResource extends Resource
                 SelectFilter::make('stage')->options(FraudStage::class),
                 SelectFilter::make('action_taken')->label('Action')->options(FraudActionTaken::class),
                 SelectFilter::make('publisher_id')->label('Publisher')->relationship('publisher', 'company_name')->searchable(),
-                Filter::make('created')
-                    ->schema([DatePicker::make('from'), DatePicker::make('until')])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $q, string $date) => $q->whereDate('created_at', '>=', $date))
-                        ->when($data['until'] ?? null, fn (Builder $q, string $date) => $q->whereDate('created_at', '<=', $date))),
+                SelectFilter::make('app_id')->label('App')->relationship('app', 'name')->searchable(),
+                DateRangeFilter::make(),
             ])
             ->recordActions([
                 ViewAction::make()->slideOver(),

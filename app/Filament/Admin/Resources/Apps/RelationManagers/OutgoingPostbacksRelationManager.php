@@ -23,7 +23,11 @@ class OutgoingPostbacksRelationManager extends RelationManager
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['conversion:id,trans_id']))
             ->columns([
                 TextColumn::make('created_at')->label('Sent')->dateTime()->sortable(),
-                TextColumn::make('conversion.trans_id')->label('Conversion')->copyable()->limit(16)->searchable(),
+                TextColumn::make('conversion.trans_id')->label('Conversion')
+                    ->copyable()
+                    ->copyableState(fn (?string $state): ?string => $state)
+                    ->limit(16)
+                    ->searchable(),
                 TextColumn::make('kind')->badge()
                     ->color(fn (OutgoingPostbackKind $state): string => $state === OutgoingPostbackKind::Reversal ? 'danger' : 'gray'),
                 TextColumn::make('attempt')->numeric(),

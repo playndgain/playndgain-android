@@ -1,114 +1,181 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   AdVault design tokens — docs/09-landing-site.md §1, §4.
+   PLAYNDGAIN design tokens — the single token file.
 
-   The single token file. Imported by the landing site, the offerwall, and the
-   Filament panel theme. Two token files always drift, so nothing that belongs
-   to one surface may live here — no layout, no components, no page chrome.
+   Imported by the landing site (app.css), the offerwall (wall.css) and the
+   Filament panel theme (filament/theme.css). Two token files always drift, so
+   nothing that belongs to one surface lives here — no layout, no components,
+   no page chrome. Faces are not here either: the site and the wall ship
+   different sets of the same two families (fonts.css / fonts-wall.css):
+   the wall never needs an italic, and every byte of it rides a phone over 3G.
+
+   Source of truth for the values is the "Landing Editorial v2" design board.
+   Every hex below was lifted from it; the three that were not are marked
+   derived. Where this file and design.md disagree, this file is right.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Self-hosted faces. Descriptors are Google's own, verbatim; only the URLs
-      changed. `font-stretch` is load-bearing: drop it and the browser clamps
-      the wdth axis to 100%, which silently flattens .display / .display-x to
-      normal-width Archivo. Latin + latin-ext only — neither family ships an
-      Arabic cut, so the phase-2 `ar` offerwall locale needs a third family. ── */
-@font-face {
-  font-family: 'Archivo';
-  font-style: normal;
-  font-weight: 300 800;
-  font-stretch: 62% 125%;
-  font-display: swap;
-  src: url('/fonts/archivo-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Archivo';
-  font-style: normal;
-  font-weight: 300 800;
-  font-stretch: 62% 125%;
-  font-display: swap;
-  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-@font-face {
-  font-family: 'Geist Mono';
-  font-style: normal;
-  font-weight: 300 600;
-  font-display: swap;
-  src: url('/fonts/geist-mono-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: 'Geist Mono';
-  font-style: normal;
-  font-weight: 300 600;
-  font-display: swap;
-  src: url('/fonts/geist-mono-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
+@theme static {
+  /* ── Surfaces: deep navy ink, never pure black ─────────────────────────── */
+  --color-ink-950: #0A1020;  /* page */
+  --color-ink-900: #0C1424;  /* card */
+  --color-ink-875: #0D1526;  /* panel: the trace table, code, inputs */
+  --color-ink-850: #111B2E;  /* row, highlighted row */
+  --color-ink-800: #1B2842;  /* tile, secondary button */
 
-@theme {
-  /* Surfaces — cool, near-black, never pure #000 */
-  --color-obsidian-950: #08090A;
-  --color-obsidian-900: #0E1013;
-  --color-steel-850:    #14171B;
-  --color-steel-800:    #1A1E24;
-  --color-steel-700:    #262B33;
-  --color-steel-600:    #363D47;
+  /* ── Lines: every edge in the system is a 1px hairline ──────────────────── */
+  --color-line-900: #151E33; /* soft divider between rows */
+  --color-line-800: #1C2740; /* hairline: sections, grids, the header */
+  --color-line-700: #22304A; /* panel and plate border */
+  --color-line-600: #2A3854; /* control border: ghost buttons, chips */
+  --color-line-500: #38486A; /* swatch ring, the strongest line */
 
-  /* Text */
-  --color-chalk:        #E9ECF1;
-  --color-steel-300:    #A2ABB8;
-  --color-steel-400:    #6E7784;
+  /* ── Text: the mist ramp ────────────────────────────────────────────────── */
+  --color-mist-50:  #EEF1F7; /* primary */
+  --color-mist-200: #A8B4C9; /* body copy */
+  --color-mist-300: #93A1BA; /* secondary, navigation */
+  --color-mist-400: #7D8CA6; /* muted, labels, timestamps */
+  --color-mist-500: #68789A; /* faint, footnotes */
 
-  /* Brand — amber. Gold in a vault. */
-  --color-amber-500:    #F5A524;
-  --color-amber-400:    #FFBE4D;
-  --color-amber-950:    #2A1C05;
+  /* ── Accent: champagne gold. Action, emphasis, numbering, credited money. ── */
+  --color-gold-400: #DFC08A;
+  --color-gold-300: #E8D1A6; /* derived — the hover lift on a gold fill */
+  --color-gold-950: #221B0F; /* derived — gold-tinted surface for notices */
+  --color-on-gold:  #0A1020; /* what reads on gold: the page ink */
 
-  /* Semantic. Green and red mean money direction and nothing else: no green
-     success toasts, no red decorative accents. When green appears on an
-     AdVault surface, the publisher earned something. */
-  --color-gain:         #2FBF71;
-  --color-loss:         #E5484D;
+  /* ── Money direction. Credited money is gold, exactly as the board paints
+        the ledger row. Reversed money needs a second hue the board never
+        shows; the rose is derived to sit in the same low-saturation family.
+        Neither is decorative: no gold "success" toast, no rose form error. ── */
+  --color-gain: #DFC08A;
+  --color-loss: #D98B8B;
 
-  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
-  --font-sans:    "Archivo", ui-sans-serif, system-ui, sans-serif;
-  --font-mono:    "Geist Mono", ui-monospace, monospace;
+  /* ── Type: a serif for what is said, a grotesk for how it is operated ──── */
+  --font-display: "Newsreader Variable", "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Manrope Variable", "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* ── Breakpoints: Tailwind's defaults, declared so they are on the record ── */
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  /* ── Shape: 3px controls, 4px cards, pills. Panels and plates stay square. ── */
+  --radius-control: 3px;
+  --radius-card: 4px;
+  --radius-pill: 999px;
+
+  /* ── Depth: the one shadow in the system is the hero card. Everything else
+        is a line against a surface one step lighter. ─────────────────────── */
+  --shadow-card: 0 34px 70px -28px rgb(0 0 0 / 0.85);
+
+  /* ── Motion: the board is still. A three-second pulse on the live dot, a
+        theme swap, a hover — and nothing on scroll. ─────────────────────── */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-theme: 280ms;
 }
 
-/* ── The three type roles. System-wide, not landing-only: the panels and the
-      offerwall carry the same headings and the same figures. ── */
+/* ── Layout constants. Not @theme: they are read by hand-written CSS, never
+      by a utility, and the gutter changes with the viewport. ──────────────── */
+:root {
+  --container: 1320px;
+  --gutter: 48px;
+  --section: 96px;
+  --hairline: 1px solid var(--color-line-800);
+}
 
-/* Display type uses the width axis — this is the thing that makes headings unmistakable. */
-.display   { font-family: "Archivo", sans-serif; font-variation-settings: "wdth" 112; letter-spacing: -0.022em; }
-.display-x { font-family: "Archivo", sans-serif; font-variation-settings: "wdth" 125; letter-spacing: -0.03em; }
+@media (max-width: 47.99rem) {
+  :root {
+    --gutter: 24px;
+    --section: 56px;
+  }
+}
 
-/* Every monetary figure, everywhere — landing, docs, both dashboards, the
-   offerwall. $0.130000 above $2.520000 aligns on the decimal. */
-.num { font-family: "Geist Mono", monospace; font-variant-numeric: tabular-nums; }
+/* ── The type roles. System-wide, not landing-only: the panels and the wall
+      carry the same headings and the same figures. ────────────────────────── */
 
-/* ── Brand lockup ──────────────────────────────────────────────────────────
-   Plain CSS rather than utility classes on the component, because the panels
-   build from a different Tailwind entry than the site: utilities written in
-   resources/views/components never reached the panel bundle, and the lockup
-   arrived there with no flex at all — glyph stacked on top of the wordmark.
-   This file is imported by all three entries, so a rule here is the one thing
-   guaranteed to exist wherever the mark renders. ── */
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
+/* Headlines: Newsreader at its regular weight, tight. Optical sizing stays on
+   following the rendered size. The gold italic is the one emphasis device. */
+.display,
+.display-2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-optical-sizing: auto;
+  text-wrap: pretty;
+}
+
+.display   { line-height: 1.02; letter-spacing: -0.025em; }
+.display-2 { line-height: 1.1;  letter-spacing: -0.02em; }
+
+.display em,
+.display-2 em {
+  font-style: italic;
+  color: var(--color-gold-400);
+}
+
+/* Large figures — counters, terms, the "01" section indices. */
+.numeral {
+  font-family: var(--font-display);
+  font-weight: 400;
   line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
-.brand-mark svg { flex: none; }
+.index {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--color-gold-400);
+  font-variant-numeric: lining-nums tabular-nums;
+}
 
-.brand-mark-word {
-  font-family: "Archivo", sans-serif;
-  font-variation-settings: "wdth" 112;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.022em;
-  color: currentColor;
+/* Every figure on every surface: money, timestamps, counts. Tabular so
+   $0.130000 above $2.520000 aligns on the decimal — in the body face, not a
+   second family. */
+.num { font-variant-numeric: tabular-nums; }
+
+/* Labels above and below things. */
+.eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-gold-400);
+}
+
+.label {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-mist-400);
+}
+
+/* ── Brand lockup: brand-mark.css, imported by every bundle. ─────────────── */
+
+/* ── Focus. One ring for every surface: gold, outside the element. ─────────
+   In the base layer on purpose: a field that lives inside a wrapper which
+   paints its own focus ring (Filament's .fi-input-wrp, the docs search
+   modal) sets outline-none on the input, and that utility must win. Left
+   unlayered, this rule beat it and every such field showed two rings — the
+   wrapper's and a square one around the bare input. */
+@layer base {
+  :where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-gold-400);
+    outline-offset: 3px;
+  }
+}
+
+/* ── Reduced motion is a code path: nothing shortens, everything stops. ──── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

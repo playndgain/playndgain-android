@@ -56,8 +56,8 @@ it('sorts the house channel below every partner', function () {
 it('seeds the day-1 fraud rule set across both stages', function () {
     $this->seed(FraudRuleSeeder::class);
 
-    expect(FraudRule::query()->where('stage', FraudStage::PreClick)->count())->toBe(10)
-        ->and(FraudRule::query()->where('stage', FraudStage::PostConversion)->count())->toBe(10);
+    expect(FraudRule::query()->where('stage', FraudStage::PreClick)->count())->toBe(11)
+        ->and(FraudRule::query()->where('stage', FraudStage::PostConversion)->count())->toBe(12);
 });
 
 it('never resets a threshold an operator tuned', function () {
@@ -97,7 +97,7 @@ it('creates exactly one admin, with no default password', function () {
     $admins = User::query()->where('role', 'admin')->get();
 
     expect($admins)->toHaveCount(1)
-        ->and($admins->first()->email)->toBe(config('advault.seed_admin_email'));
+        ->and($admins->first()->email)->toBe(config('playndgain.seed_admin_email'));
 });
 
 it('never wipes the credentials off a network an admin configured', function () {
@@ -129,7 +129,7 @@ it('is idempotent — reseeding does not duplicate anything', function () {
     $this->seed();
 
     expect(Network::query()->count())->toBe(17)
-        ->and(FraudRule::query()->count())->toBe(20)
+        ->and(FraudRule::query()->count())->toBe(23)
         ->and(User::query()->where('role', 'admin')->count())->toBe(1);
 });
 

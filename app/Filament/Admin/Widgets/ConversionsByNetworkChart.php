@@ -14,13 +14,15 @@ use Filament\Widgets\ChartWidget;
 class ConversionsByNetworkChart extends ChartWidget
 {
     /** Chart.js default palette, one colour per band. */
-    private const PALETTE = ['#F5A524', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+    private const PALETTE = ['#DFC08A', '#93A1BA', '#6FD3A3', '#D98B8B', '#C9A6F0', '#E8D1A6', '#7FA394', '#38486A'];
 
     protected static ?int $sort = 4;
 
     protected ?string $heading = 'Conversions by network — 7 days';
 
-    protected int|string|array $columnSpan = 2;
+    protected int|string|array $columnSpan = 1;
+
+    protected ?string $maxHeight = '260px';
 
     protected function getType(): string
     {

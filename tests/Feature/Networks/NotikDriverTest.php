@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Network;
+use App\Models\Offer;
 use App\Networks\Drivers\NotikDriver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -136,4 +137,32 @@ it('fails closed when the postback secret is missing', function () {
     expect((new NotikDriver($this->network->fresh()))->verifyPostback(
         notikSignedRequest($this->postback, 'notik-postback-secret')
     ))->toBeFalse();
+});
+
+it('puts the click id in the user_id slot and appends s1', function () {
+    $driver = new NotikDriver($this->network);
+
+    $tracked = Offer::factory()->create([
+        'network_id' => $this->network->id,
+        'tracking_url' => 'http://127.0.0.1:8000/api-redirect?token=eyJ...&user_id=$9uz_Mpe3O7Nw1S_[user_id]',
+    ]);
+
+    expect($driver->buildTrackingUrl($tracked, 'click-uuid'))
+        ->toBe('http://127.0.0.1:8000/api-redirect?token=eyJ...&user_id=$9uz_Mpe3O7Nw1S_click-uuid&s1=click-uuid');
+
+    $untracked = Offer::factory()->create([
+        'network_id' => $this->network->id,
+        'tracking_url' => 'https://notik.me/click?oid=88213&pubid=4821',
+    ]);
+
+    expect($driver->buildTrackingUrl($untracked, 'click-uuid'))
+        ->toBe('https://notik.me/click?oid=88213&pubid=4821&s1=click-uuid');
+
+    $withCurlyBraces = Offer::factory()->create([
+        'network_id' => $this->network->id,
+        'tracking_url' => 'https://notik.me/click?oid=88213&pubid=4821&user_id=PREFIX_{user_id}',
+    ]);
+
+    expect($driver->buildTrackingUrl($withCurlyBraces, 'click-uuid'))
+        ->toBe('https://notik.me/click?oid=88213&pubid=4821&user_id=PREFIX_click-uuid&s1=click-uuid');
 });

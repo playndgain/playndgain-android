@@ -32,58 +32,29 @@
      around the frame and through the frost without painting the cards. --}}
 <div class="wall-pane">
 
-{{-- Painted while the rest of the body is still on the wire. It carries the
-     brand mark and a skeleton of the real card geometry, so the first thing a
-     user on a slow connection sees is the shape of the answer rather than an
-     empty frame.
-
-     Rendered `hidden` and revealed by the line below it: with JS off there is
-     nothing to remove it again, and a splash nobody can dismiss is worse than
-     no splash. The script after the content clears it — the body is fully
-     parsed by then, and the wall is server-rendered, so parsed is ready. The
-     CSS keyframe in wall.css is the backstop for a transfer that never
-     finishes at all. --}}
-<div class="wall-loader" aria-hidden="true" hidden>
-    {{-- Same shell as the content, so the skeleton's columns land exactly
-         where the real ones will. --}}
-    <div class="wall-shell">
-        <div class="wall-loader__brand">
-            <x-brand-mark :size="30" />
-        </div>
-
-        @unless (isset($partner))
-            <div class="wall-skeleton__search"></div>
-
-            <div class="wall-skeleton__chips">
-                <span style="inline-size:48px"></span>
-                <span style="inline-size:76px"></span>
-                <span style="inline-size:64px"></span>
-                <span style="inline-size:88px"></span>
-            </div>
-
-            <ul class="wall-skeleton">
-                @for ($i = 0; $i < 6; $i++)
-                    <li class="wall-skeleton__card">
-                        <span class="wall-skeleton__tile"></span>
-                        <span class="wall-skeleton__body">
-                            <span class="wall-skeleton__line"></span>
-                            <span class="wall-skeleton__line wall-skeleton__line--short"></span>
-                        </span>
-                        <span class="wall-skeleton__reward"></span>
-                    </li>
-                @endfor
-            </ul>
-        @endunless
+{{-- Covers the frame from first paint until the face and Alpine are ready.
+     wall.js fades it out. The CSS 6s keyframe is the backstop for a transfer
+     that never finishes. With JS off a <noscript> rule hides it, because a
+     splash nobody can dismiss is worse than no splash. --}}
+<div class="wall-loader" aria-hidden="true">
+    <div class="wall-loader__stage">
+        @if ($ctx !== null)
+            <span class="wall-loader__mark" aria-hidden="true">{{ mb_substr($ctx->app->name, 0, 1) }}</span>
+            <span class="wall-loader__name">{{ $ctx->app->name }}</span>
+            <span class="wall-loader__title">{{ __('wall.earn', ['currency' => $ctx->app->currency_name]) }}</span>
+        @else
+            <span class="wall-loader__title">{{ __('wall.title') }}</span>
+        @endif
+        <span class="wall-loader__spin"></span>
     </div>
 </div>
-<script>document.currentScript.previousElementSibling.hidden = false</script>
+<noscript><style>.wall-loader{visibility:hidden!important;pointer-events:none}</style></noscript>
 
 @yield('content')
-<script>document.querySelector('.wall-loader').remove()</script>
 
 <footer class="wall-footer">
     <span>{{ __('wall.powered_by') }}</span>
-    <x-brand-mark :size="16" />
+    <x-brand-mark :size="14" />
 </footer>
 </div>
 </body>

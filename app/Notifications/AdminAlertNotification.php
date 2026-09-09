@@ -50,25 +50,27 @@ class AdminAlertNotification extends Notification implements ShouldQueue
         $platform = Identity::name();
         $severity = $this->pages ? 'PAGE' : 'ALERT';
 
-        $mail = (new MailMessage)
+        // Its own markdown view rather than MailMessage lines: the context
+        // pairs render as the mail chrome's fact ledger, and a page is marked
+        // in the body as well as the subject, because a subject prefix is the
+        // first thing a mail rule strips.
+        return (new MailMessage)
             ->subject("[{$severity}] {$platform}: {$this->key}")
-            ->line($this->headline());
-
-        if ($this->pages) {
-            // Stated in the body as well as the subject, because a subject
-            // prefix is the first thing a mail rule strips.
-            $mail->line('docs/11 §7 rates this signal as a page. '.$platform.' has no paging channel yet — this email is the whole notification, so treat it as one.');
-        }
-
-        if ($this->subject !== null) {
-            $mail->line("Subject: {$this->subject}");
-        }
-
-        foreach ($this->context as $name => $value) {
-            $mail->line($name.': '.($value === null ? 'null' : var_export($value, true)));
-        }
-
-        return $mail->line('The application log holds every occurrence; this email is sent once per cooldown window.');
+            ->markdown('mail.admin-alert-html', [
+                'key' => $this->key,
+                'pages' => $this->pages,
+                'platform' => $platform,
+                'headline' => $this->headline(),
+                'subject' => $this->subject,
+                'context' => array_map(
+                    fn (mixed $value): string => match (true) {
+                        $value === null => 'null',
+                        is_bool($value) => $value ? 'true' : 'false',
+                        default => (string) $value,
+                    },
+                    $this->context,
+                ),
+            ]);
     }
 
     /**

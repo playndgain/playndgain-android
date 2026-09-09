@@ -22,6 +22,9 @@ final class PublisherTestPostbackAction
     public static function make(): Action
     {
         return TestPostbackAction::make('publisher_test_postback')
+            ->label('Test postback')
+            ->icon('lucide-send')
+            ->color('gray')
             ->before(function (App $record, Action $action): void {
                 $key = "test-postback:{$record->id}";
 

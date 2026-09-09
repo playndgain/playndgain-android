@@ -31,9 +31,23 @@ final class CreditNoteBuilder
 
         $publisher = $withdrawal->publisher;
         $issued = ($withdrawal->paid_at ?? $withdrawal->processed_at ?? $withdrawal->requested_at ?? now())->toImmutable();
-        $periodEnd = ($withdrawal->requested_at ?? $issued)->toImmutable();
-        $periodStart = $this->periodStart($withdrawal, $periodEnd);
-        $lines = $this->lines($withdrawal, $periodStart, $periodEnd);
+
+        // The statements this payout settles define the period and the due
+        // date — docs/06 §9. A withdrawal from before statements existed
+        // falls back to "since the previous paid withdrawal".
+        $statements = $withdrawal->statements()->withoutGlobalScopes()->orderBy('period')->get();
+
+        if ($statements->isNotEmpty()) {
+            $periodStart = CarbonImmutable::instance($statements->first()->period)->startOfMonth();
+            $periodEnd = CarbonImmutable::instance($statements->last()->period)->endOfMonth();
+            $dueDate = CarbonImmutable::instance($statements->max('due_date'));
+            $lines = $this->lines($withdrawal, $periodStart, $periodEnd, inclusiveStart: true);
+        } else {
+            $periodEnd = ($withdrawal->requested_at ?? $issued)->toImmutable();
+            $periodStart = $this->periodStart($withdrawal, $periodEnd);
+            $dueDate = $issued->addDays(30);
+            $lines = $this->lines($withdrawal, $periodStart, $periodEnd);
+        }
         $subtotal = $this->sumLines($lines);
         $vatRate = Money::format(Identity::invoice()['vat_rate'], 2);
         $vatAmount = Money::share($subtotal, $vatRate);
@@ -43,7 +57,7 @@ final class CreditNoteBuilder
             number: 'CN-'.str_pad((string) $withdrawal->id, 5, '0', STR_PAD_LEFT),
             publisherId: (string) $publisher->pub_id,
             issueDate: $issued->toDateString(),
-            dueDate: $issued->addDays(30)->toDateString(),
+            dueDate: $dueDate->toDateString(),
             periodStart: $periodStart->toDateString(),
             periodEnd: $periodEnd->toDateString(),
             billingEmail: (string) $publisher->user?->email,
@@ -68,7 +82,7 @@ final class CreditNoteBuilder
     /**
      * @return list<array{description: string, amount: string}>
      */
-    private function lines(Withdrawal $withdrawal, DateTimeInterface $from, DateTimeInterface $to): array
+    private function lines(Withdrawal $withdrawal, DateTimeInterface $from, DateTimeInterface $to, bool $inclusiveStart = false): array
     {
         $rows = Conversion::query()
             ->withoutGlobalScopes()
@@ -76,7 +90,10 @@ final class CreditNoteBuilder
             ->where('publisher_id', $withdrawal->publisher_id)
             ->where('is_test', false)
             ->whereIn('status', [ConversionStatus::Approved, ConversionStatus::Reversed])
-            ->where('created_at', '>', $from)
+            // A statement period starts at midnight on the 1st and owns that
+            // instant; the legacy window starts at the previous payout's
+            // request time and must not count it twice.
+            ->where('created_at', $inclusiveStart ? '>=' : '>', $from)
             ->where('created_at', '<=', $to)
             ->orderBy('created_at')
             ->get();
@@ -161,8 +178,7 @@ final class CreditNoteBuilder
 
     private function paymentInstruction(Withdrawal $withdrawal): string
     {
-        $details = json_decode((string) $withdrawal->payment_details, true);
-        $details = is_array($details) ? $details : [];
+        $details = $withdrawal->destination();
 
         return match ($withdrawal->method) {
             PaymentMethodType::Paypal => 'PayPal: '.($details['email'] ?? ''),

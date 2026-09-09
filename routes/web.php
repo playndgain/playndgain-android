@@ -2,18 +2,13 @@
 
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DocsController;
+use App\Http\Controllers\DocsTextController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\McpController;
+use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PostbackController;
-use App\Http\Controllers\Wall\ClickController;
-use App\Http\Controllers\Wall\ConsentController;
-use App\Http\Controllers\Wall\HistoryController;
-use App\Http\Controllers\Wall\OfferDetailController;
-use App\Http\Controllers\Wall\OfferIconController;
-use App\Http\Controllers\Wall\PartnerWallController;
-use App\Http\Controllers\Wall\PrivacyController;
-use App\Http\Controllers\Wall\WallController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -76,6 +71,19 @@ Route::post('/contact', [ContactController::class, 'store'])
     ->middleware('throttle:6,1')
     ->name('contact.send');
 
+// The footer's mailing list: the same plain POST to this app as the contact
+// form, for the same reasons, and throttled for the same reason too.
+Route::post('/newsletter', [NewsletterController::class, 'store'])
+    ->middleware('throttle:6,1')
+    ->name('newsletter.subscribe');
+
+// Off the list. `signed` is the whole credential — the link lives in a mail
+// footer, so it has to work with no session, and the signature is what stops a
+// crawler or a stranger opting somebody else out by counting up the ids.
+Route::get('/newsletter/unsubscribe/{subscriber}', [NewsletterController::class, 'unsubscribe'])
+    ->middleware('signed')
+    ->name('newsletter.unsubscribe');
+
 // ---------------------------------------------------------------------------
 // Impersonation exit  →  docs/07-admin-panel.md §5
 // ---------------------------------------------------------------------------
@@ -91,73 +99,34 @@ Route::get('/impersonate/stop', ImpersonationController::class)
 // Developer docs  →  docs/10-developer-docs.md
 // ---------------------------------------------------------------------------
 
+// The docs as text, for the "Copy page" menu and for tools that read
+// documentation. Registered before the page route so the dot in each name is
+// never read as a slug.
+Route::get('/docs/llms.txt', [DocsTextController::class, 'all'])->name('docs.llms');
+Route::get('/docs/prompt.txt', [DocsTextController::class, 'prompt'])->name('docs.prompt');
+Route::get('/docs/{slug}.md', [DocsTextController::class, 'page'])
+    ->where('slug', '[A-Za-z0-9\-]+')
+    ->name('docs.markdown');
+
+// A read-only MCP server over the same pages. POST only; the controller
+// answers 405 to anything else, as the transport specification asks.
+Route::any('/mcp', McpController::class)
+    ->middleware('throttle:60,1')
+    ->name('mcp');
+
 Route::get('/docs/{slug?}', DocsController::class)
     ->where('slug', '[A-Za-z0-9\-\/]+')
     ->name('docs');
 
 // ---------------------------------------------------------------------------
-// Offerwall  →  docs/03-offerwall.md
+// Offerwall  →  routes/wall.php
 // ---------------------------------------------------------------------------
 //
-// The `wall` group is stateless on purpose: no session, no cookie, no CSRF.
-// The wall is an iframe on someone else's domain and authenticates by
-// appid + userid + sig, not by a cookie it could never receive. Limits are
-// defined in AppServiceProvider::rateLimiters().
-
-Route::middleware('wall')->group(function (): void {
-    Route::get('/wall', WallController::class)
-        ->middleware('throttle:wall')
-        ->name('wall');
-
-    // What the offer actually asks of the user, before they leave for it: the
-    // steps, what each one pays, and who it is open to. It is a page and not a
-    // client-side expansion because it has to survive JS being off — the card
-    // links straight here, and the dialog on the wall is an enhancement that
-    // fetches this same URL.
-    Route::get('/wall/offer/{offer}', OfferDetailController::class)
-        ->middleware('throttle:wall')
-        ->name('wall.offer');
-
-    // The user's own clicks and what each one earned. It runs the full gate,
-    // consent included: the history of a user is exactly the data a declined
-    // consent refuses, so it must not be reachable by deep link either.
-    Route::get('/wall/history', HistoryController::class)
-        ->middleware('throttle:wall')
-        ->name('wall.history');
-
-    // A partner's own wall, framed. Server-rendered with its own URL rather
-    // than a pane swap, for the same reason `wall.offer` is: the back button
-    // behaves, it survives JS being off, and a publisher can deep-link one.
-    Route::get('/wall/partners', [PartnerWallController::class, 'index'])
-        ->middleware('throttle:wall')
-        ->name('wall.partners');
-
-    Route::get('/wall/partners/{network}', [PartnerWallController::class, 'show'])
-        ->middleware('throttle:wall')
-        ->name('wall.partner');
-
-    Route::get('/click/{offer}', ClickController::class)
-        ->middleware('throttle:click')
-        ->name('wall.click');
-
-    // Icons are proxied, never hotlinked — networks rotate and delete their CDN
-    // assets without warning, and a wall of broken images reads as dead.
-    Route::get('/img/offer/{offer}', OfferIconController::class)
-        ->middleware('throttle:wall')
-        ->name('wall.icon');
-
-    Route::post('/wall/consent', [ConsentController::class, 'store'])
-        ->middleware('throttle:wall')
-        ->name('wall.consent');
-
-    Route::get('/privacy/data', [PrivacyController::class, 'show'])
-        ->middleware('throttle:privacy')
-        ->name('privacy.data');
-
-    Route::post('/privacy/delete', [PrivacyController::class, 'destroy'])
-        ->middleware('throttle:privacy')
-        ->name('privacy.delete');
-});
+// Not here on purpose. Everything in this file inherits the `web` group —
+// session, cookies, CSRF — and the wall is stateless by specification
+// (docs/03). Its routes are registered from bootstrap/app.php without that
+// group, so a consent POST from inside a publisher's iframe is never asked
+// for a token it cannot hold.
 
 // ---------------------------------------------------------------------------
 // Inbound network postbacks  →  docs/04-conversions-postbacks.md
@@ -173,6 +142,11 @@ Route::middleware('wall')->group(function (): void {
 // speed. The limit is deliberately generous: a network catching up after an
 // outage sends a legitimate burst, and shedding that is how a publisher stops
 // being paid for conversions we were told about.
+
+// The publisher panel's Withdrawals and Payment details pages became one
+// Payments page — docs/08 §10. Old bookmarks and mails land on it.
+Route::redirect('/dashboard/withdrawals', '/dashboard/payments', 301);
+Route::redirect('/dashboard/payment-methods', '/dashboard/payments', 301);
 
 Route::match(['get', 'post'], '/postback/{driver}', PostbackController::class)
     ->middleware('throttle:postback')

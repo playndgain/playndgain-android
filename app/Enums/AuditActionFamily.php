@@ -110,10 +110,10 @@ enum AuditActionFamily: string implements HasColor, HasIcon, HasLabel
     public static function verbColor(string $action): string
     {
         return match (Str::afterLast($action, '.')) {
-            'approved', 'paid', 'unblocked', 'unbanned' => 'success',
+            'approved', 'paid', 'unblocked', 'unbanned', 'email_verified' => 'success',
             'rejected', 'banned', 'blocked', 'force_reversed', 'ban_made_permanent' => 'danger',
             'impersonated', 'impersonation_ended', 'revealed', 'credentials_revealed',
-            'secret_regenerated', '2fa_reset' => 'warning',
+            'secret_regenerated', '2fa_reset', 'password_changed' => 'warning',
             'balance_adjusted', 'requested' => 'primary',
             default => 'gray',
         };
@@ -122,10 +122,11 @@ enum AuditActionFamily: string implements HasColor, HasIcon, HasLabel
     public static function verbIcon(string $action): Heroicon
     {
         return match (Str::afterLast($action, '.')) {
-            'approved', 'paid', 'unblocked', 'unbanned' => Heroicon::OutlinedCheckCircle,
+            'approved', 'paid', 'unblocked', 'unbanned', 'email_verified' => Heroicon::OutlinedCheckCircle,
             'rejected', 'banned', 'blocked', 'force_reversed', 'ban_made_permanent' => Heroicon::OutlinedNoSymbol,
             'impersonated', 'impersonation_ended' => Heroicon::OutlinedUserCircle,
-            'revealed', 'credentials_revealed', 'secret_regenerated', '2fa_reset' => Heroicon::OutlinedKey,
+            'revealed', 'credentials_revealed', 'secret_regenerated', '2fa_reset',
+            'password_changed' => Heroicon::OutlinedKey,
             'balance_adjusted', 'requested' => Heroicon::OutlinedBanknotes,
             'updated', 'toggled' => Heroicon::OutlinedPencilSquare,
             'created', 'matched' => Heroicon::OutlinedPlusCircle,
@@ -144,6 +145,8 @@ enum AuditActionFamily: string implements HasColor, HasIcon, HasLabel
                 '*.credentials_revealed',
                 '*.secret_regenerated',
                 '*.2fa_reset',
+                '*.password_changed',
+                '*.email_verified',
             ],
             self::Money => [
                 'withdrawal.*',

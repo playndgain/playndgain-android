@@ -2,8 +2,9 @@
 
 namespace App\Filament\Publisher\Widgets;
 
-use App\Filament\Publisher\Resources\Withdrawals\WithdrawalResource;
+use App\Filament\Publisher\Pages\Payments;
 use App\Filament\Publisher\Support\CurrentPublisher;
+use App\Services\Money\Money;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -11,8 +12,8 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
  * Balance row — docs/08 §3.
  *
  * "Available" is `withdrawableBalance()` and never `clearedBalance()`. Cleared
- * still contains money the publisher has already requested, so showing it next
- * to a Withdraw button produces a form that rejects the number above it.
+ * still contains money the monthly run has already requested, so showing it
+ * would promise a payout that is already on its way.
  */
 class BalanceStats extends StatsOverviewWidget
 {
@@ -28,18 +29,18 @@ class BalanceStats extends StatsOverviewWidget
             return [];
         }
 
-        $available = (float) $publisher->withdrawableBalance();
+        $available = $publisher->withdrawableBalance();
 
         return [
-            Stat::make('Available', '$'.number_format($available, 2))
-                ->description($available < 0 ? 'Negative — future earnings pay this down' : 'Ready to withdraw')
-                ->color($available < 0 ? 'danger' : 'success')
-                ->url(WithdrawalResource::getUrl()),
+            Stat::make('Available', Money::display($available))
+                ->description(bccomp($available, '0', Money::SCALE) < 0 ? 'Negative — future earnings pay this down' : 'Paid automatically on the 1st')
+                ->color(bccomp($available, '0', Money::SCALE) < 0 ? 'loss' : 'gain')
+                ->url(Payments::getUrl()),
 
-            Stat::make('Pending', '$'.number_format((float) $publisher->pendingBalance(), 2))
+            Stat::make('Pending', Money::display($publisher->pendingBalance()))
                 ->description('Earnings clear at the start of next month'),
 
-            Stat::make('Lifetime earnings', '$'.number_format((float) $publisher->lifetime_earnings, 2))
+            Stat::make('Lifetime earnings', Money::display($publisher->lifetime_earnings))
                 ->description('All earnings ever, before reversals and withdrawals'),
         ];
     }

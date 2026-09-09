@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Marcelodelgado\Announcements\Traits\HasAnnouncements;
 use SensitiveParameter;
 
 /**
@@ -27,6 +28,8 @@ use SensitiveParameter;
  */
 class User extends Authenticatable implements FilamentUser, HasAppAuthentication, HasAppAuthenticationRecovery, MustVerifyEmail
 {
+    use HasAnnouncements;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
@@ -96,7 +99,7 @@ class User extends Authenticatable implements FilamentUser, HasAppAuthentication
     {
         return match ($panel->getId()) {
             'admin' => $this->isAdmin(),
-            'publisher' => $this->isAdmin() || ($this->isPublisher() && ! $this->publisher?->isBanned()),
+            'publisher' => $this->isAdmin() || ($this->isPublisher() && ! $this->publisher?->isBanned() && ! $this->publisher?->isSuspended()),
             default => false,
         };
     }

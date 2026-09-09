@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Config;
 use Livewire\Livewire;
 
 beforeEach(function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     Filament::setCurrentPanel('admin');
 
     $this->admin = User::factory()->admin()->create([
@@ -32,6 +32,8 @@ it('classifies known admin actions into families', function (string $action, Aud
     ['publisher.balance_adjusted', AuditActionFamily::Money],
     ['publisher.impersonated', AuditActionFamily::Access],
     ['publisher.impersonation_ended', AuditActionFamily::Access],
+    ['publisher.password_changed', AuditActionFamily::Access],
+    ['publisher.email_verified', AuditActionFamily::Access],
     ['conversion.approved', AuditActionFamily::Money],
     ['conversion.rejected', AuditActionFamily::Money],
     ['conversion.force_reversed', AuditActionFamily::Money],

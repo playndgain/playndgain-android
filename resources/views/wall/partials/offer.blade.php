@@ -50,8 +50,12 @@
         <span class="wall-tile wall-tile--xl">
             <span class="wall-tile__letter" aria-hidden="true">{{ mb_substr((string) $offer->name, 0, 1) }}</span>
             @if (filled($offer->icon_url))
+                {{-- 56², the size `.wall-tile--xl` actually paints. The image
+                     is absolutely positioned, so these attributes only supply
+                     the ratio — but a square that is not the box's square is a
+                     lie about the art, and offer icons are square. --}}
                 <img class="wall-tile__img" src="/img/offer/{{ $offer->id }}"
-                     alt="" width="72" height="72" decoding="async" onerror="this.remove()">
+                     alt="" width="56" height="56" decoding="async" onerror="this.remove()">
             @endif
         </span>
 
@@ -69,16 +73,16 @@
                 @if (count($steps) > 1)
                     <span class="wall-reward__upto">{{ __('wall.up_to') }}</span>
                 @endif
-                <span class="wall-reward__row">
-                    <span class="num wall-reward__value">{{ $reward }}</span>
-                    <span class="wall-reward__currency">{{ $currency }}</span>
-                </span>
+                <span class="num wall-reward__value">{{ $reward }}</span>
+                <span class="wall-reward__currency">{{ $currency }}</span>
             </p>
 
             {{-- The same two facts the card carries, for the same reason as the
                  pill above: the screen the user landed on confirms the one they
                  tapped. --}}
-            @include('wall.partials.facts', ['devices' => $devices, 'people' => (int) ($people ?? 0)])
+            <span class="offer__facts">
+                @include('wall.partials.facts', ['devices' => $devices, 'people' => (int) ($people ?? 0)])
+            </span>
         </div>
     </header>
 

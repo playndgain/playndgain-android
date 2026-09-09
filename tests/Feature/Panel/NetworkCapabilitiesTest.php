@@ -19,7 +19,7 @@ use Livewire\Livewire;
  * catalogue keys the schema otherwise requires, and skips the sync sweep.
  */
 beforeEach(function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $this->actingAs(User::factory()->admin()->create([
         'two_factor_secret' => 'JBSWY3DPEHPK3PXP',

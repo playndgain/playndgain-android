@@ -13,7 +13,9 @@ class RevenueVsPayoutChart extends ChartWidget
 
     protected ?string $heading = 'Revenue vs payout — 30 days';
 
-    protected int|string|array $columnSpan = 2;
+    protected int|string|array $columnSpan = 1;
+
+    protected ?string $maxHeight = '260px';
 
     protected function getType(): string
     {
@@ -32,7 +34,7 @@ class RevenueVsPayoutChart extends ChartWidget
                 [
                     'label' => 'Revenue',
                     'data' => $days->map(fn (object $row): float => (float) $row->revenue)->values()->all(),
-                    'borderColor' => '#F5A524',
+                    'borderColor' => '#DFC08A',
                     'backgroundColor' => 'rgba(245, 165, 36, 0.12)',
                     'fill' => true,
                     'tension' => 0.3,
@@ -40,7 +42,7 @@ class RevenueVsPayoutChart extends ChartWidget
                 [
                     'label' => 'Publisher payout',
                     'data' => $days->map(fn (object $row): float => (float) $row->payout)->values()->all(),
-                    'borderColor' => '#6E7784',
+                    'borderColor' => '#7D8CA6',
                     'fill' => false,
                     'tension' => 0.3,
                 ],

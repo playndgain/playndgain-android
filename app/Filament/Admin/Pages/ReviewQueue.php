@@ -4,6 +4,8 @@ namespace App\Filament\Admin\Pages;
 
 use App\Enums\ConversionStatus;
 use App\Filament\Admin\Resources\Conversions\ConversionResource;
+use App\Filament\Admin\Support\DateRangeFilter;
+use App\Filament\Support\AppColumns;
 use App\Models\Conversion;
 use App\Models\FraudEvent;
 use App\Models\OfferClick;
@@ -20,6 +22,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -61,12 +64,15 @@ class ReviewQueue extends Page implements HasActions, HasSchemas, HasTable
         return $table
             ->query(fn (): Builder => Conversion::query()
                 ->withoutGlobalScopes()
-                ->with(['publisher:id,pub_id', 'app:id,name', 'network:id,name', 'offerClick'])
+                ->with(['publisher:id,pub_id', AppColumns::eager(), 'network:id,name', 'offerClick'])
                 ->where('status', ConversionStatus::Pending))
             ->columns([
-                TextColumn::make('trans_id')->label('TX')->copyable()->limit(16),
+                TextColumn::make('trans_id')->label('TX')
+                    ->copyable()
+                    ->copyableState(fn (?string $state): ?string => $state)
+                    ->limit(16),
                 TextColumn::make('publisher.pub_id')->label('Pub')->prefix('#'),
-                TextColumn::make('app.name')->label('App')->limit(18),
+                AppColumns::show(),
                 TextColumn::make('offer_name')->label('Offer')->limit(24),
                 TextColumn::make('payout')->money('USD'),
                 TextColumn::make('rules')
@@ -93,6 +99,11 @@ class ReviewQueue extends Page implements HasActions, HasSchemas, HasTable
                     ->label('User history')
                     ->state(fn (Conversion $record): string => $this->endUserHistory($record)),
                 TextColumn::make('created_at')->label('Received')->since()->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('publisher_id')->label('Publisher')->relationship('publisher', 'company_name')->searchable(),
+                SelectFilter::make('app_id')->label('App')->relationship('app', 'name')->searchable(),
+                DateRangeFilter::make(),
             ])
             ->recordActions([
                 Action::make('approve')

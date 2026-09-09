@@ -1,9 +1,8 @@
 <x-mail::message>
-# Monthly payout — rules failed
+<x-slot:hero>
+<x-mail::hero eyebrow="Ops" title="{{ count($failures) }} publisher(s) failed the payout rules" />
+</x-slot:hero>
+The scheduled run could not open a withdrawal for these publishers. Each one has been told why.
 
-The scheduled run could not open a withdrawal for {{ count($failures) }} publisher(s).
-
-@foreach ($failures as $failure)
-- **#{{ $failure['pub_id'] }}** — {{ $failure['reason'] }}
-@endforeach
+<x-mail::facts :rows="collect($failures)->mapWithKeys(fn (array $f): array => ['#'.$f['pub_id'] => $f['reason']])->all()" />
 </x-mail::message>

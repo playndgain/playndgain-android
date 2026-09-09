@@ -27,7 +27,7 @@ class TopCountriesChart extends ChartWidget
             'datasets' => [[
                 'label' => 'Revenue',
                 'data' => $rows->map(fn (object $row): float => (float) $row->revenue)->all(),
-                'backgroundColor' => '#F5A524',
+                'backgroundColor' => '#DFC08A',
             ]],
             'labels' => $rows->map(fn (object $row): string => (string) $row->bucket)->all(),
         ];

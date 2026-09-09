@@ -83,7 +83,7 @@ it('reads the proxy classification fields when the database is on disk', functio
 });
 
 it('degrades to unknown rather than throwing when no database is present', function () {
-    config()->set('advault.geoip_path', storage_path('app/geoip-absent'));
+    config()->set('playndgain.geoip_path', storage_path('app/geoip-absent'));
 
     $verdict = (new MaxMindIpIntelligence)->inspect('194.226.224.226');
 

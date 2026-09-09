@@ -6,6 +6,13 @@
 </x-mail::header>
 </x-slot:header>
 
+{{-- Hero: the ink band under the mark, when a mail passes one. --}}
+@isset($hero)
+<x-slot:hero>
+{!! $hero !!}
+</x-slot:hero>
+@endisset
+
 {{-- Body --}}
 {!! $slot !!}
 

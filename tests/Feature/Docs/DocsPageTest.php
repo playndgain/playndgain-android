@@ -10,7 +10,7 @@ it('serves the index and every page in the navigation', function () {
 
     $slugs = array_column(array_merge(...array_column(config('docs.nav'), 'pages')), 'slug');
 
-    expect($slugs)->toHaveCount(24);
+    expect($slugs)->toHaveCount(23);
 
     foreach ($slugs as $slug) {
         $this->get("/docs/{$slug}")->assertOk();
@@ -37,13 +37,13 @@ it('substitutes APP_URL from config and never hardcodes the production origin', 
             ->assertOk()
             ->assertSee('https://docs.example.test/wall', escape: false)
             ->assertDontSee('{APP_URL}', escape: false)
-            ->assertDontSee('https://advault.io', escape: false);
+            ->assertDontSee('https://playndgain.com', escape: false);
     }
 });
 
-it('does not hardcode https://advault.io in published Markdown', function () {
+it('does not hardcode https://playndgain.com in published Markdown', function () {
     $hits = collect(glob(resource_path('docs/*.md')))
-        ->filter(fn (string $path): bool => str_contains((string) file_get_contents($path), 'https://advault.io'))
+        ->filter(fn (string $path): bool => str_contains((string) file_get_contents($path), 'https://playndgain.com'))
         ->map(fn (string $path): string => basename($path))
         ->values()
         ->all();
@@ -83,8 +83,8 @@ it('renders its content and its navigation with JavaScript disabled', function (
     $html = (string) $this->get('/docs/chargebacks-reversals')->getContent();
 
     expect($html)
-        ->toContain('Reversals send a negative amount')
-        ->toContain('you pay out rewards on revenue you were never paid');
+        ->toContain('What a reversal is')
+        ->toContain('you keep paying players for revenue you were never paid');
 
     preg_match('/<details class="doc-disclosure.*?<\/details>/s', $html, $matches);
 
@@ -111,11 +111,11 @@ it('highlights fenced code on the server and ships no highlighter to the client'
 });
 
 it('gives every heading an anchor and every page a neighbour', function () {
-    $html = (string) $this->get('/docs/idempotency')->getContent();
+    $html = (string) $this->get('/docs/retries-and-failure')->getContent();
 
     expect($html)
-        ->toContain('<h2 id="dedupe-on-trans-id">')
-        ->toContain('<a class="doc-anchor" href="#dedupe-on-trans-id"')
+        ->toContain('<h2 id="deduplicate-on-trans-id">')
+        ->toContain('<a class="doc-anchor" href="#deduplicate-on-trans-id"')
         ->toContain('/docs/chargebacks-reversals')   // previous
         ->toContain('/docs/test-mode');              // next
 });
@@ -136,5 +136,34 @@ it('documents every macro the resolver actually resolves', function () {
 
     foreach ($matches[1] as $macro) {
         expect($html)->toContain('<code>'.$macro.'</code>');
+    }
+});
+
+/**
+ * Retired slugs are in publishers' bookmarks and in mail we have already sent.
+ * The restructure moves them; it does not 404 them.
+ */
+it('redirects every slug the restructure retired', function (string $old, string $new) {
+    $this->get("/docs/{$old}")->assertRedirect("/docs/{$new}");
+})->with([
+    ['idempotency', 'retries-and-failure'],
+    ['test-postback', 'test-mode'],
+    ['error-codes', 'troubleshooting'],
+    ['prohibited-traffic', 'traffic-quality'],
+    ['payout-terms', 'statements-and-payouts'],
+]);
+
+/**
+ * A link to a page that no longer exists is a 404 a reader finds before we do.
+ */
+it('links only to pages that are published', function () {
+    $slugs = collect(config('docs.nav'))->pluck('pages')->flatten(1)->pluck('slug')->all();
+
+    foreach (glob(resource_path('docs/*.md')) as $file) {
+        preg_match_all('#\(/docs/([a-z0-9-]+)\)#', (string) file_get_contents($file), $matches);
+
+        $broken = array_diff(array_unique($matches[1]), $slugs);
+
+        expect($broken)->toBe([], basename($file).' links to an unpublished page');
     }
 });

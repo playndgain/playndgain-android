@@ -472,7 +472,7 @@ it('reads the proxy classification fields when the database is on disk', functio
 });
 
 it('degrades to unknown rather than throwing when no database is present', function () {
-    config()->set('advault.geoip_path', storage_path('app/geoip-absent'));
+    config()->set('playndgain.geoip_path', storage_path('app/geoip-absent'));
 
     $verdict = (new MaxMindIpIntelligence)->inspect('194.226.224.226');
 
@@ -3055,7 +3055,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ### Task 9: Make the documentation tell the truth
 
 **Files:**
-- Modify: `docs/05-fraud-engine.md`, `docs/03-offerwall.md`, `docs/07-admin-panel.md`, `.env.example`, `config/advault.php`
+- Modify: `docs/05-fraud-engine.md`, `docs/03-offerwall.md`, `docs/07-admin-panel.md`, `.env.example`, `config/playndgain.php`
 
 **Interfaces:** none. This task ships no behaviour.
 

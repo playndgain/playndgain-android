@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Config;
  */
 function rowClickAdmin(): User
 {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     return User::factory()->admin()->create([
         'two_factor_secret' => 'JBSWY3DPEHPK3PXP',

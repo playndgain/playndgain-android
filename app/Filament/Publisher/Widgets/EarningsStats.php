@@ -4,6 +4,7 @@ namespace App\Filament\Publisher\Widgets;
 
 use App\Filament\Publisher\Support\CurrentPublisher;
 use App\Filament\Publisher\Widgets\Concerns\FiltersBySelectedApp;
+use App\Services\Money\Money;
 use App\Services\Reporting\StatsQuery;
 use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
@@ -60,7 +61,7 @@ class EarningsStats extends StatsOverviewWidget
         $now = (float) StatsQuery::make()->forPublisher($publisherId)->forApp($appId)->between($from, $to)->totals()['payout'];
         $then = (float) StatsQuery::make()->forPublisher($publisherId)->forApp($appId)->between($previousFrom, $previousTo)->totals()['payout'];
 
-        $stat = Stat::make($label, '$'.number_format($now, 2));
+        $stat = Stat::make($label, Money::display($now));
 
         if ($then <= 0.0) {
             return $stat->description($now > 0 ? 'no prior period to compare' : 'nothing yet');
@@ -72,6 +73,6 @@ class EarningsStats extends StatsOverviewWidget
         return $stat
             ->description(sprintf('%s%.1f%% vs previous', $up ? '+' : '', $delta))
             ->descriptionIcon($up ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
-            ->color($up ? 'success' : 'danger');
+            ->color($up ? 'gain' : 'loss');
     }
 }

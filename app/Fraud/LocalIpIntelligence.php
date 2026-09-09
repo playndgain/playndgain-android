@@ -22,7 +22,7 @@ use App\Fraud\Contracts\IpIntelligence;
  * dev looks like a real one instead of a `geo_mismatch`.
  *
  * **It is bound only when `app()->environment('local')` and
- * `advault.geoip_dev_country` is set** — see AppServiceProvider. Unset config is
+ * `playndgain.geoip_dev_country` is set** — see AppServiceProvider. Unset config is
  * today's behaviour exactly, and no other environment can reach the binding. A
  * decorator that places an address the databases refused is precisely what must
  * never run in production: every eligibility decision downstream trusts the

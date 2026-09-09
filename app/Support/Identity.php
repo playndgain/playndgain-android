@@ -8,7 +8,7 @@ use Illuminate\Database\QueryException;
 /**
  * The public name, mailboxes and domain.
  *
- * `.env` is the default (APP_NAME, APP_URL, MAIL_*, ADVAULT_SUPPORT_EMAIL,
+ * `.env` is the default (APP_NAME, APP_URL, MAIL_*, PLAYNDGAIN_SUPPORT_EMAIL,
  * INVOICE_*). A non-empty `settings` row wins, so the admin panel can override
  * without a deploy. Blank setting means "use env".
  */
@@ -21,7 +21,7 @@ final class Identity
 
     public static function supportEmail(): string
     {
-        return self::settingOr('support_email', (string) config('advault.support_email'));
+        return self::settingOr('support_email', (string) config('playndgain.support_email'));
     }
 
     public static function url(): string
@@ -34,7 +34,7 @@ final class Identity
      */
     public static function invoice(): array
     {
-        $invoice = config('advault.invoice');
+        $invoice = config('playndgain.invoice');
 
         return [
             'name' => self::settingOr('invoice_company_name', (string) ($invoice['company_name'] ?: self::name())),

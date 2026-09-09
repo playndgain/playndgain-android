@@ -31,7 +31,7 @@ use Illuminate\Database\Seeder;
  */
 class TestOfferSeeder extends Seeder
 {
-    public const EXTERNAL_ID = 'advault-test-offer';
+    public const EXTERNAL_ID = 'playndgain-test-offer';
 
     public function run(): void
     {

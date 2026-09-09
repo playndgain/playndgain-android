@@ -248,7 +248,7 @@ class MaxMindIpIntelligence implements IpIntelligence
     /** Where `geoip:update` writes and every reader looks. */
     public static function directory(): string
     {
-        $dir = config('advault.geoip_path');
+        $dir = config('playndgain.geoip_path');
 
         return rtrim(is_string($dir) && $dir !== '' ? $dir : storage_path(self::DEFAULT_PATH), '/\\');
     }

@@ -1,44 +1,58 @@
 @props([
-    /** Pixel size of the glyph. The wordmark is a fixed 16px beside it. */
-    'size' => 26,
-    /** Set false for the glyph alone — favicon-shaped surfaces, tight bars. */
+    /** Pixel size of the tile. The wordmark scales with it. */
+    'size' => 20,
+    /** Set false for the tile alone — the favicon-shaped surfaces, tight bars. */
     'wordmark' => true,
+    /** A second line under the wordmark — the panels name themselves here
+        ("Publisher", "Admin"). Null everywhere else. */
+    'label' => null,
+    /** 'accent' paints the label amber (the admin panel); 'muted' is the default. */
+    'labelTone' => 'muted',
 ])
+
+@php
+    // One gradient definition per instance: a page renders the mark more than
+    // once, and two <linearGradient>s with one id paint the second tile black.
+    $gradient = 'pgm-'.substr(md5(uniqid('', true)), 0, 8);
+@endphp
 
 {{-- The mark, in one place.
 
-     It used to be inline SVG in the header, again in the footer with a
-     different stroke, and a third time as a data-URI favicon. Three copies of a
-     logo drift, and the one nobody looks at is the one that ends up wrong.
+     A rounded amber tile carrying a bold geometric "P", beside the wordmark.
+     The letter is two primitives — a stem and a stroked bowl — not text: the
+     favicon, the mail header and the wall's loading splash all render it, and
+     none of them can wait for a font. scripts/make-favicons.php draws the same
+     geometry from the same numbers, so the icon set cannot drift from here.
 
-     Flat amber rather than the header's old gradient: a gradient needs an `id`,
-     and the same `id` rendered twice on one page (header and footer) is a
-     collision the second one loses. The favicon has to be flat anyway, so flat
-     everywhere is also the only version that matches itself.
+     Styling comes from brand-mark.css, imported by every bundle.
 
-     Styling comes from `.brand-mark` in tokens.css, not from utility classes —
-     the panels build from their own Tailwind entry and never saw utilities
-     written in this directory.
+     Which panel you are in IS written here, and only here: the panels pass
+     `label`, which sets a second line under the wordmark inside the lockup —
+     one unit, no extra width, instead of a badge competing with the logo.
 
-     Which panel you are in is NOT written here. The topbar badge says that,
-     once, on the right-hand side of the bar.
-
-     It IS on the offerwall, in two places and only two: the loading splash and
-     a muted footer line. That surface is otherwise the publisher's brand, so
-     the mark stays quiet and never competes with their palette — but it keeps
-     its own colours, because a logo recoloured per app is not the logo. Note
-     that docs/09's landing copy still promises users see no logo but the
-     publisher's; that claim and this component now disagree. --}}
+     On the offerwall it appears exactly once, in the footer attribution: the
+     wall wears the publisher's brand and the design copy promises their
+     players never see a logo that is not theirs. --}}
 
 <span {{ $attributes->merge(['class' => 'brand-mark']) }}>
-    <svg width="{{ $size }}" height="{{ $size }}" viewBox="0 0 26 26" fill="none"
-         aria-hidden="true">
-        <rect x="1" y="1" width="24" height="24" rx="7" stroke="#262B33" stroke-width="1.5"/>
-        <path d="M8 7.5L13 18.5L18 7.5" stroke="#F5A524" stroke-width="2.4"
-              stroke-linecap="round" stroke-linejoin="round"/>
+    <svg class="brand-mark-tile" width="{{ $size }}" height="{{ $size }}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+        <defs>
+            <linearGradient id="{{ $gradient }}" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#FFC554"/>
+                <stop offset="1" stop-color="#F28C1A"/>
+            </linearGradient>
+        </defs>
+        <rect width="64" height="64" rx="16" fill="url(#{{ $gradient }})"/>
+        <rect x="15.5" y="13.5" width="11" height="38" rx="1.5" fill="#1A1000"/>
+        <path d="M21 19H33a11 11 0 0 1 0 22H21" fill="none" stroke="#1A1000" stroke-width="11"/>
     </svg>
 
-    @if ($wordmark)
-        <span class="brand-mark-word">{{ \App\Support\Identity::name() }}</span>
+    @if ($wordmark && $label)
+        <span class="brand-mark-text">
+            <span class="brand-mark-word" style="font-size: {{ round($size * 0.62, 1) }}px">{{ \App\Support\Identity::name() }}</span>
+            <span @class(['brand-mark-label', 'brand-mark-label-accent' => $labelTone === 'accent'])>{{ $label }}</span>
+        </span>
+    @elseif ($wordmark)
+        <span class="brand-mark-word" style="font-size: {{ round($size * 0.72, 1) }}px">{{ \App\Support\Identity::name() }}</span>
     @endif
 </span>

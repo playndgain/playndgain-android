@@ -39,8 +39,8 @@ class ViewConversion extends ViewRecord
 
     public function infolist(Schema $schema): Schema
     {
-        return $schema->components([
-            Section::make('Conversion')->columns(4)->schema([
+        return $schema->columns(1)->components([
+            Section::make('Conversion')->columnSpanFull()->columns(4)->schema([
                 TextEntry::make('trans_id')->label('Transaction ID')->copyable(),
                 TextEntry::make('network_txid')->label('Network TX')->copyable(),
                 TextEntry::make('status')->badge(),
@@ -62,6 +62,7 @@ class ViewConversion extends ViewRecord
             ]),
 
             Section::make('Click')
+                ->columnSpanFull()
                 ->columns(4)
                 ->visible(fn (Conversion $record): bool => $record->offerClick !== null)
                 ->schema([
@@ -77,6 +78,7 @@ class ViewConversion extends ViewRecord
                 ]),
 
             Section::make('Incoming postback')
+                ->columnSpanFull()
                 ->schema([
                     KeyValueEntry::make('raw')
                         ->label('')
@@ -84,6 +86,7 @@ class ViewConversion extends ViewRecord
                 ]),
 
             Section::make('Fraud events')
+                ->columnSpanFull()
                 ->description('Every rule that fired, blocking or not. This is the answer to "why is this pending".')
                 ->schema([
                     RepeatableEntry::make('fraud_events')
@@ -102,6 +105,7 @@ class ViewConversion extends ViewRecord
                 ]),
 
             Section::make('Delivery attempts')
+                ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('outgoingPostbacks')
                         ->label('')

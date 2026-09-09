@@ -1,4 +1,4 @@
-# AdVault — Master Specification
+# PLAYNDGAIN — Master Specification
 
 > **Status:** Approved design, pre-implementation
 > **Date:** 2026-08-15 (stack versions revised)
@@ -7,9 +7,9 @@
 
 ---
 
-## 1. What AdVault Is
+## 1. What PLAYNDGAIN Is
 
-AdVault is an **offerwall aggregator**. It does not create its own advertising demand. It:
+PLAYNDGAIN is an **offerwall aggregator**. It does not create its own advertising demand. It:
 
 1. Pulls offer catalogues from partner ad networks (Notik, Monlix, AdscendMedia, OGAds, AdGate Media, Lootably, Admantum, Adswedmedia) through their APIs.
 2. Normalizes those offers into a single internal shape.
@@ -22,9 +22,9 @@ Two dashboards: **admin** (us) and **publisher** (our customers). No advertiser 
 ### The money path
 
 ```
-Advertiser → Partner network → AdVault → Publisher → End user
-             (pays us $X)      (keeps    (credits
-                                30%)      coins)
+Advertiser → PLAYNDGAIN → Publisher → End user
+(confirms    (credits     (credits
+ action)      payout)      coins)
 ```
 
 Everything in this system exists to make that path **accurate, auditable, and hard to defraud**.
@@ -48,7 +48,7 @@ These were settled during design. They are not open questions.
 | Publisher extras | Blacklists (offer/country/device) and end-user bans. **Not** sub-accounts, **not** CSV exports. |
 | Compliance | EU consent gate + data controls. **Not** a registered IAB TCF vendor. |
 | Landing + docs | **Blade + Alpine.js + Tailwind v4 + GSAP.** Server-rendered HTML. Node at build time only — nothing but PHP in production. |
-| Brand | "AdVault". Obsidian/steel/amber. Deliberately not the violet-SaaS default. |
+| Brand | "PLAYNDGAIN". Obsidian/steel/amber. Deliberately not the violet-SaaS default. |
 | Rev-share default | **70%** to publisher (assumption — one config value, `settings.default_rev_share`). |
 
 ### Explicitly out of scope for v1

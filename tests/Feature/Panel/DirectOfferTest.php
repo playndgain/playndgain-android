@@ -27,14 +27,14 @@ use Livewire\Livewire;
  * the same code a network's offer runs.
  */
 beforeEach(function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
     Filament::setCurrentPanel('admin');
 
     $this->app->register(NetworkServiceProvider::class);
 
     $this->direct = Network::factory()->create([
         'driver' => 'direct',
-        'name' => 'AdVault (house)',
+        'name' => 'PLAYNDGAIN (house)',
         'status' => NetworkStatus::Active,
         'credentials' => ['postback_secret' => 'direct-secret'],
         'postback_ips' => ['127.0.0.1'],

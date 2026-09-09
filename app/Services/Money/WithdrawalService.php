@@ -34,6 +34,8 @@ class WithdrawalService
     /** Floor under `publishers.min_payout`. A publisher override cannot go below it. */
     public const FLOOR_MIN_PAYOUT = '20.00';
 
+    public const UNREADABLE_DESTINATION = 'Your saved payment destination cannot be read. Enter it again on the Payments page.';
+
     /**
      * Why this publisher cannot request right now, or null if they can.
      *
@@ -67,7 +69,7 @@ class WithdrawalService
         }
 
         if ($publisher->paymentMethods()->count() === 0) {
-            return 'Add a payment method before requesting a withdrawal.';
+            return 'Add a payment method to receive the monthly payout.';
         }
 
         return null;
@@ -112,6 +114,15 @@ class WithdrawalService
                 throw new RuntimeException('Amount is below the minimum payout.');
             }
 
+            // A destination encrypted under a key we no longer have reads as
+            // null (PaymentMethod::fromEncryptedString). Snapshotting nothing
+            // would open a payout with nowhere to go.
+            $details = $method->getAttribute('details');
+
+            if (! is_array($details) || $details === []) {
+                throw new RuntimeException(self::UNREADABLE_DESTINATION);
+            }
+
             $withdrawal = Withdrawal::create([
                 'publisher_id' => $publisher->id,
                 'payment_method_id' => $method->id,
@@ -119,7 +130,7 @@ class WithdrawalService
                 'method' => $method->type,
                 // Snapshot. Editing the payment method later must not move an
                 // already-requested payout to a new destination.
-                'payment_details' => json_encode($method->details),
+                'payment_details' => $method->details,
                 'status' => WithdrawalStatus::Requested,
                 'requested_at' => now(),
             ]);
@@ -130,11 +141,91 @@ class WithdrawalService
         });
     }
 
+    /**
+     * A chargeback landing while a request is still open — docs/06 §4.
+     *
+     * The amount was frozen when the request opened and no ledger entry backs
+     * it, so a reversal that lands afterwards leaves the request promising
+     * money the publisher no longer has. Reducing it here is the only place
+     * that stays true; `processing` and `paid` are past the point of no
+     * automatic clawback (§5).
+     *
+     * Called from inside the chargeback's own transaction, which already holds
+     * the publisher row lock — only the withdrawal needs locking here.
+     */
+    public function applyChargeback(Publisher $publisher, string $debitAmount, ?User $actor = null): void
+    {
+        $chargeback = bccomp($debitAmount, '0', Money::SCALE) < 0
+            ? Money::negate($debitAmount)
+            : Money::format($debitAmount);
+
+        if (bccomp($chargeback, '0', Money::SCALE) <= 0) {
+            return;
+        }
+
+        $withdrawal = Withdrawal::query()
+            ->withoutGlobalScopes()
+            ->where('publisher_id', $publisher->id)
+            ->where('status', WithdrawalStatus::Requested)
+            ->lockForUpdate()
+            ->first();
+
+        if ($withdrawal === null) {
+            return;
+        }
+
+        $before = Money::format($withdrawal->amount);
+
+        // Never negative: the excess is a debt the ledger already carries, and
+        // repeating it on the withdrawal would double it.
+        $after = bccomp($chargeback, $before, Money::SCALE) >= 0
+            ? Money::format('0')
+            : bcsub($before, $chargeback, Money::SCALE);
+
+        $withdrawal->update(['amount' => $after]);
+
+        AuditLog::record('withdrawal.reduced_by_chargeback', $withdrawal, ['amount' => $before], ['amount' => $after], $actor);
+
+        if (bccomp($after, $this->minimumPayout($publisher), Money::SCALE) >= 0) {
+            return;
+        }
+
+        // Below the floor the monthly run applies. Left at the reduced amount
+        // rather than restored: the row is the record of what the chargebacks
+        // did to it. No ledger entry — `requested` was never debited.
+        $reason = 'Auto-rejected: chargebacks reduced amount below minimum payout';
+
+        $withdrawal->update([
+            'status' => WithdrawalStatus::Rejected,
+            'admin_note' => $reason,
+            // Null on the automatic path: a postback has nobody to attribute
+            // the rejection to, the same convention AuditLog already uses.
+            'processed_by' => $actor?->id,
+            'processed_at' => now(),
+        ]);
+
+        $this->statements()->unlink($withdrawal, $reason);
+
+        AuditLog::record('withdrawal.rejected', $withdrawal, ['status' => 'requested'], ['status' => 'rejected', 'reason' => $reason], $actor);
+    }
+
     /** Approve → `processing`. This is where the money genuinely leaves. */
     public function approve(Withdrawal $withdrawal, User $actor): Withdrawal
     {
         return DB::transaction(function () use ($withdrawal, $actor): Withdrawal {
             $withdrawal = $this->lockOpen($withdrawal, WithdrawalStatus::Requested);
+
+            // Defense in depth. The amount is frozen at request time and
+            // chargebacks since then are not in it, so the only figure that
+            // can be trusted at the moment of payment is the cleared balance.
+            // Compared against cleared, not withdrawable: this request is
+            // still `requested`, so withdrawable already subtracts it.
+            $publisher = Publisher::query()->findOrFail($withdrawal->publisher_id);
+            $amount = Money::format($withdrawal->amount);
+
+            if (bccomp($amount, $publisher->clearedBalance(), Money::SCALE) > 0) {
+                throw new RuntimeException('Amount exceeds the publisher\'s cleared balance.');
+            }
 
             $withdrawal->update([
                 'status' => WithdrawalStatus::Processing,
@@ -160,6 +251,11 @@ class WithdrawalService
                 'tx_reference' => $reference,
                 'paid_at' => now(),
             ]);
+
+            // The statements this payout settles turn `paid` in the same
+            // transaction — a publisher must never see a paid withdrawal next
+            // to a pending statement for the same month.
+            $this->statements()->markPaid($withdrawal);
 
             AuditLog::record('withdrawal.paid', $withdrawal, ['status' => 'processing'], ['status' => 'paid', 'tx_reference' => $reference], $actor);
 
@@ -217,13 +313,19 @@ class WithdrawalService
             ]);
 
             if ($wasProcessing) {
+                // Referenced to the withdrawal so a monthly statement can tell
+                // this credit apart from a genuine correction and leave it
+                // out of the month's activity.
                 LedgerEntry::createAdjustment(
                     Publisher::query()->findOrFail($withdrawal->publisher_id),
                     Money::format($withdrawal->amount),
                     "Rejected withdrawal #{$withdrawal->id} returned to balance",
                     $actor,
+                    $withdrawal,
                 );
             }
+
+            $this->statements()->unlink($withdrawal, $reason);
 
             AuditLog::record('withdrawal.rejected', $withdrawal, ['status' => $before], ['status' => 'rejected', 'reason' => $reason], $actor);
 
@@ -249,6 +351,15 @@ class WithdrawalService
         }
 
         return $locked;
+    }
+
+    /**
+     * Resolved lazily: the statement service depends on this one, and a
+     * constructor dependency in both directions is a container loop.
+     */
+    private function statements(): PayoutStatementService
+    {
+        return app(PayoutStatementService::class);
     }
 
     private function lockRow(Withdrawal $withdrawal): Withdrawal

@@ -35,9 +35,9 @@ class PruneLogsCommand extends Command
     public function handle(): int
     {
         /** @var array<string, int> $retention */
-        $retention = config('advault.log_retention');
-        $batch = (int) config('advault.log_prune_batch', 10000);
-        $pause = (int) config('advault.log_prune_pause_ms', 200);
+        $retention = config('playndgain.log_retention');
+        $batch = (int) config('playndgain.log_prune_batch', 10000);
+        $pause = (int) config('playndgain.log_prune_pause_ms', 200);
         $dryRun = (bool) $this->option('dry-run');
 
         $total = 0;

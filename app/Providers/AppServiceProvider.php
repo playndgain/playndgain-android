@@ -23,6 +23,7 @@ use App\Models\Offer;
 use App\Models\OfferClick;
 use App\Models\OutgoingPostback;
 use App\Models\PaymentMethod;
+use App\Models\PayoutStatement;
 use App\Models\Publisher;
 use App\Models\Setting;
 use App\Models\User;
@@ -33,12 +34,15 @@ use App\Policies\LedgerEntryPolicy;
 use App\Policies\OutgoingPostbackPolicy;
 use App\Policies\PublisherOwnedPolicy;
 use App\Services\Wall\ThrottleReporter;
+use BezhanSalleh\PanelSwitch\PanelSwitch;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -58,6 +62,7 @@ class AppServiceProvider extends ServiceProvider
         DailyStat::class,
         OfferClick::class,
         PaymentMethod::class,
+        PayoutStatement::class,
         Withdrawal::class,
     ];
 
@@ -109,6 +114,25 @@ class AppServiceProvider extends ServiceProvider
      * limiter and nothing else. Staging raises them; production leaves them at
      * the spec's defaults, which is what the `env()` fallbacks are.
      */
+    /**
+     * The topbar control that moves an admin between the two panels. It only
+     * renders when the signed-in user can access two or more panels, which
+     * User::canAccessPanel() already limits to admins — a publisher has one
+     * panel and never sees it.
+     */
+    private function panelSwitch(): void
+    {
+        PanelSwitch::configureUsing(function (PanelSwitch $panelSwitch): void {
+            // No explicit ->panels() list: the vendor indexes that list by the
+            // panels the user can reach and throws for a publisher, who cannot
+            // reach admin. Registration order is admin, publisher already.
+            $panelSwitch
+                ->simple()
+                ->labels(['admin' => 'Admin panel', 'publisher' => 'Publisher panel'])
+                ->icons(['admin' => 'heroicon-o-shield-check', 'publisher' => 'heroicon-o-squares-2x2']);
+        });
+    }
+
     private function rateLimiters(): void
     {
         // The `response` hook is what makes a rate limit a fraud signal rather
@@ -120,15 +144,15 @@ class AppServiceProvider extends ServiceProvider
         // at boot — so a test can pin a limit with `config()->set()` instead
         // of depending on whatever the local .env raised it to.
         RateLimiter::for('wall', fn (Request $request) => [
-            Limit::perMinute((int) config('advault.rate_limits.wall_per_ip'))->by($request->ip())->response($report),
-            Limit::perMinute((int) config('advault.rate_limits.wall_per_app'))->by('app:'.$request->query('appid'))->response($report),
+            Limit::perMinute((int) config('playndgain.rate_limits.wall_per_ip'))->by($request->ip())->response($report),
+            Limit::perMinute((int) config('playndgain.rate_limits.wall_per_app'))->by('app:'.$request->query('appid'))->response($report),
         ]);
 
-        RateLimiter::for('click', fn (Request $request) => Limit::perMinute((int) config('advault.rate_limits.click_per_user'))
+        RateLimiter::for('click', fn (Request $request) => Limit::perMinute((int) config('playndgain.rate_limits.click_per_user'))
             ->by($request->ip().'|'.$request->query('userid'))
             ->response($report));
 
-        RateLimiter::for('privacy', fn (Request $request) => Limit::perMinute((int) config('advault.rate_limits.privacy_per_ip'))
+        RateLimiter::for('privacy', fn (Request $request) => Limit::perMinute((int) config('playndgain.rate_limits.privacy_per_ip'))
             ->by($request->ip())
             ->response($report));
 
@@ -142,15 +166,28 @@ class AppServiceProvider extends ServiceProvider
         // burst of retries after an outage must not be shed. No fraud event
         // here, because a network at its limit is an infrastructure fact, not
         // an end user doing something.
-        RateLimiter::for('postback', fn (Request $request) => Limit::perMinute((int) config('advault.rate_limits.postback_per_ip'))
+        RateLimiter::for('postback', fn (Request $request) => Limit::perMinute((int) config('playndgain.rate_limits.postback_per_ip'))
             ->by((string) $request->ip()));
     }
 
     public function boot(): void
     {
+        // Generated URLs follow the scheme APP_URL declares. Keyed on the URL
+        // rather than the environment on purpose: the Lighthouse job serves a
+        // production build over plain HTTP on 127.0.0.1, and forcing https
+        // there hands the browser stylesheets it cannot fetch.
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         $this->rateLimiters();
         $this->localGeo();
         $this->filamentTables();
+        $this->panelSwitch();
+
+        // The announcements resource checks this gate on top of the panel.
+        // A string, not a closure, so config:cache can serialise the config.
+        Gate::define('manage-announcements', fn (User $user): bool => $user->isAdmin());
 
         foreach (self::PUBLISHER_OWNED as $model) {
             Gate::policy($model, PublisherOwnedPolicy::class);
@@ -176,7 +213,16 @@ class AppServiceProvider extends ServiceProvider
     private function filamentTables(): void
     {
         Table::configureUsing(function (Table $table): void {
-            $table->recordUrl(null);
+            $table
+                ->recordUrl(null)
+                // A visible bar, not a Filter button whose badge reads "0".
+                // The custom pages already put their filters on the page;
+                // ledger tables were hiding the same controls behind a click.
+                ->filtersLayout(FiltersLayout::AboveContent)
+                ->deferFilters(false)
+                // Sidebar links are clean URLs. Without the session the bar
+                // resets the moment you open another page and come back.
+                ->persistFiltersInSession();
         });
     }
 
@@ -196,7 +242,7 @@ class AppServiceProvider extends ServiceProvider
      */
     private function localGeo(): void
     {
-        $country = config('advault.geoip_dev_country');
+        $country = config('playndgain.geoip_dev_country');
 
         if (! $this->app->environment('local') || ! is_string($country) || $country === '') {
             return;

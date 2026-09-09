@@ -89,7 +89,9 @@ it('renders a branded credit-note mail with a pdf attached', function () {
 
     expect($mail->render())
         ->toContain($note->number)
-        ->toContain('#F5A524')
+        ->toContain('#FFB020') // amber-400: the mark and the button
+        ->toContain('#6EE7A8') // gain-300: the payout figure in the ink band
+        ->toContain('$'.$note->total)
         ->toContain(Identity::name())
         ->and($mail->attachments())->toHaveCount(1)
         ->and($mail->envelope()->subject)->toContain($note->number);

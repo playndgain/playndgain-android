@@ -317,6 +317,50 @@ it('emits a legible foreground for whatever accent the publisher picked', functi
     wallGet($light)->assertOk()->assertSee('--wall-on-primary:#0B0D10', false);
 });
 
+it('paints the ink surfaces when theme=dark is on a paper wall', function () {
+    [$app] = wallFixture(['theme' => [
+        'primary' => '#F28C1A',
+        'background' => '#F5F5FA',
+        'card' => '#FFFFFF',
+        'text' => '#0C0D1A',
+        'dark' => false,
+    ]]);
+    wallGeo('US');
+
+    wallGet($app)->assertOk()
+        ->assertSee('--wall-bg:#F5F5FA', false)
+        ->assertSee('content="light"', false)
+        ->assertSee('theme=dark', false);
+
+    wallGet($app, extra: ['theme' => 'dark'])->assertOk()
+        ->assertSee('--wall-bg:#0A0B14', false)
+        ->assertSee('--wall-card:#11131F', false)
+        ->assertSee('--wall-text:#F4F5FA', false)
+        ->assertSee('--wall-primary:#F28C1A', false)
+        ->assertSee('content="dark"', false)
+        ->assertSee('theme=light', false);
+});
+
+it('paints the paper surfaces when theme=light is on a custom dark wall', function () {
+    [$app] = wallFixture(['theme' => [
+        'primary' => '#6FD3A3',
+        'background' => '#07231B',
+        'card' => '#0C3227',
+        'text' => '#E6F2EC',
+        'dark' => true,
+    ]]);
+    wallGeo('US');
+
+    wallGet($app)->assertOk()->assertSee('--wall-bg:#07231B', false);
+
+    wallGet($app, extra: ['theme' => 'light'])->assertOk()
+        ->assertSee('--wall-bg:#F5F5FA', false)
+        ->assertSee('--wall-card:#FFFFFF', false)
+        ->assertSee('--wall-text:#0C0D1A', false)
+        ->assertSee('--wall-primary:#6FD3A3', false)
+        ->assertSee('content="light"', false);
+});
+
 it('serves the arabic wall right to left', function () {
     [$app] = wallFixture();
     wallGeo('US');

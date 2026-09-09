@@ -8,7 +8,7 @@
 | Egypt and MENA are the top geo in the reference data, so `ar` ships in v1
 | rather than waiting for a localisation phase.
 |
-| Archivo has no Arabic cut (see resources/css/tokens.css), so the RTL wall
+| Neither Manrope nor Newsreader ships an Arabic cut (see fonts-wall.css), so the RTL wall
 | falls back to the reader's own system Arabic face — Segoe UI / Geeza Pro /
 | Noto Sans Arabic. Shipping a fourth webfont to a 3G phone costs more than the
 | typographic consistency is worth on a list of cards.
@@ -18,6 +18,7 @@
 return [
 
     'title' => 'العروض',
+    'earn' => 'اكسب :currency',
     'search' => 'ابحث عن عرض',
     'search_placeholder' => 'بحث...',
     'clear' => 'مسح البحث',
@@ -153,6 +154,10 @@ return [
         'blocked_risk' => [
             'title' => 'العروض غير متاحة على هذا الاتصال',
             'body' => 'تعذّر التحقق من هذا الاتصال. حاول مرة أخرى عبر اتصال جوال أو إنترنت منزلي.',
+        ],
+        'blocked_unavailable' => [
+            'title' => 'العروض غير متاحة',
+            'body' => 'تعذّر عرض العروض هنا. يرجى المحاولة مرة أخرى لاحقًا.',
         ],
         'test_fired' => [
             'title' => 'تم إرسال تحويل تجريبي',

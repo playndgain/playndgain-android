@@ -1,0 +1,198 @@
+- generic [active] [ref=f7e1]:
+  - link "Skip to content" [ref=f7e3] [cursor=pointer]:
+    - /url: "#fi-main-content"
+  - navigation "Topbar" [ref=f7e5]:
+    - link "PLAYNDGAIN Admin" [ref=f7e7] [cursor=pointer]:
+      - /url: https://playndgain.test/admin
+      - generic [ref=f7e14]:
+        - generic [ref=f7e15]: PLAYNDGAIN
+        - generic [ref=f7e16]: Admin
+    - generic [ref=f7e17]:
+      - button "Admin panel" [ref=f7e21] [cursor=pointer]
+      - generic [ref=f7e26]:
+        - generic [ref=f7e27]: Global search
+        - searchbox "Global search" [ref=f7e33]
+      - button "User menu" [ref=f7e36] [cursor=pointer]:
+        - img "Avatar of PLAYNDGAIN Admin" [ref=f7e37]
+  - generic [ref=f7e38]:
+    - navigation "Sidebar navigation" [ref=f7e41]:
+      - list [ref=f7e42]:
+        - listitem [ref=f7e43]:
+          - list [ref=f7e44]:
+            - listitem [ref=f7e45]:
+              - link "Dashboard" [ref=f7e46] [cursor=pointer]:
+                - /url: https://playndgain.test/admin
+        - listitem [ref=f7e50]:
+          - generic [ref=f7e51] [cursor=pointer]:
+            - generic [ref=f7e52]: Supply
+            - button "Supply" [expanded] [ref=f7e53]
+          - list [ref=f7e56]:
+            - listitem [ref=f7e57]:
+              - link "Networks" [ref=f7e58] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/networks
+            - listitem [ref=f7e62]:
+              - link "Offers" [ref=f7e63] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/offers
+            - listitem [ref=f7e67]:
+              - link "Sync log" [ref=f7e68] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/network-syncs
+        - listitem [ref=f7e72]:
+          - generic [ref=f7e73] [cursor=pointer]:
+            - generic [ref=f7e74]: Publishers
+            - button "Publishers" [expanded] [ref=f7e75]
+          - list [ref=f7e78]:
+            - listitem [ref=f7e79]:
+              - link "Publishers" [ref=f7e80] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/publishers
+            - listitem [ref=f7e84]:
+              - link "Apps" [ref=f7e85] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/apps
+            - listitem [ref=f7e89]:
+              - link "Signup queue" [ref=f7e90] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/signup-queue
+        - listitem [ref=f7e94]:
+          - generic [ref=f7e95] [cursor=pointer]:
+            - generic [ref=f7e96]: Money
+            - button "Money" [expanded] [ref=f7e97]
+          - list [ref=f7e100]:
+            - listitem [ref=f7e101]:
+              - link "Conversions" [ref=f7e102] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/conversions
+            - listitem [ref=f7e106]:
+              - link "Withdrawals" [ref=f7e107] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/withdrawals
+            - listitem [ref=f7e111]:
+              - link "Ledger" [ref=f7e112] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/ledger-entries
+            - listitem [ref=f7e116]:
+              - link "Profit history" [ref=f7e117] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/profit-history
+        - listitem [ref=f7e121]:
+          - generic [ref=f7e122] [cursor=pointer]:
+            - generic [ref=f7e123]: Risk
+            - button "Risk" [expanded] [ref=f7e124]
+          - list [ref=f7e127]:
+            - listitem [ref=f7e128]:
+              - link "Protection" [ref=f7e129] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/protection
+            - listitem [ref=f7e133]:
+              - link "Review queue" [ref=f7e134] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/review-queue
+            - listitem [ref=f7e138]:
+              - link "Fraud Rules" [ref=f7e139] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/fraud-rules
+            - listitem [ref=f7e143]:
+              - link "Fraud Events" [ref=f7e144] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/fraud-events
+            - listitem [ref=f7e148]:
+              - link "Banned users" [ref=f7e149] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/banned-end-users
+        - listitem [ref=f7e153]:
+          - generic [ref=f7e154] [cursor=pointer]:
+            - generic [ref=f7e155]: Logs
+            - button "Logs" [expanded] [ref=f7e156]
+          - list [ref=f7e159]:
+            - listitem [ref=f7e160]:
+              - link "Offerwall clicks" [ref=f7e161] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/offer-clicks
+            - listitem [ref=f7e165]:
+              - link "Incoming Postbacks" [ref=f7e166] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/incoming-postbacks
+            - listitem [ref=f7e170]:
+              - link "Outgoing Postbacks" [ref=f7e171] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/outgoing-postbacks
+            - listitem [ref=f7e175]:
+              - link "Audit Logs" [ref=f7e176] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/audit-logs
+        - listitem [ref=f7e180]:
+          - generic [ref=f7e181] [cursor=pointer]:
+            - generic [ref=f7e182]: System
+            - button "System" [expanded] [ref=f7e183]
+          - list [ref=f7e186]:
+            - listitem [ref=f7e187]:
+              - link "Settings" [ref=f7e188] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/settings
+            - listitem [ref=f7e193]:
+              - link "Admin users" [ref=f7e194] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/admin-users
+            - listitem [ref=f7e198]:
+              - link "Health" [ref=f7e199] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/health
+            - listitem [ref=f7e203]:
+              - link "Announcements" [ref=f7e204] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/announcements
+            - listitem [ref=f7e208]:
+              - link "Sent mail" [ref=f7e209] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/emails
+    - main [ref=f7e214]:
+      - generic [ref=f7e216]:
+        - generic [ref=f7e218]:
+          - navigation "Breadcrumb" [ref=f7e219]:
+            - list [ref=f7e220]:
+              - listitem [ref=f7e221]:
+                - link "Announcements" [ref=f7e222] [cursor=pointer]:
+                  - /url: https://playndgain.test/admin/announcements
+              - listitem [ref=f7e223]:
+                - link "Payout run on the 1st" [ref=f7e226] [cursor=pointer]:
+                  - /url: https://playndgain.test/admin/announcements/1/edit
+              - listitem [ref=f7e227]:
+                - generic [ref=f7e230]: Edit
+          - heading "Edit Payout run on the 1st" [level=1] [ref=f7e231]
+        - generic [ref=f7e237]:
+          - generic [ref=f7e241]:
+            - generic [ref=f7e245]:
+              - generic [ref=f7e248]:
+                - generic [ref=f7e252]:
+                  - text: Title
+                  - superscript [ref=f7e253]: "*"
+                - generic [ref=f7e254]:
+                  - textbox "Title*" [ref=f7e257]: Payout run on the 1st
+                  - generic [ref=f7e258]: Short headline shown on the dashboard.
+              - generic [ref=f7e264]:
+                - generic [ref=f7e268]:
+                  - text: Type
+                  - superscript [ref=f7e269]: "*"
+                - generic [ref=f7e270]:
+                  - generic [ref=f7e275]:
+                    - combobox "Type*" [ref=f7e276] [cursor=pointer]:
+                      - generic [ref=f7e277]: Warning
+                    - status [ref=f7e279]
+                    - button "Clear selection" [ref=f7e280] [cursor=pointer]
+                  - generic [ref=f7e283]: Severity drives icon and colors on the dashboard.
+            - generic [ref=f7e293]:
+              - generic [ref=f7e297]:
+                - text: Body
+                - superscript [ref=f7e298]: "*"
+              - generic [ref=f7e299]:
+                - textbox "Body*" [ref=f7e303]: Statements for August close on the 1st. Check your payment method before then.
+                - generic [ref=f7e304]: Full message users should read.
+            - generic [ref=f7e311]:
+              - generic [ref=f7e314]:
+                - generic [ref=f7e317]:
+                  - switch "Active" [checked] [ref=f7e318] [cursor=pointer]
+                  - generic [ref=f7e319]: Active
+                - generic [ref=f7e320]: Inactive announcements are hidden from everyone.
+              - generic [ref=f7e327]:
+                - generic [ref=f7e330]:
+                  - switch "Dismissible" [checked] [ref=f7e331] [cursor=pointer]
+                  - generic [ref=f7e332]: Dismissible
+                - generic [ref=f7e333]: If off, users cannot dismiss the banner.
+            - generic [ref=f7e341]:
+              - generic [ref=f7e344]:
+                - generic [ref=f7e345]: Starts at
+                - generic [ref=f7e349]:
+                  - textbox "Starts at" [ref=f7e352]
+                  - generic [ref=f7e353]: Optional. Hidden until this moment.
+              - generic [ref=f7e359]:
+                - generic [ref=f7e360]: Expires at
+                - generic [ref=f7e364]:
+                  - textbox "Expires at" [ref=f7e367]
+                  - generic [ref=f7e368]: Optional. Hidden automatically after this moment.
+          - generic [ref=f7e376]:
+            - button "Save changes" [ref=f7e377] [cursor=pointer]
+            - button "Cancel" [ref=f7e379] [cursor=pointer]
+  - generic:
+    - status:
+      - generic [ref=f7e380]:
+        - heading "Created" [level=3] [ref=f7e385]
+        - button "Close notification" [ref=f7e386] [cursor=pointer]

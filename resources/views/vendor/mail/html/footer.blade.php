@@ -1,15 +1,24 @@
 @php
-    $support = \App\Support\Identity::supportEmail();
+    $identity = \App\Support\Identity::class;
+    $support = $identity::supportEmail();
+    $links = [
+        'Dashboard' => $identity::url().'/dashboard',
+        'Docs' => route('docs'),
+        'Support' => 'mailto:'.$support,
+    ];
 @endphp
 <tr>
-<td>
-<table class="footer" align="center" width="570" cellpadding="0" cellspacing="0" role="presentation">
+<td align="center">
+<table class="footer" align="center" width="560" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td class="content-cell" align="center" style="padding:28px 16px 0;">
-{{ Illuminate\Mail\Markdown::parse($slot) }}
-<p style="margin:8px 0 0;color:#6E7784;font-size:12px;">
-<a href="mailto:{{ $support }}" style="color:#6E7784;text-decoration:underline;">{{ $support }}</a>
+<td class="footer-cell" align="center">
+<p class="footer-links">
+@foreach ($links as $label => $href)
+<a href="{{ $href }}">{{ $label }}</a>@if (! $loop->last)<span class="footer-dot" aria-hidden="true">·</span>@endif
+@endforeach
 </p>
+{{ Illuminate\Mail\Markdown::parse($slot) }}
+<p class="footer-note">This is a transactional message from {{ $identity::name() }}. Questions go to <a href="mailto:{{ $support }}">{{ $support }}</a>.</p>
 </td>
 </tr>
 </table>

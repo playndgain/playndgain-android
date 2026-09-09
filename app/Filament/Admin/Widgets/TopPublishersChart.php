@@ -34,7 +34,7 @@ class TopPublishersChart extends ChartWidget
             'datasets' => [[
                 'label' => 'Revenue',
                 'data' => $rows->map(fn (object $row): float => (float) $row->revenue)->all(),
-                'backgroundColor' => '#3B82F6',
+                'backgroundColor' => '#DFC08A',
             ]],
             'labels' => $rows->map(function (object $row) use ($publishers): string {
                 $publisher = $publishers->get((int) $row->bucket);

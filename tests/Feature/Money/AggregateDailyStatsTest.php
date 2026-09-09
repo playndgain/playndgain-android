@@ -148,3 +148,21 @@ it('does not leak another publisher\'s numbers into a scoped read', function () 
 
     expect($totals['conversions'])->toBe(1);
 });
+
+it('scopes StatsQuery to one network', function () {
+    [$publisher, $app, $network, $offer] = statsFixture();
+    $other = Network::factory()->create();
+    $otherOffer = Offer::factory()->create(['network_id' => $other->id]);
+
+    conversionRow([], $publisher, $app, $network, $offer);
+    conversionRow([], $publisher, $app, $other, $otherOffer);
+
+    $this->artisan('stats:aggregate --today')->assertSuccessful();
+
+    $totals = StatsQuery::make()
+        ->forNetwork($network->id)
+        ->between(now()->toImmutable()->startOfDay(), now()->toImmutable())
+        ->totals();
+
+    expect($totals['conversions'])->toBe(1);
+});

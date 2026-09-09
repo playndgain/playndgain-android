@@ -118,7 +118,21 @@ it('seeds a non-null daily cap on both providers', function () {
     (new IpProviderSeeder)->run();
 
     expect(IpProvider::query()->pluck('daily_cap', 'key')->all())
-        ->toBe(['proxycheck' => 1000, 'ipqualityscore' => 1000]);
+        ->toBe(['proxycheck' => 1000, 'ipqualityscore' => 200]);
+});
+
+/**
+ * A 200/day cap is 200 *distinct new* addresses, so how long an answer is kept
+ * decides how far it reaches. A vendor fraud score moves on weekly timescales;
+ * at the one-day default the same address is re-billed daily for an answer that
+ * did not change. Seven days turns 200/day into roughly 1,400 addresses of
+ * standing coverage. Asserted because it is a cost decision, not a default.
+ */
+it('holds the scarcer provider answer for a week', function () {
+    (new IpProviderSeeder)->run();
+
+    expect(IpProvider::query()->pluck('ttl_seconds', 'key')->all())
+        ->toBe(['proxycheck' => 86400, 'ipqualityscore' => 604800]);
 });
 
 it('orders active providers by priority and excludes the unavailable', function () {

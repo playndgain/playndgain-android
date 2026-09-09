@@ -83,7 +83,7 @@ final class ViewOfferEventsAction
 
         $revShare = $publisherFacing
             ? $publisher?->rev_share
-            : Setting::get('default_rev_share', config('advault.default_rev_share'));
+            : Setting::get('default_rev_share', config('playndgain.default_rev_share'));
 
         $rate = $app?->currency_rate;
         $currency = $app?->currency_name;

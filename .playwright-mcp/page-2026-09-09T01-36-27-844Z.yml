@@ -1,0 +1,501 @@
+- generic [ref=f5e1]:
+  - link "Skip to content" [ref=f5e3] [cursor=pointer]:
+    - /url: "#fi-main-content"
+  - navigation "Topbar" [ref=f5e5]:
+    - link "PLAYNDGAIN Admin" [ref=f5e7] [cursor=pointer]:
+      - /url: https://playndgain.test/admin
+      - generic [ref=f5e14]:
+        - generic [ref=f5e15]: PLAYNDGAIN
+        - generic [ref=f5e16]: Admin
+    - generic [ref=f5e17]:
+      - button "Admin panel" [ref=f5e21] [cursor=pointer]
+      - generic [ref=f5e26]:
+        - generic [ref=f5e27]: Global search
+        - searchbox "Global search" [ref=f5e33]
+      - button "User menu" [ref=f5e36] [cursor=pointer]:
+        - img "Avatar of PLAYNDGAIN Admin" [ref=f5e37]
+  - generic [ref=f5e38]:
+    - navigation "Sidebar navigation" [ref=f5e41]:
+      - list [ref=f5e42]:
+        - listitem [ref=f5e43]:
+          - list [ref=f5e44]:
+            - listitem [ref=f5e45]:
+              - link "Dashboard" [ref=f5e46] [cursor=pointer]:
+                - /url: https://playndgain.test/admin
+        - listitem [ref=f5e50]:
+          - generic [ref=f5e51] [cursor=pointer]:
+            - generic [ref=f5e52]: Supply
+            - button "Supply" [expanded] [ref=f5e53]
+          - list [ref=f5e56]:
+            - listitem [ref=f5e57]:
+              - link "Networks" [ref=f5e58] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/networks
+            - listitem [ref=f5e62]:
+              - link "Offers" [ref=f5e63] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/offers
+            - listitem [ref=f5e67]:
+              - link "Sync log" [ref=f5e68] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/network-syncs
+        - listitem [ref=f5e72]:
+          - generic [ref=f5e73] [cursor=pointer]:
+            - generic [ref=f5e74]: Publishers
+            - button "Publishers" [expanded] [ref=f5e75]
+          - list [ref=f5e78]:
+            - listitem [ref=f5e79]:
+              - link "Publishers" [ref=f5e80] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/publishers
+            - listitem [ref=f5e84]:
+              - link "Apps" [ref=f5e85] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/apps
+            - listitem [ref=f5e89]:
+              - link "Signup queue" [ref=f5e90] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/signup-queue
+        - listitem [ref=f5e94]:
+          - generic [ref=f5e95] [cursor=pointer]:
+            - generic [ref=f5e96]: Money
+            - button "Money" [expanded] [ref=f5e97]
+          - list [ref=f5e100]:
+            - listitem [ref=f5e101]:
+              - link "Conversions" [ref=f5e102] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/conversions
+            - listitem [ref=f5e106]:
+              - link "Withdrawals" [ref=f5e107] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/withdrawals
+            - listitem [ref=f5e111]:
+              - link "Ledger" [ref=f5e112] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/ledger-entries
+            - listitem [ref=f5e116]:
+              - link "Profit history" [ref=f5e117] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/profit-history
+        - listitem [ref=f5e121]:
+          - generic [ref=f5e122] [cursor=pointer]:
+            - generic [ref=f5e123]: Risk
+            - button "Risk" [expanded] [ref=f5e124]
+          - list [ref=f5e127]:
+            - listitem [ref=f5e128]:
+              - link "Protection" [ref=f5e129] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/protection
+            - listitem [ref=f5e133]:
+              - link "Review queue" [ref=f5e134] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/review-queue
+            - listitem [ref=f5e138]:
+              - link "Fraud Rules" [ref=f5e139] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/fraud-rules
+            - listitem [ref=f5e143]:
+              - link "Fraud Events" [ref=f5e144] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/fraud-events
+            - listitem [ref=f5e148]:
+              - link "Banned users" [ref=f5e149] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/banned-end-users
+        - listitem [ref=f5e153]:
+          - generic [ref=f5e154] [cursor=pointer]:
+            - generic [ref=f5e155]: Logs
+            - button "Logs" [expanded] [ref=f5e156]
+          - list [ref=f5e159]:
+            - listitem [ref=f5e160]:
+              - link "Offerwall clicks" [ref=f5e161] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/offer-clicks
+            - listitem [ref=f5e165]:
+              - link "Incoming Postbacks" [ref=f5e166] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/incoming-postbacks
+            - listitem [ref=f5e170]:
+              - link "Outgoing Postbacks" [ref=f5e171] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/outgoing-postbacks
+            - listitem [ref=f5e175]:
+              - link "Audit Logs" [ref=f5e176] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/audit-logs
+        - listitem [ref=f5e180]:
+          - generic [ref=f5e181] [cursor=pointer]:
+            - generic [ref=f5e182]: System
+            - button "System" [expanded] [ref=f5e183]
+          - list [ref=f5e186]:
+            - listitem [ref=f5e187]:
+              - link "Settings" [ref=f5e188] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/settings
+            - listitem [ref=f5e193]:
+              - link "Admin users" [ref=f5e194] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/admin-users
+            - listitem [ref=f5e198]:
+              - link "Health" [ref=f5e199] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/health
+            - listitem [ref=f5e203]:
+              - link "Announcements" [ref=f5e204] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/announcements
+            - listitem [ref=f5e208]:
+              - link "Sent mail" [ref=f5e209] [cursor=pointer]:
+                - /url: https://playndgain.test/admin/emails
+    - main [active] [ref=f5e214]:
+      - generic [ref=f5e216]:
+        - generic [ref=f5e217]:
+          - generic [ref=f5e218]:
+            - navigation "Breadcrumb" [ref=f5e219]:
+              - list [ref=f5e220]:
+                - listitem [ref=f5e221]:
+                  - link "Conversions" [ref=f5e222] [cursor=pointer]:
+                    - /url: https://playndgain.test/admin/conversions
+                - listitem [ref=f5e223]:
+                  - generic [ref=f5e226]: List
+            - heading "Conversions" [level=1] [ref=f5e227]
+          - button "Export CSV" [ref=f5e230] [cursor=pointer]
+        - generic [ref=f5e240]:
+          - generic [ref=f5e242]:
+            - generic [ref=f5e247]:
+              - generic [ref=f5e248]: Group by
+              - combobox "Group by" [ref=f5e251]:
+                - option "-" [selected]
+                - option "Publisher"
+                - option "Network"
+                - option "App"
+                - option "Offer"
+                - option "Status"
+                - option "Date"
+            - generic [ref=f5e252]:
+              - generic [ref=f5e253]:
+                - generic [ref=f5e254]: Search
+                - searchbox "Search" [ref=f5e260]
+              - button "Filter" [ref=f5e263] [cursor=pointer]:
+                - generic [ref=f5e266]: "0"
+          - table [ref=f5e269]:
+            - rowgroup [ref=f5e270]:
+              - row [ref=f5e271]:
+                - columnheader "TX" [ref=f5e272]
+                - columnheader [ref=f5e273]:
+                  - button "Pub" [ref=f5e274] [cursor=pointer]
+                - columnheader "App" [ref=f5e277]
+                - columnheader "Offer" [ref=f5e278]
+                - columnheader "Network" [ref=f5e279]
+                - columnheader [ref=f5e280]:
+                  - button "Revenue" [ref=f5e281] [cursor=pointer]
+                - columnheader [ref=f5e284]:
+                  - button "Payout" [ref=f5e285] [cursor=pointer]
+                - columnheader "Profit" [ref=f5e288]
+                - columnheader "User reward" [ref=f5e289]
+                - columnheader "Status" [ref=f5e290]
+                - columnheader "Test" [ref=f5e291]
+                - columnheader "Country" [ref=f5e292]
+                - columnheader [ref=f5e293]:
+                  - button "Created" [ref=f5e294] [cursor=pointer]
+                - columnheader "Clears" [ref=f5e297]
+                - columnheader "Actions" [ref=f5e298]
+            - rowgroup [ref=f5e299]:
+              - row [ref=f5e300]:
+                - cell "OFFER8-VCHFTDT7CS6..." [ref=f5e301]
+                - cell "#10000" [ref=f5e304]
+                - cell "demo" [ref=f5e307]
+                - cell "Temu" [ref=f5e310]
+                - cell "Demo Network" [ref=f5e313]
+                - cell "$0.29" [ref=f5e316]
+                - cell "$0.20" [ref=f5e319]
+                - cell "$0.09" [ref=f5e322]
+                - cell "203.00" [ref=f5e325]
+                - cell "approved" [ref=f5e328]
+                - cell "No" [ref=f5e332]
+                - cell "CA" [ref=f5e338]
+                - cell "Sep 8, 2026 23:50:26" [ref=f5e342]
+                - cell "Oct 1, 2026" [ref=f5e345]
+                - cell [ref=f5e348]:
+                  - generic [ref=f5e349]:
+                    - link "View" [ref=f5e350] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/334
+                    - button "Actions" [ref=f5e357] [cursor=pointer]
+              - row [ref=f5e360]:
+                - cell "OFFER2-S4OTQE4VTV7..." [ref=f5e361]
+                - cell "#10000" [ref=f5e364]
+                - cell "demo" [ref=f5e367]
+                - cell "Royal Match" [ref=f5e370]
+                - cell "Demo Network" [ref=f5e373]
+                - cell "$8.75" [ref=f5e376]
+                - cell "$6.12" [ref=f5e379]
+                - cell "$2.62" [ref=f5e382]
+                - cell "6,125.00" [ref=f5e385]
+                - cell "approved" [ref=f5e388]
+                - cell "No" [ref=f5e392]
+                - cell "US" [ref=f5e398]
+                - cell "Sep 8, 2026 23:08:53" [ref=f5e402]
+                - cell "Oct 1, 2026" [ref=f5e405]
+                - cell [ref=f5e408]:
+                  - generic [ref=f5e409]:
+                    - link "View" [ref=f5e410] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/335
+                    - button "Actions" [ref=f5e417] [cursor=pointer]
+              - row [ref=f5e420]:
+                - cell "OFFER1-ZYI5WQOTVYK..." [ref=f5e421]
+                - cell "#10000" [ref=f5e424]
+                - cell "demo" [ref=f5e427]
+                - cell "Coin Master" [ref=f5e430]
+                - cell "Demo Network" [ref=f5e433]
+                - cell "$0.64" [ref=f5e436]
+                - cell "$0.45" [ref=f5e439]
+                - cell "$0.19" [ref=f5e442]
+                - cell "448.00" [ref=f5e445]
+                - cell "approved" [ref=f5e448]
+                - cell "No" [ref=f5e452]
+                - cell "US" [ref=f5e458]
+                - cell "Sep 8, 2026 19:57:20" [ref=f5e462]
+                - cell "Oct 1, 2026" [ref=f5e465]
+                - cell [ref=f5e468]:
+                  - generic [ref=f5e469]:
+                    - link "View" [ref=f5e470] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/326
+                    - button "Actions" [ref=f5e477] [cursor=pointer]
+              - row [ref=f5e480]:
+                - cell "OFFER1-LM8UYKBQFHR..." [ref=f5e481]
+                - cell "#10000" [ref=f5e484]
+                - cell "demo" [ref=f5e487]
+                - cell "Coin Master" [ref=f5e490]
+                - cell "Demo Network" [ref=f5e493]
+                - cell "$0.64" [ref=f5e496]
+                - cell "$0.45" [ref=f5e499]
+                - cell "$0.19" [ref=f5e502]
+                - cell "448.00" [ref=f5e505]
+                - cell "approved" [ref=f5e508]
+                - cell "No" [ref=f5e512]
+                - cell "CA" [ref=f5e518]
+                - cell "Sep 8, 2026 17:25:02" [ref=f5e522]
+                - cell "Oct 1, 2026" [ref=f5e525]
+                - cell [ref=f5e528]:
+                  - generic [ref=f5e529]:
+                    - link "View" [ref=f5e530] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/337
+                    - button "Actions" [ref=f5e537] [cursor=pointer]
+              - row [ref=f5e540]:
+                - cell "OFFER4-CMAKUBIZH31..." [ref=f5e541]
+                - cell "#10000" [ref=f5e544]
+                - cell "demo" [ref=f5e547]
+                - cell "Shopee Shopping" [ref=f5e550]
+                - cell "Demo Network" [ref=f5e553]
+                - cell "$2.23" [ref=f5e556]
+                - cell "$1.56" [ref=f5e559]
+                - cell "$0.67" [ref=f5e562]
+                - cell "1,561.00" [ref=f5e565]
+                - cell "approved" [ref=f5e568]
+                - cell "No" [ref=f5e572]
+                - cell "FR" [ref=f5e578]
+                - cell "Sep 8, 2026 16:44:54" [ref=f5e582]
+                - cell "Oct 1, 2026" [ref=f5e585]
+                - cell [ref=f5e588]:
+                  - generic [ref=f5e589]:
+                    - link "View" [ref=f5e590] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/331
+                    - button "Actions" [ref=f5e597] [cursor=pointer]
+              - row [ref=f5e600]:
+                - cell "OFFER11-OQXAJUIY5P..." [ref=f5e601]
+                - cell "#10000" [ref=f5e604]
+                - cell "demo" [ref=f5e607]
+                - cell "Duolingo" [ref=f5e610]
+                - cell "Demo Network" [ref=f5e613]
+                - cell "$0.42" [ref=f5e616]
+                - cell "$0.29" [ref=f5e619]
+                - cell "$0.13" [ref=f5e622]
+                - cell "294.00" [ref=f5e625]
+                - cell "approved" [ref=f5e628]
+                - cell "No" [ref=f5e632]
+                - cell "US" [ref=f5e638]
+                - cell "Sep 8, 2026 16:41:56" [ref=f5e642]
+                - cell "Oct 1, 2026" [ref=f5e645]
+                - cell [ref=f5e648]:
+                  - generic [ref=f5e649]:
+                    - link "View" [ref=f5e650] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/324
+                    - button "Actions" [ref=f5e657] [cursor=pointer]
+              - row [ref=f5e660]:
+                - cell "OFFER2-MMFSNSR19MD..." [ref=f5e661]
+                - cell "#10000" [ref=f5e664]
+                - cell "demo" [ref=f5e667]
+                - cell "Royal Match" [ref=f5e670]
+                - cell "Demo Network" [ref=f5e673]
+                - cell "$8.75" [ref=f5e676]
+                - cell "$6.12" [ref=f5e679]
+                - cell "$2.62" [ref=f5e682]
+                - cell "6,125.00" [ref=f5e685]
+                - cell "approved" [ref=f5e688]
+                - cell "No" [ref=f5e692]
+                - cell "IN" [ref=f5e698]
+                - cell "Sep 8, 2026 15:23:24" [ref=f5e702]
+                - cell "Oct 1, 2026" [ref=f5e705]
+                - cell [ref=f5e708]:
+                  - generic [ref=f5e709]:
+                    - link "View" [ref=f5e710] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/327
+                    - button "Actions" [ref=f5e717] [cursor=pointer]
+              - row [ref=f5e720]:
+                - cell "OFFER8-XAQIB2IE6JP..." [ref=f5e721]
+                - cell "#10000" [ref=f5e724]
+                - cell "demo" [ref=f5e727]
+                - cell "Temu" [ref=f5e730]
+                - cell "Demo Network" [ref=f5e733]
+                - cell "$0.29" [ref=f5e736]
+                - cell "$0.20" [ref=f5e739]
+                - cell "$0.09" [ref=f5e742]
+                - cell "203.00" [ref=f5e745]
+                - cell "approved" [ref=f5e748]
+                - cell "No" [ref=f5e752]
+                - cell "GB" [ref=f5e758]
+                - cell "Sep 8, 2026 12:49:48" [ref=f5e762]
+                - cell "Oct 1, 2026" [ref=f5e765]
+                - cell [ref=f5e768]:
+                  - generic [ref=f5e769]:
+                    - link "View" [ref=f5e770] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/317
+                    - button "Actions" [ref=f5e777] [cursor=pointer]
+              - row [ref=f5e780]:
+                - cell "OFFER5-FNOJXQLPWCY..." [ref=f5e781]
+                - cell "#10000" [ref=f5e784]
+                - cell "demo" [ref=f5e787]
+                - cell "TikTok Lite" [ref=f5e790]
+                - cell "Demo Network" [ref=f5e793]
+                - cell "$1.44" [ref=f5e796]
+                - cell "$1.01" [ref=f5e799]
+                - cell "$0.43" [ref=f5e802]
+                - cell "1,008.00" [ref=f5e805]
+                - cell "approved" [ref=f5e808]
+                - cell "No" [ref=f5e812]
+                - cell "AU" [ref=f5e818]
+                - cell "Sep 8, 2026 12:35:42" [ref=f5e822]
+                - cell "Oct 1, 2026" [ref=f5e825]
+                - cell [ref=f5e828]:
+                  - generic [ref=f5e829]:
+                    - link "View" [ref=f5e830] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/339
+                    - button "Actions" [ref=f5e837] [cursor=pointer]
+              - row [ref=f5e840]:
+                - cell "OFFER3-KILQNBKRGMJ..." [ref=f5e841]
+                - cell "#10000" [ref=f5e844]
+                - cell "demo" [ref=f5e847]
+                - cell "Monopoly Go" [ref=f5e850]
+                - cell "Demo Network" [ref=f5e853]
+                - cell "$5.60" [ref=f5e856]
+                - cell "$3.92" [ref=f5e859]
+                - cell "$1.68" [ref=f5e862]
+                - cell "3,920.00" [ref=f5e865]
+                - cell "approved" [ref=f5e868]
+                - cell "No" [ref=f5e872]
+                - cell "IN" [ref=f5e878]
+                - cell "Sep 8, 2026 12:23:44" [ref=f5e882]
+                - cell "Oct 1, 2026" [ref=f5e885]
+                - cell [ref=f5e888]:
+                  - generic [ref=f5e889]:
+                    - link "View" [ref=f5e890] [cursor=pointer]:
+                      - /url: https://playndgain.test/admin/conversions/332
+                    - button "Actions" [ref=f5e897] [cursor=pointer]
+              - row [ref=f5e900]:
+                - columnheader "Summary" [ref=f5e901]
+                - cell [ref=f5e902]
+                - cell [ref=f5e903]
+                - cell [ref=f5e904]
+                - cell [ref=f5e905]
+                - columnheader "Revenue" [ref=f5e906]
+                - columnheader "Payout" [ref=f5e907]
+                - columnheader "Profit" [ref=f5e908]
+                - cell [ref=f5e909]
+                - cell [ref=f5e910]
+                - cell [ref=f5e911]
+                - cell [ref=f5e912]
+                - cell [ref=f5e913]
+                - cell [ref=f5e914]
+                - cell [ref=f5e915]
+              - row [ref=f5e916]:
+                - rowheader "This page" [ref=f5e917]
+                - cell "Sum $29.05" [ref=f5e918]:
+                  - generic [ref=f5e919]:
+                    - generic [ref=f5e920]: Sum
+                    - generic [ref=f5e921]: $29.05
+                - cell "Sum $20.34" [ref=f5e922]:
+                  - generic [ref=f5e923]:
+                    - generic [ref=f5e924]: Sum
+                    - generic [ref=f5e925]: $20.34
+                - cell "Sum $8.72" [ref=f5e926]:
+                  - generic [ref=f5e927]:
+                    - generic [ref=f5e928]: Sum
+                    - generic [ref=f5e929]: $8.72
+                - cell [ref=f5e930]
+                - cell [ref=f5e931]
+                - cell [ref=f5e932]
+                - cell [ref=f5e933]
+                - cell [ref=f5e934]
+                - cell [ref=f5e935]
+                - cell [ref=f5e936]
+              - row [ref=f5e937]:
+                - rowheader "All conversions" [ref=f5e938]
+                - cell "Sum $1,217.07" [ref=f5e939]:
+                  - generic [ref=f5e940]:
+                    - generic [ref=f5e941]: Sum
+                    - generic [ref=f5e942]: $1,217.07
+                - cell "Sum $851.95" [ref=f5e943]:
+                  - generic [ref=f5e944]:
+                    - generic [ref=f5e945]: Sum
+                    - generic [ref=f5e946]: $851.95
+                - cell "Sum $365.12" [ref=f5e947]:
+                  - generic [ref=f5e948]:
+                    - generic [ref=f5e949]: Sum
+                    - generic [ref=f5e950]: $365.12
+                - cell [ref=f5e951]
+                - cell [ref=f5e952]
+                - cell [ref=f5e953]
+                - cell [ref=f5e954]
+                - cell [ref=f5e955]
+                - cell [ref=f5e956]
+                - cell [ref=f5e957]
+          - navigation "Pagination navigation" [ref=f5e958]:
+            - generic [ref=f5e959]: Showing 1 to 10 of 339 results
+            - generic [ref=f5e962]:
+              - generic [ref=f5e963]: Per page
+              - combobox "Per page" [ref=f5e966]:
+                - option "5"
+                - option "10" [selected]
+                - option "25"
+                - option "50"
+            - list [ref=f5e967]:
+              - listitem [ref=f5e968]:
+                - button "Go to page 1" [ref=f5e969] [cursor=pointer]:
+                  - generic [ref=f5e970]: "1"
+              - listitem [ref=f5e971]:
+                - button "Go to page 2" [ref=f5e972] [cursor=pointer]:
+                  - generic [ref=f5e973]: "2"
+              - listitem [ref=f5e974]:
+                - button "Go to page 3" [ref=f5e975] [cursor=pointer]:
+                  - generic [ref=f5e976]: "3"
+              - listitem [ref=f5e977]:
+                - button "Go to page 4" [ref=f5e978] [cursor=pointer]:
+                  - generic [ref=f5e979]: "4"
+              - listitem [ref=f5e980]:
+                - button [disabled] [aria-hidden] [ref=f5e981]:
+                  - generic [ref=f5e982]: ...
+              - listitem [ref=f5e983]:
+                - button "Go to page 33" [ref=f5e984] [cursor=pointer]:
+                  - generic [ref=f5e985]: "33"
+              - listitem [ref=f5e986]:
+                - button "Go to page 34" [ref=f5e987] [cursor=pointer]:
+                  - generic [ref=f5e988]: "34"
+              - listitem [ref=f5e989]:
+                - button "Next" [ref=f5e990] [cursor=pointer]
+  - generic:
+    - status
+  - generic [ref=f5e1071]:
+    - generic [ref=f5e1074]:
+      - term [ref=f5e1075]: Company name
+      - definition [ref=f5e1077]:
+        - generic [ref=f5e1078]: Demo Publisher Ltd
+    - generic [ref=f5e1083]:
+      - generic [ref=f5e1086]:
+        - term [ref=f5e1089]: Pub
+        - definition [ref=f5e1091]:
+          - generic [ref=f5e1092]: "#10000"
+      - generic [ref=f5e1096]:
+        - term [ref=f5e1099]: Status
+        - definition [ref=f5e1101]:
+          - generic [ref=f5e1102]: Approved
+      - generic [ref=f5e1109]:
+        - term [ref=f5e1112]: Email
+        - definition [ref=f5e1114]:
+          - generic [ref=f5e1115]: demo@playndgain.test
+      - generic [ref=f5e1119]:
+        - term [ref=f5e1122]: Balance
+        - definition [ref=f5e1124]:
+          - generic [ref=f5e1125]: $818.89
+      - generic [ref=f5e1129]:
+        - term [ref=f5e1132]: Joined
+        - definition [ref=f5e1134]:
+          - generic [ref=f5e1135]: 1 hour ago
+    - link "Open account" [ref=f5e1141] [cursor=pointer]:
+      - /url: https://playndgain.test/admin/publishers/1

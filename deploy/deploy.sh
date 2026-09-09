@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# AdVault deploy — docs/11-infrastructure.md §9, in the order that document
+# PLAYNDGAIN deploy — docs/11-infrastructure.md §9, in the order that document
 # states, because the order is the whole point:
 #
 #   * migrations run BEFORE the caches are rebuilt, so a cached config never
@@ -12,7 +12,7 @@
 #     finish and supervisor brings Horizon back on the new code.
 #
 # Usage:  sudo -u www-data deploy/deploy.sh          (from the release root)
-#         APP_DIR=/var/www/advault deploy/deploy.sh
+#         APP_DIR=/var/www/playndgain deploy/deploy.sh
 #
 # Run it as the user that owns the files. Running it as root leaves
 # root-owned entries in storage/framework and bootstrap/cache, and the next
@@ -20,7 +20,7 @@
 
 set -euo pipefail
 
-APP_DIR="${APP_DIR:-/var/www/advault}"
+APP_DIR="${APP_DIR:-/var/www/playndgain}"
 PHP="${PHP:-php}"
 
 cd "$APP_DIR"
@@ -115,7 +115,7 @@ case "$artisan_commands" in
 esac
 
 # Graceful. Supervisor restarts Horizon on the new code; stopwaitsecs=3600 in
-# deploy/supervisor/advault-horizon.conf gives in-flight jobs room to land.
+# deploy/supervisor/playndgain-horizon.conf gives in-flight jobs room to land.
 $PHP artisan horizon:terminate
 
 $PHP artisan up

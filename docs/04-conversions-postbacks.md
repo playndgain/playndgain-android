@@ -4,12 +4,12 @@ The money pipeline. Everything here is either correct or the business is broken.
 
 ---
 
-## 1. Inbound: Network → AdVault
+## 1. Inbound: Network → PLAYNDGAIN
 
 ### Endpoint
 
 ```
-GET|POST  https://api.advault.io/postback/{driver}
+GET|POST  https://api.playndgain.com/postback/{driver}
 ```
 
 One route, driver resolved from the path segment. Each network is given its own URL and configures it in their dashboard.
@@ -124,7 +124,7 @@ Only `approved` writes a ledger entry.
 
 ---
 
-## 2. Outbound: AdVault → Publisher
+## 2. Outbound: PLAYNDGAIN → Publisher
 
 ### Macro set
 
@@ -197,7 +197,7 @@ class DispatchPublisherPostback implements ShouldQueue
         $started = hrtime(true);
 
         $response = Http::timeout(15)
-            ->withUserAgent('AdVault-Postback/1.0')
+            ->withUserAgent('PLAYNDGAIN-Postback/1.0')
             ->send($app->postback_method, $url);
 
         $log->update([

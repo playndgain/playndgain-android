@@ -31,7 +31,7 @@ function offerWithTargeting(array $attributes): Offer
 }
 
 it('lists the real geo and device targeting on the admin offers table', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     offerWithTargeting([
         'name' => 'Targeted offer',
@@ -58,7 +58,7 @@ it('lists the real geo and device targeting on the admin offers table', function
 });
 
 it('calls an untargeted offer worldwide on the admin offers table', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     offerWithTargeting(['name' => 'Worldwide offer', 'countries' => [], 'devices' => []]);
 
@@ -71,7 +71,7 @@ it('calls an untargeted offer worldwide on the admin offers table', function () 
 });
 
 it('hides offers whose network is no longer active', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $live = offerWithTargeting(['name' => 'Live network offer']);
     $disabled = offerWithTargeting(['name' => 'Disabled network offer']);

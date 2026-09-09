@@ -22,6 +22,7 @@ use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
@@ -48,7 +49,16 @@ class Register extends BaseRegister
 {
     /** Countries the traffic actually comes from, per the prototype. `XX` is the
      *  ISO user-assigned code for other/unknown — the column is char(2). */
-    private const COUNTRIES = [
+    /**
+     * The payout the currency-rate illustration is anchored on.
+     *
+     * A figure of ours, not a share of anything: the rate is the only
+     * arithmetic the publisher implements, and the example states that and
+     * nothing about what sits upstream of the payout.
+     */
+    private const EXAMPLE_PAYOUT = 0.35;
+
+    public const COUNTRIES = [
         'EG' => 'Egypt',
         'US' => 'United States',
         'GB' => 'United Kingdom',
@@ -100,6 +110,7 @@ class Register extends BaseRegister
         return $schema->components([
             Wizard::make([
                 Step::make('Account')
+                    ->icon(Heroicon::OutlinedUser)
                     ->schema([
                         Text::make('You can explore the dashboard and fire a test conversion straight away. A human reviews the account before it can earn.'),
                         TextInput::make('name')
@@ -132,6 +143,7 @@ class Register extends BaseRegister
                     ]),
 
                 Step::make('Traffic')
+                    ->icon(Heroicon::OutlinedSignal)
                     ->schema([
                         Text::make('A person reads this before approving you. Specific answers get approved faster — it is the cheapest fraud control we have, and it is why your payouts are not funding someone\'s bot farm.'),
                         ToggleButtons::make('traffic_type')
@@ -156,6 +168,7 @@ class Register extends BaseRegister
                     ]),
 
                 Step::make('First app')
+                    ->icon(Heroicon::OutlinedSquares2x2)
                     ->schema([
                         Text::make('This creates the app ID and secret you will embed. Everything here is editable later.'),
                         TextInput::make('app_name')
@@ -192,15 +205,18 @@ class Register extends BaseRegister
                             ->live(onBlur: true),
                         // The single line that prevents the most common setup
                         // error — a rate that credits users pennies or fortunes.
+                        // Anchored on a payout rather than on an offer's gross:
+                        // the rate is the only arithmetic the publisher owns.
                         Text::make(fn (Get $get): string => sprintf(
-                            'A $0.50 offer at your %s%% share credits your user %s %s.',
-                            $this->revShare(),
-                            number_format(0.5 * ($this->revShare() / 100) * (float) ($get('currency_rate') ?: 1000)),
+                            'A conversion that pays you $%s credits your player %s %s.',
+                            number_format(self::EXAMPLE_PAYOUT, 2),
+                            number_format(self::EXAMPLE_PAYOUT * (float) ($get('currency_rate') ?: 1000)),
                             $get('currency_name') ?: 'Coins',
                         )),
                     ]),
 
                 Step::make('Review')
+                    ->icon(Heroicon::OutlinedCheckBadge)
                     ->schema([
                         Text::make('Anything wrong? Step back and fix it.'),
                         Text::make(fn (Get $get): Htmlable => $this->reviewList($get)),
@@ -222,7 +238,7 @@ class Register extends BaseRegister
     }
 
     /**
-     * The vault brand panel is the right-hand half of this page. A second
+     * The brand panel — the trace — is the right-hand half of this page. A second
      * column of deal terms used to sit inside the form and crush the wizard.
      */
     public function content(Schema $schema): Schema

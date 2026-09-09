@@ -1,0 +1,396 @@
+- generic [active] [ref=f1e1]:
+  - link "Skip to content" [ref=f1e2] [cursor=pointer]:
+    - /url: "#main"
+  - generic [ref=f1e9]:
+    - generic [ref=f1e10]: P
+    - generic [ref=f1e11]: L
+    - generic [ref=f1e12]: A
+    - generic [ref=f1e13]: "Y"
+    - generic [ref=f1e14]: "N"
+    - generic [ref=f1e15]: D
+    - generic [ref=f1e16]: G
+    - generic [ref=f1e17]: A
+    - generic [ref=f1e18]: I
+    - generic [ref=f1e19]: "N"
+  - banner [ref=f1e21]:
+    - navigation "Main" [ref=f1e22]:
+      - link "PLAYNDGAIN — home" [ref=f1e23] [cursor=pointer]:
+        - /url: https://playndgain.test
+        - generic [ref=f1e24]: PLAYNDGAIN
+      - list [ref=f1e30]:
+        - listitem [ref=f1e31]:
+          - link "Publishers" [ref=f1e32] [cursor=pointer]:
+            - /url: "#publishers"
+        - listitem [ref=f1e33]:
+          - link "Inventory" [ref=f1e34] [cursor=pointer]:
+            - /url: "#inventory"
+        - listitem [ref=f1e35]:
+          - link "How it works" [ref=f1e36] [cursor=pointer]:
+            - /url: "#how"
+        - listitem [ref=f1e37]:
+          - link "Docs" [ref=f1e38] [cursor=pointer]:
+            - /url: https://playndgain.test/docs/introduction
+        - listitem [ref=f1e39]:
+          - link "Terms" [ref=f1e40] [cursor=pointer]:
+            - /url: "#terms"
+      - generic [ref=f1e41]:
+        - link "Sign in" [ref=f1e42] [cursor=pointer]:
+          - /url: /dashboard/login
+        - link "Get started" [ref=f1e43] [cursor=pointer]:
+          - /url: /dashboard/register
+  - main [ref=f1e44]:
+    - region [ref=f1e45]:
+      - generic [ref=f1e46]:
+        - generic [ref=f1e47]:
+          - paragraph [ref=f1e48]: Rewarded offerwall · one iframe
+          - heading "Turn playtime into payouts." [level=1] [ref=f1e50]
+          - paragraph [ref=f1e51]: Drop the PLAYNDGAIN offerwall into any app or game. You are paid for every verified action.
+          - generic [ref=f1e52]:
+            - link "Start earning" [ref=f1e53] [cursor=pointer]:
+              - /url: /dashboard/register
+            - link "Talk to us" [ref=f1e54] [cursor=pointer]:
+              - /url: https://playndgain.test/contact?topic=publisher
+          - list [ref=f1e55]:
+            - listitem [ref=f1e56]: Live in a day
+            - listitem [ref=f1e59]: Paid monthly
+            - listitem [ref=f1e62]: $20 minimum
+        - generic [ref=f1e66]:
+          - 'img "The PLAYNDGAIN offerwall on a phone: featured offers and a catalogue of games, surveys and installs, priced in the app''s own currency" [ref=f1e69]'
+          - generic [ref=f1e74]:
+            - text: +640 Coins
+            - generic [ref=f1e75]: reward credited
+          - generic [ref=f1e80]:
+            - text: 150 ms
+            - generic [ref=f1e81]: signed postback · 200 OK
+          - generic [ref=f1e86]:
+            - text: DE · Android
+            - generic [ref=f1e87]: eligible offers only
+    - region "What the network is running" [ref=f1e88]:
+      - generic [ref=f1e89]:
+        - generic [ref=f1e90]:
+          - generic [aria-hidden] [ref=f1e95]:
+            - generic [ref=f1e96]: C
+            - text: Coin Master
+            - generic [ref=f1e97]: "+640"
+          - paragraph [ref=f1e98]: "13"
+          - paragraph [ref=f1e99]: Live offers
+          - paragraph [ref=f1e100]: Games, surveys, installs and sign-ups, in one catalogue.
+        - generic [ref=f1e101]:
+          - paragraph [ref=f1e106]: "2"
+          - paragraph [ref=f1e107]: Countries
+          - paragraph [ref=f1e108]: Filtered per render to what each player can finish.
+        - generic [ref=f1e109]:
+          - paragraph [ref=f1e114]: "2"
+          - paragraph [ref=f1e115]: Demand partners live
+          - paragraph [ref=f1e116]: Routed to whichever pays best for that player.
+        - generic [ref=f1e117]:
+          - paragraph [ref=f1e122]: 96.3%
+          - paragraph [ref=f1e123]: Callbacks delivered
+          - paragraph [ref=f1e124]: Signed, retried, and logged with their round-trip time.
+    - region [ref=f1e125]:
+      - generic [ref=f1e126]:
+        - generic [ref=f1e127]:
+          - generic [ref=f1e128]:
+            - paragraph [ref=f1e129]: Inventory
+            - heading "Offers your players will actually finish." [level=2] [ref=f1e130]
+          - paragraph [ref=f1e131]: One catalogue from verified demand partners, deduplicated and priced, filtered per render to the player in front of it.
+        - list [ref=f1e132]:
+          - listitem [ref=f1e133]:
+            - generic [ref=f1e137]:
+              - paragraph [ref=f1e138]: Mobile games
+              - paragraph [ref=f1e139]: Install, finish the tutorial, reach a level — paid per milestone.
+          - listitem [ref=f1e140]:
+            - generic [ref=f1e144]:
+              - paragraph [ref=f1e145]: Surveys
+              - paragraph [ref=f1e146]: Qualify, answer honestly, get credited in minutes.
+          - listitem [ref=f1e147]:
+            - generic [ref=f1e151]:
+              - paragraph [ref=f1e152]: Apps & trials
+              - paragraph [ref=f1e153]: Install, sign up, start a trial or a subscription.
+          - listitem [ref=f1e154]:
+            - generic [ref=f1e158]:
+              - paragraph [ref=f1e159]: Fintech
+              - paragraph [ref=f1e160]: Open an account, verify it, make a first transaction.
+          - listitem [ref=f1e161]:
+            - generic [ref=f1e165]:
+              - paragraph [ref=f1e166]: Shopping
+              - paragraph [ref=f1e167]: Create an account, place a first order, earn cashback.
+          - listitem [ref=f1e168]:
+            - generic [ref=f1e172]:
+              - paragraph [ref=f1e173]: Video & engagement
+              - paragraph [ref=f1e174]: Watch, return for a week, keep playing.
+    - region [ref=f1e175]:
+      - generic [ref=f1e176]:
+        - generic [ref=f1e177]:
+          - paragraph [ref=f1e178]: One integration
+          - heading "One wall. Every network. Your brand." [level=2] [ref=f1e179]
+          - paragraph [ref=f1e180]: The wall wears your colours and your currency. Behind it, every demand partner's inventory is filtered, deduplicated and priced — you see one catalogue and one payout.
+          - list [ref=f1e181]:
+            - listitem [ref=f1e182]:
+              - generic [ref=f1e186]:
+                - paragraph [ref=f1e187]: Your brand, not ours
+                - paragraph [ref=f1e188]: Colours, radius, currency name and conversion rate per placement. Your players never see a logo that isn't yours.
+            - listitem [ref=f1e189]:
+              - generic [ref=f1e193]:
+                - paragraph [ref=f1e194]: Filtered on every render
+                - paragraph [ref=f1e195]: Country, device and OS are checked per request, so nobody is shown an offer they cannot finish.
+            - listitem [ref=f1e196]:
+              - generic [ref=f1e200]:
+                - paragraph [ref=f1e201]: Signed, once
+                - paragraph [ref=f1e202]: Every demand partner answers through the same signed callback. Verify one signature and credit every conversion.
+        - generic [ref=f1e204]:
+          - 'img "The publisher dashboard: earnings for today and this month, postback health, and the latest conversions" [ref=f1e212]'
+          - generic [aria-hidden] [ref=f1e213]:
+            - generic [ref=f1e218]:
+              - text: +$0.091000
+              - generic [ref=f1e219]: credited to your balance
+            - generic [ref=f1e226]:
+              - text: Your theme
+              - generic [ref=f1e227]: colours, radius, currency
+    - region [ref=f1e228]:
+      - generic [ref=f1e229]:
+        - generic [ref=f1e230]:
+          - paragraph [ref=f1e231]: For publishers
+          - heading "Built for the people who bring the players." [level=2] [ref=f1e232]
+        - article [ref=f1e233]:
+          - generic [ref=f1e234]:
+            - paragraph [ref=f1e238]: Your wall, your brand
+            - heading "Monetise every player." [level=3] [ref=f1e239]
+            - paragraph [ref=f1e240]: Embed the wall, keep your brand, and get paid monthly for every verified offer your players complete. No SDK, no app-store review.
+            - link "Start earning" [ref=f1e241] [cursor=pointer]:
+              - /url: /dashboard/register
+          - generic [aria-hidden] [ref=f1e244]:
+            - generic [ref=f1e251]:
+              - text: yourgame.app/
+              - generic [ref=f1e252]: rewards
+            - generic [ref=f1e255]:
+              - generic [ref=f1e256]: <iframe
+              - generic [ref=f1e257]: src="
+              - text: …/wall?appid=
+              - generic [ref=f1e258]: YOUR_APP_ID
+              - generic [ref=f1e259]: "\""
+              - generic [ref=f1e260]: ">"
+    - region [ref=f1e261]:
+      - generic [ref=f1e262]:
+        - generic [ref=f1e263]:
+          - generic [ref=f1e264]:
+            - paragraph [ref=f1e265]: Integration
+            - heading "Live in an afternoon." [level=2] [ref=f1e266]
+          - paragraph [ref=f1e267]: Embed an iframe, verify a signature, credit your player. Three things to remember — we document all three.
+        - list [ref=f1e268]:
+          - listitem [ref=f1e269]:
+            - paragraph [ref=f1e270]: "01"
+            - heading "Embed one iframe" [level=3] [ref=f1e271]
+            - paragraph [ref=f1e272]: Point a WebView or an iframe at the wall URL with your app id and the player's id. No SDK, no build step, no app-store review.
+          - listitem [ref=f1e273]:
+            - paragraph [ref=f1e274]: "02"
+            - heading "Players complete offers" [level=3] [ref=f1e275]
+            - paragraph [ref=f1e276]: Installs, levels, surveys, sign-ups — filtered per render to what that player, on that device, in that country, can actually finish.
+          - listitem [ref=f1e277]:
+            - paragraph [ref=f1e278]: "03"
+            - heading "A signed postback pays you" [level=3] [ref=f1e279]
+            - paragraph [ref=f1e280]: Every completion hits your server signed with your secret. Dedupe on trans_id, return 200, credit the player. Reversals arrive the same way, negative.
+        - generic [ref=f1e281]:
+          - generic [ref=f1e282]:
+            - paragraph [ref=f1e283]: How the money moves
+            - generic [ref=f1e311]:
+              - generic [ref=f1e312]: Your app · click
+              - generic [ref=f1e318]: signed postback · +payout
+            - paragraph [ref=f1e319]: PLAYNDGAIN routes every click to the demand partner that pays best, and signs every postback back to you.
+          - generic [ref=f1e320]:
+            - generic [ref=f1e321]:
+              - generic [ref=f1e322]: callback handler · php
+              - generic [ref=f1e323]: 18 lines
+            - generic [ref=f1e324]: "$expected = hash('sha256', $_GET['trans_id'] . $_GET['payout_usd'] . PLAYNDGAIN_SECRET); if (! hash_equals($expected, $_GET['signature'])) { http_response_code(403); exit; } // we retry — you WILL see this twice if (Tx::where('trans_id', $_GET['trans_id']) ->where('status', $_GET['status'])->exists()) { exit('ok'); } // negative on a reversal — handle it $user->increment('coins', (int) $_GET['currency_amount']); echo 'ok';"
+    - region [ref=f1e325]:
+      - generic [ref=f1e326]:
+        - generic [ref=f1e327]:
+          - paragraph [ref=f1e328]: Everything in between
+          - heading "The plumbing between the first embed and the first withdrawal." [level=2] [ref=f1e329]
+        - generic [ref=f1e330]:
+          - article [ref=f1e331]:
+            - generic [ref=f1e337]:
+              - generic [ref=f1e338]: Datacenter IP · blocked
+              - generic [ref=f1e340]: Velocity 12/min · flagged
+              - generic [ref=f1e342]: Clean · 0 rules hit
+            - heading "A fraud engine that explains itself" [level=3] [ref=f1e344]
+            - paragraph [ref=f1e345]: VPN and proxy checks, device fingerprinting, velocity windows — 23 rules on every click before it counts. Every block writes the rule and the inputs that triggered it.
+          - article [ref=f1e346]:
+            - generic [ref=f1e352]:
+              - generic [ref=f1e353]:
+                - generic [ref=f1e354]: Earning · Coin Master · OFFER19624
+                - generic [ref=f1e355]: +$0.091000
+              - generic [ref=f1e356]:
+                - generic [ref=f1e357]: Chargeback · same trans_id
+                - generic [ref=f1e358]: −$0.091000
+            - heading "An append-only ledger, reversals included" [level=3] [ref=f1e359]
+            - paragraph [ref=f1e360]: Balances derive from rows that are never edited or deleted. A reversal is a new negative row carrying the original trans_id, and your dashboard lists which ones, and when.
+          - article [ref=f1e361]:
+            - generic [ref=f1e367]:
+              - paragraph [ref=f1e368]: sha256(trans_id · payout · secret)
+              - generic [ref=f1e369]: verified
+            - heading "Signed callbacks" [level=3] [ref=f1e372]
+            - paragraph [ref=f1e373]: sha256 over trans_id, payout and your secret. Three lines to verify, documented in five languages.
+          - article [ref=f1e374]:
+            - generic [ref=f1e380]:
+              - generic [ref=f1e381]: DE
+              - generic [ref=f1e382]: Android
+              - generic [ref=f1e383]: OS 14+
+              - generic [ref=f1e384]: eligible only
+            - heading "Filtered on every render" [level=3] [ref=f1e385]
+            - paragraph [ref=f1e386]: Country, device and OS are checked per request, so a player only ever sees offers they can finish.
+        - generic [ref=f1e388]:
+          - generic [ref=f1e389]:
+            - paragraph [ref=f1e390]: Terms
+            - heading "Stated once, before you integrate." [level=3] [ref=f1e391]
+            - paragraph [ref=f1e392]: No tier to unlock, and no rate we revise after your traffic arrives.
+          - generic [ref=f1e393]:
+            - generic [ref=f1e394]:
+              - term [ref=f1e395]: What you earn
+              - definition [ref=f1e396]: Per action
+              - definition [ref=f1e399]: Paid for every verified conversion, never for a click.
+            - generic [ref=f1e400]:
+              - term [ref=f1e401]: Payout schedule
+              - definition [ref=f1e402]: Monthly
+              - definition [ref=f1e405]: Earnings clear on the 1st of the following month.
+            - generic [ref=f1e406]:
+              - term [ref=f1e407]: Minimum payout
+              - definition [ref=f1e408]: $20
+              - definition [ref=f1e411]: PayPal, crypto, bank, Wise.
+            - generic [ref=f1e412]:
+              - term [ref=f1e413]: Precision
+              - definition [ref=f1e414]: 6 dp
+              - definition [ref=f1e417]: On every figure. No silent rounding.
+    - region [ref=f1e418]:
+      - generic [ref=f1e419]:
+        - generic [ref=f1e420]:
+          - generic [ref=f1e421]:
+            - paragraph [ref=f1e422]: Playbooks
+            - heading "What a first month looks like." [level=2] [ref=f1e423]
+          - paragraph [ref=f1e424]: Worked examples of the three placements we see most. Your figures are your own — the dashboard shows them from the first click.
+        - generic [ref=f1e425]:
+          - article [ref=f1e426]:
+            - generic [ref=f1e427]:
+              - generic [ref=f1e428]:
+                - generic [ref=f1e429]: Casual game
+                - generic [ref=f1e432]: Example
+              - heading "Rewarded currency instead of a paywall" [level=3] [ref=f1e433]
+              - paragraph [ref=f1e434]: "A match-3 studio puts the wall behind its coin shop: players earn coins by finishing offers, the studio earns on every completion."
+              - list [ref=f1e435]:
+                - listitem [ref=f1e436]: Coins per completion
+                - listitem [ref=f1e437]: Your colours, your currency
+            - img "The offerwall in a game's dark theme, listing game and survey offers priced in coins" [ref=f1e439]
+          - article [ref=f1e440]:
+            - generic [ref=f1e441]:
+              - generic [ref=f1e442]:
+                - generic [ref=f1e443]: Fintech app
+                - generic [ref=f1e446]: Example
+              - heading "A rewards tab that pays for itself" [level=3] [ref=f1e447]
+              - paragraph [ref=f1e448]: A neobank pays cashback for partner installs and sign-ups; every conversion clears monthly into the ledger, chargebacks included.
+              - list [ref=f1e449]:
+                - listitem [ref=f1e450]: Cashback in cents
+                - listitem [ref=f1e451]: Paid monthly
+            - img "The publisher dashboard showing earnings, clicks and conversions for a placement" [ref=f1e453]
+          - article [ref=f1e454]:
+            - generic [ref=f1e455]:
+              - generic [ref=f1e456]:
+                - generic [ref=f1e457]: Survey site
+                - generic [ref=f1e460]: Example
+              - heading "One integration for every demand source" [level=3] [ref=f1e461]
+              - paragraph [ref=f1e462]: A get-paid-to site replaces four offerwall SDKs with one iframe, one catalogue and one signed postback format.
+              - list [ref=f1e463]:
+                - listitem [ref=f1e464]: One postback format
+                - listitem [ref=f1e465]: Deduplicated inventory
+            - img "The postback report listing signed callbacks with their status and round-trip time" [ref=f1e467]
+    - region [ref=f1e468]:
+      - generic [ref=f1e471]:
+        - heading "Start earning from the players you already have." [level=2] [ref=f1e477]
+        - paragraph [ref=f1e478]: Create a placement, fire a test conversion end to end, and watch the first signed postback arrive — before anyone reviews your account.
+        - generic [ref=f1e479]:
+          - link "Start earning" [ref=f1e480] [cursor=pointer]:
+            - /url: /dashboard/register
+          - link "Read the docs" [ref=f1e481] [cursor=pointer]:
+            - /url: https://playndgain.test/docs/quick-start
+        - paragraph [ref=f1e482]:
+          - text: Or write to
+          - link "support@playndgain.com" [ref=f1e483] [cursor=pointer]:
+            - /url: mailto:support@playndgain.com
+  - contentinfo [ref=f1e484]:
+    - generic [ref=f1e485]:
+      - generic [ref=f1e486]:
+        - link "PLAYNDGAIN — home" [ref=f1e487] [cursor=pointer]:
+          - /url: https://playndgain.test
+          - generic [ref=f1e488]: PLAYNDGAIN
+        - paragraph [ref=f1e494]: The rewarded offerwall that shows its arithmetic.
+      - navigation "Publishers" [ref=f1e495]:
+        - paragraph [ref=f1e496]: Publishers
+        - list [ref=f1e497]:
+          - listitem [ref=f1e498]:
+            - link "The wall" [ref=f1e499] [cursor=pointer]:
+              - /url: "#publishers"
+          - listitem [ref=f1e500]:
+            - link "How it works" [ref=f1e501] [cursor=pointer]:
+              - /url: "#how"
+          - listitem [ref=f1e502]:
+            - link "Terms" [ref=f1e503] [cursor=pointer]:
+              - /url: "#terms"
+          - listitem [ref=f1e504]:
+            - link "Sign in" [ref=f1e505] [cursor=pointer]:
+              - /url: /dashboard/login
+      - navigation "Developers" [ref=f1e506]:
+        - paragraph [ref=f1e507]: Developers
+        - list [ref=f1e508]:
+          - listitem [ref=f1e509]:
+            - link "Quick start" [ref=f1e510] [cursor=pointer]:
+              - /url: https://playndgain.test/docs/quick-start
+          - listitem [ref=f1e511]:
+            - link "Macro reference" [ref=f1e512] [cursor=pointer]:
+              - /url: https://playndgain.test/docs/macro-reference
+          - listitem [ref=f1e513]:
+            - link "Callbacks" [ref=f1e514] [cursor=pointer]:
+              - /url: https://playndgain.test/docs/how-postbacks-work
+          - listitem [ref=f1e515]:
+            - link "Chargebacks" [ref=f1e516] [cursor=pointer]:
+              - /url: https://playndgain.test/docs/chargebacks-reversals
+      - navigation "Company" [ref=f1e517]:
+        - paragraph [ref=f1e518]: Company
+        - list [ref=f1e519]:
+          - listitem [ref=f1e520]:
+            - link "About" [ref=f1e521] [cursor=pointer]:
+              - /url: https://playndgain.test/about
+          - listitem [ref=f1e522]:
+            - link "Status" [ref=f1e523] [cursor=pointer]:
+              - /url: https://playndgain.test/status
+          - listitem [ref=f1e524]:
+            - link "Contact" [ref=f1e525] [cursor=pointer]:
+              - /url: https://playndgain.test/contact
+          - listitem [ref=f1e526]:
+            - link "Privacy" [ref=f1e527] [cursor=pointer]:
+              - /url: https://playndgain.test/legal/privacy
+    - generic [ref=f1e528]:
+      - generic [ref=f1e529]:
+        - generic [ref=f1e530]:
+          - paragraph [ref=f1e531]: Stay in the loop
+          - paragraph [ref=f1e532]: Release notes and new demand partners. Roughly monthly.
+        - generic [ref=f1e533]:
+          - generic [ref=f1e534]:
+            - generic [ref=f1e535]: Email address
+            - textbox "Email address" [invalid] [ref=f1e536]:
+              - /placeholder: you@company.com
+            - button "Subscribe" [ref=f1e537] [cursor=pointer]
+          - paragraph
+      - generic [ref=f1e538]:
+        - generic [ref=f1e539]: © 2026 PLAYNDGAIN
+        - list [ref=f1e540]:
+          - listitem [ref=f1e541]:
+            - link "Publisher agreement" [ref=f1e542] [cursor=pointer]:
+              - /url: https://playndgain.test/legal/publisher-agreement
+          - listitem [ref=f1e543]:
+            - link "Traffic policy" [ref=f1e544] [cursor=pointer]:
+              - /url: https://playndgain.test/docs/traffic-quality
+          - listitem [ref=f1e545]:
+            - link "Privacy" [ref=f1e546] [cursor=pointer]:
+              - /url: https://playndgain.test/legal/privacy
+          - listitem [ref=f1e547]:
+            - link "Terms" [ref=f1e548] [cursor=pointer]:
+              - /url: https://playndgain.test/legal/terms

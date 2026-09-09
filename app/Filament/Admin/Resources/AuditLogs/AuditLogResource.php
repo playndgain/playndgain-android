@@ -11,11 +11,11 @@ use App\Filament\Admin\Resources\AuditLogs\Pages\ListAuditLogs;
 use App\Filament\Admin\Resources\Conversions\ConversionResource;
 use App\Filament\Admin\Resources\Networks\NetworkResource;
 use App\Filament\Admin\Resources\Publishers\PublisherResource;
+use App\Filament\Admin\Support\DateRangeFilter;
 use App\Filament\Tables\Columns\UserColumn;
 use App\Models\AuditLog;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Html;
 use Filament\Schemas\Schema;
@@ -23,7 +23,6 @@ use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
@@ -117,11 +116,7 @@ class AuditLogResource extends Resource
                         ->pluck('subject_type')
                         ->mapWithKeys(fn (string $type): array => [$type => class_basename($type)])
                         ->all()),
-                Filter::make('created')
-                    ->schema([DatePicker::make('from'), DatePicker::make('until')])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $q, string $date) => $q->whereDate('created_at', '>=', $date))
-                        ->when($data['until'] ?? null, fn (Builder $q, string $date) => $q->whereDate('created_at', '<=', $date))),
+                DateRangeFilter::make(),
             ])
             ->recordActions([
                 Action::make('inspect')

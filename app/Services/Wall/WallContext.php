@@ -19,18 +19,31 @@ final class WallContext
     public const LOCALES = ['en', 'ar'];
 
     /**
-     * Falls back to the AdVault palette (docs/09 §1) so an app that never
-     * opened the appearance tab still looks like a product.
+     * Falls back to the brand's own Midnight palette so an app that never
+     * opened the appearance tab still looks like a product. The values are
+     * the design board's wall card: page, row, text and the gold accent.
      *
      * @var array<string, string|bool>
      */
     public const DEFAULT_THEME = [
-        'primary' => '#F5A524',
-        'background' => '#08090A',
-        'card' => '#14171B',
-        'text' => '#E9ECF1',
-        'radius' => '12px',
+        'primary' => '#FFB020',
+        'background' => '#0A0B14',
+        'card' => '#11131F',
+        'text' => '#F4F5FA',
+        'radius' => '14px',
         'dark' => true,
+    ];
+
+    /**
+     * What `?theme=light` renders on an app that never chose a background:
+     * the site's paper surfaces with the app's own primary kept.
+     *
+     * @var array<string, string>
+     */
+    public const LIGHT_SURFACES = [
+        'background' => '#F5F5FA',
+        'card' => '#FFFFFF',
+        'text' => '#0C0D1A',
     ];
 
     /**
@@ -193,14 +206,36 @@ final class WallContext
             $theme['dark'] = (bool) $raw['dark'];
         }
 
-        // The `theme` query parameter is a per-load override for a publisher
-        // whose own UI has a light/dark toggle.
-        if ($override === 'light' || $override === 'dark') {
-            $theme['dark'] = $override === 'dark';
-
-            if ($override === 'light' && ! is_string($raw['background'] ?? null)) {
-                $theme = ['primary' => $theme['primary'], 'background' => '#FFFFFF', 'card' => '#F4F5F7', 'text' => '#14171B', 'radius' => $theme['radius'], 'dark' => false];
+        // A light wall whose surfaces are still the dark defaults — the flag
+        // was switched but the colours never were, or the card, which has no
+        // picker, was never set at all — takes the paper surfaces. A surface
+        // the publisher actually chose is kept, whichever mode it is in.
+        if (! $theme['dark']) {
+            foreach (self::LIGHT_SURFACES as $key => $light) {
+                if ($theme[$key] === self::DEFAULT_THEME[$key]) {
+                    $theme[$key] = $light;
+                }
             }
+        }
+
+        // The `theme` query parameter is a per-load override for a publisher
+        // whose own UI has a light/dark toggle. It has to swap the surfaces,
+        // not just the `dark` flag: a paper palette with `color-scheme: dark`
+        // is a white page and a black scrollbar, which is how the menu's
+        // Dark mode used to look like it did nothing.
+        if ($override === 'light') {
+            $theme['dark'] = false;
+
+            foreach (self::LIGHT_SURFACES as $key => $light) {
+                $theme[$key] = $light;
+            }
+        }
+
+        if ($override === 'dark') {
+            $theme['dark'] = true;
+            $theme['background'] = self::DEFAULT_THEME['background'];
+            $theme['card'] = self::DEFAULT_THEME['card'];
+            $theme['text'] = self::DEFAULT_THEME['text'];
         }
 
         return $theme;

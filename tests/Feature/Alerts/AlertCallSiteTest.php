@@ -12,7 +12,7 @@ require_once __DIR__.'/../Money/MoneyFixtures.php';
 
 beforeEach(function () {
     Notification::fake();
-    alertRecipients(['ops@advault.io']);
+    alertRecipients(['ops@playndgain.com']);
 });
 
 it('raises ledger drift from the nightly reconcile', function () {

@@ -33,27 +33,27 @@
             engine family as production.
         -->
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="advault_test"/>
+        <env name="DB_DATABASE" value="playndgain_test"/>
         <env name="DB_URL" value=""/>
         <!--
             Pinned true so the suite always exercises the production-correct
             configuration, whatever a developer has set in their own .env.
         -->
-        <env name="ADVAULT_REQUIRE_ADMIN_2FA" value="true"/>
+        <env name="PLAYNDGAIN_REQUIRE_ADMIN_2FA" value="true"/>
         <!--
             Same reason, two more values a developer's own .env would otherwise
             decide. `APP_URL` is asserted verbatim by the tests that check a
             form posts to the right place, and a local domain fails them on a
-            machine that is configured correctly. `ADVAULT_DEV_COUNTRY` is the
+            machine that is configured correctly. `PLAYNDGAIN_DEV_COUNTRY` is the
             local-preview geo stand-in: blank here so the suite's addresses stay
             unplaced and the fail-closed rules are exercised, whatever a
             developer set to see their own wall.
         -->
-        <env name="APP_NAME" value="AdVault"/>
+        <env name="APP_NAME" value="PLAYNDGAIN"/>
         <env name="APP_URL" value="http://localhost"/>
-        <env name="MAIL_FROM_ADDRESS" value="no-reply@advault.io"/>
-        <env name="MAIL_FROM_NAME" value="AdVault"/>
-        <env name="ADVAULT_DEV_COUNTRY" value=""/>
+        <env name="MAIL_FROM_ADDRESS" value="no-reply@playndgain.com"/>
+        <env name="MAIL_FROM_NAME" value="PLAYNDGAIN"/>
+        <env name="PLAYNDGAIN_DEV_COUNTRY" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <!--
             Off in tests. A full-page cache on the landing route would serve one

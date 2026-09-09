@@ -48,9 +48,9 @@ it('normalises a lowercase country from the environment', function () {
 
 it('is not bound outside local, whatever the config says', function () {
     // The test suite runs as `testing`, which is the point: the container has
-    // the real reader, and a stray ADVAULT_DEV_COUNTRY in someone's shell does
+    // the real reader, and a stray PLAYNDGAIN_DEV_COUNTRY in someone's shell does
     // not quietly place every address in the test suite.
-    config()->set('advault.geoip_dev_country', 'EG');
+    config()->set('playndgain.geoip_dev_country', 'EG');
 
     expect(app(IpIntelligence::class))->not->toBeInstanceOf(LocalIpIntelligence::class)
         ->and(app(IpIntelligence::class)->inspect('127.0.0.1')->country)->toBeNull();
@@ -61,5 +61,5 @@ it('leaves an unset country alone rather than defaulting to one', function () {
     // does today, empty wall and all. The escape hatch is opt-in, and the suite
     // pins the variable blank (phpunit.xml) so this asserts the default rather
     // than whatever the developer running it put in their own .env.
-    expect(config('advault.geoip_dev_country'))->toBeEmpty();
+    expect(config('playndgain.geoip_dev_country'))->toBeEmpty();
 });

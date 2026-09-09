@@ -158,3 +158,26 @@ function fakeIpVerdict(IpVerdict $verdict): void
         }
     });
 }
+
+/**
+ * As `fakeIpVerdict`, but a different answer per address.
+ *
+ * The post-conversion IP rules compare the click's address with the
+ * conversion's, so a fake that returns one verdict for every IP cannot express
+ * the case they exist for.
+ *
+ * @param  array<string, IpVerdict>  $byIp
+ */
+function fakeIpVerdicts(array $byIp, ?IpVerdict $default = null): void
+{
+    app()->instance(IpIntelligence::class, new class($byIp, $default ?? IpVerdict::unknown()) implements IpIntelligence
+    {
+        /** @param array<string, IpVerdict> $byIp */
+        public function __construct(private readonly array $byIp, private readonly IpVerdict $default) {}
+
+        public function inspect(string $ip, bool $consented = false): IpVerdict
+        {
+            return $this->byIp[$ip] ?? $this->default;
+        }
+    });
+}

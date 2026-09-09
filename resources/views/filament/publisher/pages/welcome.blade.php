@@ -7,15 +7,15 @@
 --}}
 <x-filament-panels::page>
     <div class="mx-auto w-full max-w-2xl space-y-6">
-        <div class="rounded-xl border border-warning-500/40 bg-warning-500/10 px-4 py-3 text-sm">
-            <strong class="font-semibold">Copy the secret key now.</strong>
+        <div class="fi-brand-banner">
+            <strong>Copy the secret key now.</strong>
             It is shown once, on this screen. After you leave, the only way to see a secret again is to
             regenerate it — which invalidates every signature you have already embedded.
         </div>
 
-        <div class="fi-section rounded-xl border border-gray-700 bg-gray-900/40 p-6 space-y-5">
-            <p class="text-sm text-gray-300">
-                <strong class="font-semibold text-gray-50">{{ $this->credentials['app_name'] }}</strong>
+        <div class="space-y-5 rounded-card border border-panel-line bg-panel-card p-6">
+            <p class="text-sm text-fog-300">
+                <strong class="font-semibold text-fog-50">{{ $this->credentials['app_name'] }}</strong>
                 is created and pending review, alongside your account.
             </p>
 
@@ -24,12 +24,13 @@
                 ['label' => 'Secret key', 'value' => $this->credentials['secret'], 'mono' => true],
             ] as $field)
                 <div x-data="{ copied: false }" class="space-y-1.5">
-                    <span class="text-sm font-medium text-gray-300">{{ $field['label'] }}</span>
+                    <span class="label">{{ $field['label'] }}</span>
 
                     <div class="flex items-center gap-2">
                         <code @class([
-                            'flex-1 overflow-x-auto rounded-lg bg-black/40 px-3 py-2 text-sm',
+                            'flex-1 overflow-x-auto rounded-control border border-panel-line bg-panel-tile px-3 py-2 text-sm text-fog-50',
                             'font-mono break-all' => $field['mono'],
+                            'num' => ! $field['mono'],
                         ])>{{ $field['value'] }}</code>
 
                         <x-filament::button
@@ -49,9 +50,9 @@
             @endforeach
         </div>
 
-        <div class="space-y-3 text-sm text-gray-300">
+        <div class="space-y-3 text-sm text-fog-300">
             <p>
-                <strong class="font-semibold text-gray-50">What happens next.</strong>
+                <strong class="font-semibold text-fog-50">What happens next.</strong>
                 We have emailed you a verification link — confirm the address and the rest of the dashboard opens.
                 From there you can configure the app and fire a test postback straight away.
             </p>

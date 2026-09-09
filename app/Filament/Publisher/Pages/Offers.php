@@ -10,6 +10,7 @@ use App\Filament\Publisher\Resources\OfferClicks\OfferClickResource;
 use App\Filament\Publisher\Support\CurrentPublisher;
 use App\Filament\Publisher\Support\EligibleOffers;
 use App\Filament\Publisher\Support\PublisherPayout;
+use App\Filament\Support\InitialsChip;
 use App\Filament\Support\ViewOfferEventsAction;
 use App\Models\App;
 use App\Models\Blacklist;
@@ -19,6 +20,7 @@ use App\Networks\OfferCacheFlusher;
 use App\Support\UserReward;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\TextInput;
@@ -57,9 +59,11 @@ class Offers extends Page implements HasActions, HasSchemas, HasTable
     use InteractsWithSchemas;
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
+    protected static string|BackedEnum|null $navigationIcon = 'lucide-layout-grid';
 
-    protected static ?int $navigationSort = 3;
+    protected static string|\UnitEnum|null $navigationGroup = 'Monetize';
+
+    protected static ?int $navigationSort = 11;
 
     protected static ?string $title = 'Offers';
 
@@ -110,7 +114,21 @@ class Offers extends Page implements HasActions, HasSchemas, HasTable
                         ->where('created_at', '>=', now()->subDays(7)),
                 ]))
             ->columns([
-                ImageColumn::make('icon_url')->label('')->circular()->imageSize(32),
+                ImageColumn::make('icon_url')
+                    ->label('')
+                    ->circular()
+                    ->imageSize(32)
+                    // A missing icon left a hole in the row and a dead one left
+                    // the browser's broken-image glyph. The fallback is drawn
+                    // from the offer's own name — never the network's, which a
+                    // publisher must not be able to infer (AGENTS.md §1–2).
+                    // `defaultImageUrl` covers a null column; `onerror` covers
+                    // an icon URL that stops resolving, which happens on its
+                    // own schedule upstream.
+                    ->defaultImageUrl(fn (Offer $record): string => InitialsChip::for($record->name))
+                    ->extraImgAttributes(fn (Offer $record): array => [
+                        'onerror' => "this.onerror=null;this.src='".InitialsChip::for($record->name)."'",
+                    ]),
                 TextColumn::make('name')->searchable()->limit(40)->wrap(),
                 TextColumn::make('your_payout')
                     ->label('Your payout')
@@ -192,33 +210,37 @@ class Offers extends Page implements HasActions, HasSchemas, HasTable
                         ? null
                         : App::query()->with('publisher')->find($this->appId),
                 ),
-                Action::make('block')
-                    ->label('Block')
-                    ->icon(Heroicon::OutlinedNoSymbol)
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->modalDescription(fn (): string => $this->appId === null
-                        ? 'This blocks the offer across all of your apps.'
-                        : 'This removes the offer from this app\'s wall within seconds. Your other apps keep it.')
-                    ->action(fn (Offer $record) => $this->block($record)),
-                Action::make('preview')
-                    ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
-                    ->url(fn (Offer $record): string => $this->previewUrl($record), shouldOpenInNewTab: true),
-                // docs/08 §5's third row action. It points at the clicks log
-                // rather than Statistics because `daily_stats` aggregates
-                // without an offer dimension — clicks are the only surface that
-                // can answer "how is *this* offer doing", and the filter is
-                // pre-applied so the publisher does not have to find the offer
-                // a second time.
-                Action::make('performance')
-                    ->label('View performance')
-                    ->icon(Heroicon::OutlinedChartBar)
-                    ->url(fn (Offer $record): string => OfferClickResource::getUrl('index', [
-                        'tableFilters' => [
-                            'offer_id' => ['value' => $record->id],
-                            ...($this->appId === null ? [] : ['app_id' => ['value' => $this->appId]]),
-                        ],
-                    ])),
+                ActionGroup::make([
+                    Action::make('block')
+                        ->label('Block')
+                        ->icon(Heroicon::OutlinedNoSymbol)
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalDescription(fn (): string => $this->appId === null
+                            ? 'This blocks the offer across all of your apps.'
+                            : 'This removes the offer from this app\'s wall within seconds. Your other apps keep it.')
+                        ->action(fn (Offer $record) => $this->block($record)),
+                    Action::make('preview')
+                        ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
+                        ->url(fn (Offer $record): string => $this->previewUrl($record), shouldOpenInNewTab: true),
+                    // docs/08 §5's third row action. It points at the clicks log
+                    // rather than Statistics because `daily_stats` aggregates
+                    // without an offer dimension — clicks are the only surface that
+                    // can answer "how is *this* offer doing", and the filter is
+                    // pre-applied so the publisher does not have to find the offer
+                    // a second time.
+                    Action::make('performance')
+                        ->label('View performance')
+                        ->icon(Heroicon::OutlinedChartBar)
+                        ->url(fn (Offer $record): string => OfferClickResource::getUrl('index', [
+                            'tableFilters' => [
+                                'offer_id' => ['value' => $record->id],
+                                ...($this->appId === null ? [] : ['app_id' => ['value' => $this->appId]]),
+                            ],
+                        ])),
+                ])
+                    ->icon('lucide-ellipsis')
+                    ->tooltip('More actions'),
             ])
             ->defaultSort('payout', 'desc')
             ->emptyStateHeading('Nothing eligible')
@@ -283,7 +305,6 @@ class Offers extends Page implements HasActions, HasSchemas, HasTable
         Notification::make()
             ->title('Blocked')
             ->body('It will stop appearing on the wall within seconds.')
-            ->success()
             ->send();
     }
 

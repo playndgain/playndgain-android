@@ -33,6 +33,23 @@ final class FraudContext
         /** USD. Present on the post-conversion stage. */
         public readonly ?string $payout = null,
         /**
+         * The address the *conversion* arrived from, taken only from the
+         * network's postback and never from the click.
+         *
+         * `ConversionProcessor` resolves `$dto->ip ?? $click->ip` for the
+         * context's `$ip`, which is right for everything that wants "the best
+         * address we have" — but it means a post-conversion rule reading `$ip`
+         * cannot tell the completer's address from a fallback copy of the
+         * clicker's. That distinction is the whole point of
+         * `conversion_proxy_ip`: a shared tracking URL is completed by someone
+         * we never saw at click, and re-inspecting the clicker's address would
+         * report on the wrong person.
+         *
+         * Null means the network sent no address, which is no evidence rather
+         * than suspicion — both post-conversion IP rules pass on it.
+         */
+        public readonly ?string $conversionIp = null,
+        /**
          * The verdict already resolved for this request, when the caller has
          * one. `WallGate::protectionBlock()` passes `WallContext::$verdict`
          * here so the five IP-family rules can reuse it instead of calling

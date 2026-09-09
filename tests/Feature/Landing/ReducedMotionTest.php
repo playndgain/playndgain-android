@@ -1,73 +1,68 @@
 <?php
 
+use App\Enums\NetworkStatus;
+use App\Models\Network;
+use App\Models\Offer;
+
 /**
- * docs/09 §10 asks for: "`prefers-reduced-motion: reduce` → ScrollTrigger
- * instances are killed and counters show final values."
- *
- * The shipped implementation is better than the spec it was written against,
- * so this asserts what the code actually guarantees. site.js reads the media
- * query and returns before `gsap.registerPlugin` — under reduced motion no
- * ScrollTrigger is ever created, so there is nothing to kill. Never-created
- * beats created-then-killed: a kill loop has to run to completion to be
- * correct, and anything that throws before it finishes leaves a half-built
- * timeline animating at a visitor who asked for none. The same branch also
- * withholds the `js-ready` class, which is the only thing that hides a reveal,
- * so the reduced-motion path is the page exactly as it left the server.
- *
- * Pest has no headless browser, so the media query itself cannot be evaluated
- * here. What is asserted instead is every guarantee that has to hold for that
- * branch to be safe: the HTML is already correct before a script runs, and the
- * branch is still ordered ahead of GSAP in the source that ships.
+ * Motion is an enhancement with two gates — JavaScript present, and no
+ * request for less of it. These read the built stylesheet and the source of
+ * the site bundle, because that is what decides whether a section can ever
+ * be hidden: without `html.js` nothing is, and under
+ * prefers-reduced-motion: reduce nothing is either.
  */
-it('renders every counter at its final value in the raw HTML', function () {
-    $html = $this->get('/')->getContent();
-
-    preg_match_all('/data-count="(\d+)"[^>]*>([^<]*)</', $html, $matches, PREG_SET_ORDER);
-
-    expect($matches)->not->toBeEmpty('The page has no [data-count] elements — the selector moved.');
-
-    foreach ($matches as [, $target, $rendered]) {
-        // Reduced motion skips the count-in entirely: whatever the server wrote
-        // is what stays on screen, so it has to be the real figure and not a 0.
-        expect((int) str_replace(',', '', $rendered))->toBe((int) $target);
-    }
-});
-
-it('never ships a hidden reveal, because js-ready is a JS-only class', function () {
-    $html = $this->get('/')->getContent();
-
-    // Nothing is hidden at parse time. `.js-ready .reveal` is the only rule that
-    // sets a reveal to opacity 0, and the class arrives from site.js — on the
-    // non-reduced branch alone. Server HTML carrying it would hide the page for
-    // every visitor whose bundle never loads.
-    expect($html)->not->toContain('js-ready');
-
+it('hides entrances only behind JavaScript and the motion query', function () {
     $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
     $css = file_get_contents(public_path('build/'.$manifest['resources/css/app.css']['file']));
 
-    expect($css)->toContain('.js-ready .reveal')
-        ->toContain('prefers-reduced-motion');
+    $motion = strpos($css, 'prefers-reduced-motion:no-preference');
+
+    expect($motion)->not->toBeFalse();
+
+    // Nothing before the no-preference block touches an entrance, and inside
+    // it every hidden state is scoped to `.js` and made of opacity/transform.
+    expect(substr($css, 0, $motion))->not->toContain('data-reveal');
+    expect(substr($css, $motion))
+        ->toMatch('/\.js \[data-reveal\]\{[^}]*opacity:0[^}]*transform:translate/')
+        ->toContain('.js [data-reveal].is-in{opacity:1;transform:none}')
+        ->toContain('.js:not(.hero-seen) .hero-enter [data-enter]');
+
+    // The image fade is JavaScript-gated too: with the bundle absent, a shot
+    // paints as it arrives.
+    expect($css)->toMatch('/\.js \.shot>img\{[^}]*opacity:0/')
+        ->toContain('prefers-reduced-motion:reduce');
 });
 
-it('returns from site.js before GSAP is ever registered', function () {
-    $path = resource_path('js/site.js');
+it('ships no animation library in the site bundle', function () {
+    $src = file_get_contents(resource_path('js/site.js'));
 
-    // Fails rather than skips: an assertion that quietly stops running is worse
-    // than no assertion at all (see BundleTest).
-    expect(file_exists($path))->toBeTrue("{$path} is missing — the entry point moved.");
+    expect($src)
+        ->not->toContain('gsap')
+        ->not->toContain('ScrollTrigger')
+        ->not->toContain("from 'motion");
+});
 
-    $src = file_get_contents($path);
+it('renders every figure at its final value without a script', function () {
+    // Two live offers across three countries. It used to matter that they were
+    // here: the proof band counted them, and this test checked the count-up
+    // landed on the figure already in the HTML. The band no longer counts
+    // anything, so what matters now is the stronger property — that a page
+    // served to a reader with no script has no figure waiting to be animated
+    // into place, because it has no animated figures at all.
+    $network = Network::factory()->create(['status' => NetworkStatus::Active]);
+    Offer::factory()->for($network)->create(['countries' => ['US', 'EG']]);
+    Offer::factory()->for($network)->create(['countries' => ['DE']]);
 
-    $reduce = strpos($src, 'prefers-reduced-motion');
-    $register = strpos($src, 'gsap.registerPlugin');
+    $html = $this->get('/')->assertOk()->getContent();
 
-    expect($reduce)->not->toBeFalse('site.js never reads prefers-reduced-motion.');
-    expect($register)->not->toBeFalse('site.js never registers a GSAP plugin — the needle moved.');
+    expect($html)
+        ->not->toContain('data-count')
+        ->not->toContain('js-ready')
+        ->not->toContain('data-metric');
 
-    // Position rather than an exact line: the guarantee is the ordering, and a
-    // literal match would rot the first time the variable is renamed.
-    expect($reduce)->toBeLessThan($register, 'GSAP is registered before the reduced-motion check is read.');
-
-    expect(substr($src, $reduce, $register - $reduce))
-        ->toMatch('/\breturn\b/', 'Nothing returns between reading the media query and registering GSAP.');
+    // The figures that are on the page are terms, not statistics, and they are
+    // final in the markup: the minimum payout and the ledger's precision.
+    expect($html)
+        ->toContain('Minimum payout')
+        ->toContain('6 decimals');
 });

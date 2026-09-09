@@ -1,0 +1,77 @@
+# ${APP_DOMAIN} — marketing site, /docs, and both Filament panels.
+#
+# The container copy of deploy/nginx/playndgain.com.conf. That file is the
+# canonical statement of this domain's policy and stays the one to read; this
+# one differs from it in four lines and nothing else:
+#
+#   * server_name is rendered from $APP_DOMAIN at container start;
+#   * root is /var/www/html/public, where the image puts the release;
+#   * fastcgi_pass goes to the loopback pool, not a unix socket — both
+#     processes are in this container;
+#   * logs go to stdout/stderr, because Dokploy reads container logs and a file
+#     under /var/log/nginx would be invisible and would grow until the disk
+#     alert fired.
+#
+# TLS is Traefik's here. Nothing in this file listens on 443 and nothing
+# redirects to it — Dokploy terminates the certificate and forwards plain HTTP
+# on the Docker network.
+#
+# `default_server`: an unmatched Host (a Dokploy preview domain, a health probe
+# by IP) lands here rather than falling into the wall block, so the strictest
+# header set is the one an unknown name gets.
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    server_name ${APP_DOMAIN};
+    root /var/www/html/public;
+    index index.php;
+
+    charset utf-8;
+
+    # The panels move money; the wall does not. A slow admin export is not worth
+    # a 504, and nothing on this domain is a hot path.
+    client_max_body_size 8m;
+    fastcgi_read_timeout 120s;
+
+    include /etc/nginx/snippets/playndgain-security-headers.conf;
+
+    # docs/09 §8 states its byte budgets as gzipped transfer sizes; this is
+    # where that becomes true.
+    include /etc/nginx/snippets/playndgain-gzip.conf;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass php-fpm;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+    }
+
+    # Vite build output — hashed filenames, safe to cache forever.
+    #
+    # The security-headers include is repeated in this block and the next one on
+    # purpose: declaring `add_header` in a location discards every header
+    # inherited from the server block. Without the repeat, /build/ would be the
+    # one part of the panel domain served with no X-Frame-Options at all.
+    location ^~ /build/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        include /etc/nginx/snippets/playndgain-security-headers.conf;
+    }
+
+    location ~* \.(woff2|avif|webp|png|svg|ico)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        include /etc/nginx/snippets/playndgain-security-headers.conf;
+    }
+
+    # A stray dotfile under public/ — an editor backup, a copied .env — would
+    # otherwise be served as plaintext.
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}

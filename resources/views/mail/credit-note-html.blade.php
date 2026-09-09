@@ -1,7 +1,16 @@
 <x-mail::message>
-# Credit note {{ $note->number }}
+<x-slot:hero>
+<x-mail::hero eyebrow="Payout" title="Your payout is paid" amount="${{ $note->total }}" amount-label="Credit note {{ $note->number }}" />
+</x-slot:hero>
+The credit note is attached as a PDF. The same figure is the ledger entry on your Payments page.
 
-Your payout of **${{ $note->total }}** has been marked paid. The credit note is attached as a PDF.
+<x-mail::facts :rows="[
+    'Credit note' => $note->number,
+    'Period' => $note->periodStart.' – '.$note->periodEnd,
+    'Issued' => $note->issueDate,
+]" />
 
-Period: {{ $note->periodStart }} – {{ $note->periodEnd }}
+<x-mail::button :url="\App\Support\Identity::url().'/dashboard/payments'">
+Open Payments
+</x-mail::button>
 </x-mail::message>

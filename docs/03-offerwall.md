@@ -30,7 +30,7 @@ The publisher embeds one iframe:
 | `lang` | no | ISO-639-1. v1 ships `en` and `ar`. |
 | `balance` | no | The end user's balance in the app's own currency, shown in the topbar. A string, passed through as sent; integer strings are grouped (`21000` → `21,000`). Carried across tab and app-nav switches like `lang`. |
 
-The wall is served on its own subdomain (`wall.advault.io`) with its own nginx server block and no session cookie. That isolation is what lets it be aggressively cached and horizontally scaled later without touching the panels.
+The wall is served on its own subdomain (`wall.playndgain.com`) with its own nginx server block and no session cookie. That isolation is what lets it be aggressively cached and horizontally scaled later without touching the panels.
 
 ---
 
@@ -83,7 +83,7 @@ Conversions are paired with one grouped query keyed in PHP, deliberately **not**
 | `rejected` | **Rejected**, with `rejected_reason` when one is stored |
 | `reversed` | **Reversed** |
 
-**Statuses are text, not colour.** Green and red mean money direction and nothing else on any AdVault surface (design.md §2); a list of green "Credited" pills would spend the one signal the product reserves. The credited *amount* is the green thing, because it is money.
+**Statuses are text, not colour.** Green and red mean money direction and nothing else on any PLAYNDGAIN surface (design.md §2); a list of green "Credited" pills would spend the one signal the product reserves. The credited *amount* is the green thing, because it is money.
 
 ### The Offerwall tab
 
@@ -290,9 +290,9 @@ All wall behaviour lives in `resources/js/wall.js` as one `Alpine.data('wall')` 
 - Sticky header, two rows. The **topbar**: the platform lockup, the user's balance as a neutral pill when the publisher passes `balance`, and the menu trigger. Then the tab strip. Below them: category chips. The All Offers toolbar carries search, a client-side device filter (Android / iOS / Desktop, plus any-device inventory), and the sort control. The sort is a native `<select>` restyled but never replaced — a custom listbox is a focus trap, a keyboard model and a mobile picker to rebuild, and the browser ships all three. The filtered count appears only while a filter is on. Search matches every word against the name, the instructions, the categories, and the device list.
 - **The menu sheet** hangs off the topbar trigger: a native `<dialog>`, the same contract as the offer sheet (focus trap, Esc, backdrop — free). It holds only destinations that exist: the appearance toggle, which rides the `?theme=` per-load override and keeps every other wall parameter on the URL, and the operator's privacy and terms pages, opened off the iframe. The trigger is `x-cloak`-gated — with JS off there is no sheet and no dead button — and the wiring is plain JS on the shell (`data-menu` / `data-close`), because the rendered HTML may carry no Alpine magic.
 - **The mobile app-nav** replaces the tab strip under 640 px: Offers, History, Offerwall, and the menu trigger, fixed to the bottom edge with the main and footer padded clear of it. Plain anchors, so every destination works with JS off; only the trigger is enhancement-gated. One navigation per breakpoint — the header strip hides where the app-nav shows.
-- Hover is depth only — the card rises, its edge and surface lift a step, the art grows, the go-disc's chevron nudges forward, all on one curve, because four effects on four durations read as four effects. Every transition in the file shares `0.22s cubic-bezier(0.22, 1, 0.36, 1)`. Nothing on the wall carries the accent, so a card that turns gold under the pointer is not a thing that can happen — and on a dark theme no hover reads as selected rather than pointed at.
+- Hover is depth only — the row's edge and surface lift a step and, on a pointer that can hover, the row rises 2 px, all on one curve. Every transition reads the site's motion tokens (`--motion-fast` 150 ms for interaction, `--motion-base` 260 ms for the sheets, `--motion-exit` 200 ms for anything leaving, `--ease-out`), so the wall and the site move as one system (design.md §5, §10). The accent is spent in six places and no more — the balance, the tile letter, the primary action and its glow, the active tab's tint, the featured rail's marker, the credited history amount — so a card never turns the publisher's colour under the pointer.
 - The list reveals in windows of 24, widened by a **Show more button** carrying the count still behind it — not by a scroll trigger. An auto-loading list never ends, so the footer never arrives and a user looking for it scrolls forever. The cards are **all already in the DOM** — the window hides, it does not fetch. That is what keeps client-side search honest (it searches the whole wall, not the loaded part) and what keeps the no-JS render complete; with JS off nothing is hidden and the button that would widen it is the thing that disappears.
-- Newly revealed cards fade up on a 35 ms stagger, and the detail dialog on open. Every animation goes through one `move()` helper that returns without animating under `prefers-reduced-motion`.
+- The featured rail arrives first and the grid after it: a 20 px rise and fade over 640 ms, siblings 85 ms apart with the stagger capped at eight so a window of 24 finishes together. The detail sheet rises and scales in over 260 ms and leaves in 200 ms. Every animation goes through one `move()` helper that returns without animating under `prefers-reduced-motion`.
 - Two empty states, and they are not the same message. Server-empty names the actual cause — "No offers available in your country right now" beats a shrug illustration. Filter-empty says nothing is missing, only narrowed, and offers the way back.
 - The publisher owns the palette, so nothing in the stylesheet may depend on a colour they do not control: every surface, line and tint is a `color-mix` of the theme properties. **The chrome spends none of the accent.** Fills are `--wall-ink` on the background or the reverse — near-black on a light wall, near-white on a dark one, both derived from `text` and `background` — so the wall reads the same whatever the publisher picked, and the palette stays grayscale regardless of theme. The accent pair is still emitted — publishers have saved themes against it, and dropping a key is a contract change, not a redesign — but nothing the end user sees spends it. The design's personality is in structure, type and state, not hue.
 
@@ -318,16 +318,16 @@ Per-app, from `apps.theme`:
 
 ```json
 {
-  "primary": "#F5A524",
-  "background": "#0B0C0E",
-  "card": "#15171B",
-  "text": "#E8EAED",
-  "radius": "12px",
+  "primary": "#FFB020",
+  "background": "#0A0B14",
+  "card": "#11131F",
+  "text": "#F4F5FA",
+  "radius": "14px",
   "dark": true
 }
 ```
 
-Injected as CSS custom properties on `:root`. No per-app CSS files, no per-app builds. A live preview sits next to the form in the publisher panel.
+Those are also the defaults (`WallContext::DEFAULT_THEME`, the site's Ink & Amber since 2026-09-02); `?theme=light` paints the paper surfaces (`WallContext::LIGHT_SURFACES`) and `?theme=dark` paints the ink ones, both keeping the app's primary. Injected as CSS custom properties on `:root`. No per-app CSS files, no per-app builds. A live preview sits next to the form in the publisher panel. The radius is the publisher's on cards, tiles and inputs; controls inside a card take six-tenths of it, the sheets nearly twice, and chips, tabs, buttons and the balance are pills regardless.
 
 One derived property ships with them: `--wall-on-primary`, black or white, whichever WCAG puts further from the publisher's own `primary` (`App\Support\Contrast::on`). CSS cannot compute it. The wall's own chrome is monochrome, so nothing the end user sees spends the pair — but the contract holds for any surface that does fill with the accent: a legible foreground, never a coin flip against a colour we do not choose. Worst case is a mid-grey primary at ~4.5:1.
 

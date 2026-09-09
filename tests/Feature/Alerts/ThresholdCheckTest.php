@@ -52,7 +52,7 @@ function assertNotRaised(string $key): void
 
 beforeEach(function () {
     Notification::fake();
-    alertRecipients(['ops@advault.io']);
+    alertRecipients(['ops@playndgain.com']);
 
     // Noon: inside the active window, so the silence check is live unless a
     // test moves the clock out of it on purpose.
@@ -199,7 +199,7 @@ it('raises when the IP intelligence databases are not on disk', function () {
     // Targeting is fail-closed by specification (docs/03 §2), so a box without
     // these files serves zero offers to everyone and reports it nowhere. The
     // whole point of this check is that the silence has a voice.
-    config(['advault.geoip_path' => base_path('tests/tmp/geoip-empty')]);
+    config(['playndgain.geoip_path' => base_path('tests/tmp/geoip-empty')]);
 
     $this->artisan('alerts:check')->assertSuccessful();
 
@@ -217,7 +217,7 @@ it('stays quiet once every database is present', function () {
         file_put_contents($dir.DIRECTORY_SEPARATOR.$file, 'x');
     }
 
-    config(['advault.geoip_path' => $dir]);
+    config(['playndgain.geoip_path' => $dir]);
 
     $this->artisan('alerts:check')->assertSuccessful();
 

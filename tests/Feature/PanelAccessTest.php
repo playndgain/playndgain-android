@@ -39,26 +39,26 @@ it('defaults the admin 2FA requirement to on when the variable is absent', funct
     // variable silently ships an admin panel with no second factor. Read with
     // the variable unset rather than off config(), which the test environment
     // pins.
-    $previous = getenv('ADVAULT_REQUIRE_ADMIN_2FA');
+    $previous = getenv('PLAYNDGAIN_REQUIRE_ADMIN_2FA');
 
-    putenv('ADVAULT_REQUIRE_ADMIN_2FA');
-    unset($_ENV['ADVAULT_REQUIRE_ADMIN_2FA'], $_SERVER['ADVAULT_REQUIRE_ADMIN_2FA']);
+    putenv('PLAYNDGAIN_REQUIRE_ADMIN_2FA');
+    unset($_ENV['PLAYNDGAIN_REQUIRE_ADMIN_2FA'], $_SERVER['PLAYNDGAIN_REQUIRE_ADMIN_2FA']);
 
     try {
-        $config = require config_path('advault.php');
+        $config = require config_path('playndgain.php');
 
         expect($config['require_admin_2fa'])->toBeTrue();
     } finally {
         if ($previous !== false) {
-            putenv("ADVAULT_REQUIRE_ADMIN_2FA={$previous}");
-            $_ENV['ADVAULT_REQUIRE_ADMIN_2FA'] = $previous;
-            $_SERVER['ADVAULT_REQUIRE_ADMIN_2FA'] = $previous;
+            putenv("PLAYNDGAIN_REQUIRE_ADMIN_2FA={$previous}");
+            $_ENV['PLAYNDGAIN_REQUIRE_ADMIN_2FA'] = $previous;
+            $_SERVER['PLAYNDGAIN_REQUIRE_ADMIN_2FA'] = $previous;
         }
     }
 });
 
 it('lets the config turn the admin 2FA requirement off, and only that', function () {
-    config()->set('advault.require_admin_2fa', false);
+    config()->set('playndgain.require_admin_2fa', false);
 
     // Built fresh rather than read off the booted panel, because the booted one
     // was configured before this test changed anything.

@@ -16,8 +16,11 @@ use App\Fraud\Rules\AutoBanThresholdRule;
 use App\Fraud\Rules\BannedEndUserRule;
 use App\Fraud\Rules\ClickVelocityRule;
 use App\Fraud\Rules\ConversionGeoMismatchRule;
+use App\Fraud\Rules\ConversionIpMismatchRule;
+use App\Fraud\Rules\ConversionProxyIpRule;
 use App\Fraud\Rules\DatacenterIpRule;
 use App\Fraud\Rules\DuplicateConversionRule;
+use App\Fraud\Rules\EmulatorDeviceRule;
 use App\Fraud\Rules\GeoMismatchRule;
 use App\Fraud\Rules\ImpossibleSpeedRule;
 use App\Fraud\Rules\IpRiskScoreRule;
@@ -69,6 +72,9 @@ class FraudServiceProvider extends ServiceProvider
         UserDailyPayoutCapRule::class,
         PublisherSpikeRule::class,
         AutoBanThresholdRule::class,
+        EmulatorDeviceRule::class,
+        ConversionProxyIpRule::class,
+        ConversionIpMismatchRule::class,
     ];
 
     /** @var list<class-string<IpProviderDriver>> */

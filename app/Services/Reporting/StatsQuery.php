@@ -52,6 +52,15 @@ final class StatsQuery
         return $this;
     }
 
+    public function forNetwork(?int $networkId): self
+    {
+        if ($networkId !== null) {
+            $this->query->where('network_id', $networkId);
+        }
+
+        return $this;
+    }
+
     /**
      * Empty means every country, not none — a filter with nothing picked is an
      * unfiltered view.

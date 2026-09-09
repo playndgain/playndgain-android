@@ -2,14 +2,14 @@
 
 namespace App\Filament\Publisher\Auth;
 
+use App\Filament\Auth\EditProfile as BaseEditProfile;
 use App\Filament\Publisher\Support\CurrentPublisher;
 use App\Models\Publisher;
 use App\Services\Wall\DeviceDetector;
+use App\Support\Identity;
 use DateTimeZone;
 use Filament\Actions\Action;
-use Filament\Auth\Pages\EditProfile as BaseEditProfile;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use SensitiveParameter;
+use VitisStudio\FilamentChoosableChips\Forms\Components\ChoosableChips;
 
 /**
  * My Profile — docs/08 §14.
@@ -34,6 +35,10 @@ use SensitiveParameter;
  * block. What it has no opinion about is the rest of the section: the
  * notification preferences, the timezone that drives every date in the panel,
  * and the browser session list.
+ *
+ * Email is shown and not written. The address is the login and the mailbox
+ * for payout and account mail; changing it from here is an account-takeover
+ * path. An admin changes it if the publisher writes in.
  *
  * The two preference columns live on `publishers`, not on `users`, so they are
  * merged into the form state on fill and pulled back out before the user row
@@ -44,14 +49,30 @@ class EditProfile extends BaseEditProfile
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            $this->getNameFormComponent(),
-            $this->getEmailFormComponent(),
-            $this->getPasswordFormComponent(),
-            $this->getPasswordConfirmationFormComponent(),
-            $this->getCurrentPasswordFormComponent(),
-            $this->getTimezoneFormComponent(),
-            $this->getNotificationPreferencesFormComponent(),
+            Section::make('Profile')
+                ->columns(2)
+                ->schema([
+                    $this->getNameFormComponent(),
+                    $this->getEmailFormComponent(),
+                ]),
+            Section::make('Password')
+                ->schema([
+                    $this->getPasswordFormComponent(),
+                    $this->getPasswordConfirmationFormComponent(),
+                    $this->getCurrentPasswordFormComponent(),
+                ]),
+            Section::make('Preferences')
+                ->visible(fn (): bool => CurrentPublisher::get() !== null)
+                ->schema([
+                    $this->getTimezoneFormComponent(),
+                    $this->getNotificationPreferencesFormComponent(),
+                ]),
         ]);
+    }
+
+    protected function emailLockHelperText(): string
+    {
+        return 'This is the login. Write to '.Identity::supportEmail().' to change it.';
     }
 
     /**
@@ -85,8 +106,10 @@ class EditProfile extends BaseEditProfile
      */
     protected function getNotificationPreferencesFormComponent(): Component
     {
-        return CheckboxList::make('notification_preferences')
+        return ChoosableChips::make('notification_preferences')
             ->label('Email me about')
+            ->multiple()
+            ->checkSelected()
             ->options(Publisher::NOTIFICATION_TYPES)
             // Said here rather than only in a changelog: a checkbox that
             // silently does nothing is worse than an absent one.
@@ -175,7 +198,7 @@ class EditProfile extends BaseEditProfile
     {
         return Action::make('logOutOtherSessions')
             ->label('Log out other sessions')
-            ->color('danger')
+            ->color('warning')
             ->modalSubmitActionLabel('Log out')
             ->schema([
                 TextInput::make('password')
@@ -208,7 +231,6 @@ class EditProfile extends BaseEditProfile
 
                 Notification::make()
                     ->title('Other sessions signed out')
-                    ->success()
                     ->send();
             });
     }

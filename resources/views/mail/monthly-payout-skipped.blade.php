@@ -4,4 +4,4 @@ We could not open this month's withdrawal for publisher #{!! $pubId !!}.
 
 {!! $reason !!}
 
-Fix that in the dashboard and the next run will pick it up. You can also request a withdrawal by hand once the rules pass.
+Fix that on the Payments page and the next monthly run picks it up — the balance is yours either way.

@@ -1,12 +1,12 @@
 ---
 title: Publisher agreement
-description: The commercial terms — revenue share, the calendar-month hold, the $20 minimum, reversals, and what ends an account.
+description: The commercial terms: what you are paid, the calendar-month hold, the $20 minimum, reversals, and what ends an account.
 note: Drafted from the product specification (docs/00 §2 and §6, docs/06-ledger-payouts.md) to describe the payout mechanics the platform actually implements. It has not been reviewed by counsel. Before launch a lawyer must review it and add the operating entity, the governing law, the venue, and the tax-status representations required in the jurisdictions publishers are accepted from.
 ---
 
 Last updated: 2026-09-01
 
-This is the commercial agreement between AdVault and a publisher. It applies from the moment an account is approved and it sits on top of the [terms of service](/legal/terms).
+This is the commercial agreement between PLAYNDGAIN and a publisher. It applies from the moment an account is approved and it sits on top of the [terms of service](/legal/terms).
 
 Every figure in it is the figure the software uses. Where this page and your dashboard disagree, that is a bug and we want to hear about it.
 
@@ -16,20 +16,17 @@ Signup is open; earning is not. A person reviews every account and every app bef
 
 You must be able to enter into a contract in your jurisdiction, and the traffic you send must be yours to send.
 
-## Revenue share
+## What you are paid
 
-Your share is a percentage of the advertiser payout we receive for a conversion. **The default is 70%**, set per publisher and shown on your account.
+Each offer carries a payout, and each conversion records the payout it earned you. Payouts are set per offer and can differ by country, by device and over time. The rate that applies to your account is agreed with you and shown on your account.
 
-```txt
-Advertiser payout   $0.130000
-Revenue share       × 70%
-                    ─────────
-Your payout         $0.091000
-```
+The `payout_usd` value on the callback we send you is your figure. Nothing is applied to it afterwards: no platform fee at payout time, no adjustment, no rounding in our favour. What is on the callback is what is written to the ledger and what leaves in the payout.
 
-The share is applied before anything reaches your balance. The `payout_usd` value on the callback we send you is **your** figure, never the gross, and there is no second deduction applied later. Money is held to six decimal places throughout — payouts of a third of a cent are normal in this business and they accumulate.
+Money is held to six decimal places throughout. Payouts of a third of a cent are normal in this business and they accumulate.
 
-A change to your rate applies to conversions from the moment it is made and never retroactively.
+A change to what you are paid applies to conversions from the moment it is made and never retroactively. It is a material change and is announced accordingly.
+
+Your conversions carry their own payouts and your statements total them. Those records, not any figure quoted anywhere else, are what you are owed.
 
 ## The hold
 
@@ -66,7 +63,7 @@ A balance that stays negative for more than 30 days flags the account for review
 
 ## Your obligations
 
-**Traffic.** Everything in [prohibited traffic](/docs/prohibited-traffic) and [traffic quality](/docs/traffic-quality) is part of this agreement. In summary, and without limiting those pages: no bots, emulators or automation; no incentivising the *click* rather than the completion; no multi-accounting; no fake, shared or sequential user identifiers; no misrepresenting what an offer pays or what a subscription costs; no auto-redirects, pop-unders or forced interstitials; no hidden or disguised placement of the wall; no proxy or datacentre traffic presented as organic; no adult, hate, weapons, illegal or infringing placements; no traffic bought from click farms or resold from another offerwall.
+**Traffic.** Everything in [traffic rules](/docs/traffic-quality) is part of this agreement. In summary, and without limiting those pages: no bots, emulators or automation; no incentivising the *click* rather than the completion; no multi-accounting; no fake, shared or sequential user identifiers; no misrepresenting what an offer pays or what a subscription costs; no auto-redirects, pop-unders or forced interstitials; no hidden or disguised placement of the wall; no proxy or datacentre traffic presented as organic; no adult, hate, weapons, illegal or infringing placements; no traffic bought from click farms or resold from another offerwall.
 
 **Identifiers.** The `userid` you pass must be stable for the life of that user and must identify exactly one person. If it changes, the reward goes to the wrong account; if it is shared, the conversions are void.
 
@@ -102,11 +99,11 @@ You are not our employee, agent or partner, and neither of us can bind the other
 
 ## Confidentiality
 
-Your revenue share, your volumes and your earnings are yours and are not disclosed to other publishers or to the networks except as needed to run a conversion or investigate fraud. Network credentials, our fraud thresholds and anything else we tell you that is not on the public site stay between us.
+Your rates, your volumes and your earnings are yours and are not disclosed to other publishers or to the networks except as needed to run a conversion or investigate fraud. Network credentials, our fraud thresholds and anything else we tell you that is not on the public site stay between us.
 
 ## No guarantee of earnings
 
-Offer availability, payouts, targeting and acceptance are decided by the networks and advertisers behind them. Inventory in a country can disappear overnight. We guarantee that you are paid your share of what we are actually paid, and nothing beyond that. No figure anywhere on this site or in a conversation is a forecast of your earnings.
+Offer availability, payouts, targeting and acceptance are decided by the networks and advertisers behind them. Inventory in a country can disappear overnight. We guarantee that you are paid the payout each conversion recorded, and nothing beyond that. No figure anywhere on this site or in a conversation is a forecast of your earnings.
 
 ## Liability
 
@@ -114,7 +111,7 @@ The limitation of liability in the [terms of service](/legal/terms) applies to t
 
 ## Changes
 
-Material changes are announced in the publisher dashboard before they take effect, and the date at the top of this page is the date of the last change. A change to your revenue share, your hold period or the minimum withdrawal is always a material change. Continuing to send traffic after the effective date accepts the new version.
+Material changes are announced in the publisher dashboard before they take effect, and the date at the top of this page is the date of the last change. A change to what you are paid, to your hold period or to the minimum withdrawal is always a material change. Continuing to send traffic after the effective date accepts the new version.
 
 ## Contact
 

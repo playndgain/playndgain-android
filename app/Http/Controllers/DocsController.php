@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AppStatus;
-use App\Models\User;
 use App\Support\Docs\DocParser;
+use App\Support\Docs\ReaderApp;
 use App\Support\Identity;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
@@ -25,9 +24,28 @@ use Illuminate\View\View;
  */
 class DocsController extends Controller
 {
-    public function __invoke(string $slug = 'introduction'): View
+    /**
+     * Slugs the restructure retired, and the page that absorbed each one.
+     *
+     * A retired slug is in bookmarks, in mails we have already sent and in the
+     * search engines, so it moves rather than 404s. Permanent, because the
+     * merge is not something we intend to undo.
+     */
+    private const MOVED = [
+        'idempotency' => 'retries-and-failure',
+        'test-postback' => 'test-mode',
+        'error-codes' => 'troubleshooting',
+        'prohibited-traffic' => 'traffic-quality',
+        'payout-terms' => 'statements-and-payouts',
+    ];
+
+    public function __invoke(string $slug = 'introduction'): View|RedirectResponse
     {
         abort_if(str_contains($slug, '..'), 404);
+
+        if (isset(self::MOVED[$slug])) {
+            return redirect()->route('docs', ['slug' => self::MOVED[$slug]], 301);
+        }
 
         // A file not in the nav is not published. Resolving against the nav
         // before the filesystem also means an unlisted draft cannot be reached
@@ -43,7 +61,7 @@ class DocsController extends Controller
             return DocParser::parse(File::get($path));
         });
 
-        $credentials = $this->readerCredentials();
+        $credentials = ReaderApp::credentials();
 
         return view('docs.show', [
             'slug' => $slug,
@@ -60,29 +78,6 @@ class DocsController extends Controller
             'credentials' => $credentials,
             'neighbours' => $this->neighbours($slug),
         ]);
-    }
-
-    /**
-     * The app whose values pre-fill the snippets on this page.
-     *
-     * The secret is NEVER sent here. Docs link to the panel to reveal it.
-     *
-     * @return array{app_id: string, app_name: string}|null
-     */
-    protected function readerCredentials(): ?array
-    {
-        $user = Auth::user();
-
-        if (! $user instanceof User) {
-            return null;
-        }
-
-        $app = $user->publisher?->apps()->where('status', AppStatus::Active)->first();
-
-        return $app ? [
-            'app_id' => (string) $app->app_id,
-            'app_name' => (string) $app->name,
-        ] : null;
     }
 
     /**

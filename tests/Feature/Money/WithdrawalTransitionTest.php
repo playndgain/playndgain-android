@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\LedgerEntryType;
 use App\Enums\PaymentMethodType;
 use App\Enums\WithdrawalStatus;
 use App\Models\LedgerEntry;
@@ -18,6 +19,19 @@ function openWithdrawal(string $amount = '50.000000'): Withdrawal
 {
     $publisher = Publisher::factory()->create();
 
+    // approve() refuses to debit more than the publisher has cleared, so the
+    // balance the payout is drawn from has to exist before the transition.
+    LedgerEntry::create([
+        'publisher_id' => $publisher->id,
+        'type' => LedgerEntryType::Earning,
+        'amount' => $amount,
+        'balance_after' => $amount,
+        'available_at' => now()->subDay(),
+        'created_at' => now()->subDay(),
+    ]);
+
+    $publisher->update(['balance' => $amount, 'lifetime_earnings' => $amount]);
+
     return $publisher->withdrawals()->create([
         'payment_method_id' => PaymentMethod::query()->create([
             'publisher_id' => $publisher->id,
@@ -27,7 +41,7 @@ function openWithdrawal(string $amount = '50.000000'): Withdrawal
         ])->id,
         'amount' => $amount,
         'method' => PaymentMethodType::Paypal,
-        'payment_details' => json_encode(['email' => 'pub@example.test']),
+        'payment_details' => ['email' => 'pub@example.test'],
         'status' => WithdrawalStatus::Requested,
         'requested_at' => now(),
     ]);

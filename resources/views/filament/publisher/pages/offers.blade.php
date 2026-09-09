@@ -9,9 +9,9 @@
             </select>
         </label>
 
-        <p class="max-w-xl pb-2 text-xs text-gray-400">
+        <p class="max-w-xl pb-2 text-xs text-fog-500">
             Eligibility differs per app — your blacklists and blocked countries are per placement.
-            Payout shown is yours after rev share.
+            Payout shown is what you earn.
         </p>
     </div>
 

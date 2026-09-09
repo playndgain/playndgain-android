@@ -1,6 +1,6 @@
 <table class="panel" width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td class="panel-content">
+<td class="panel-content" bgcolor="#ECECF4">
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
 <td class="panel-item">

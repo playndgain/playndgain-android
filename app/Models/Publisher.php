@@ -123,6 +123,11 @@ class Publisher extends Model
         return $this->status === PublisherStatus::Banned;
     }
 
+    public function isSuspended(): bool
+    {
+        return $this->status === PublisherStatus::Suspended;
+    }
+
     /**
      * Everything past its hold window — docs/06 §2.
      *
@@ -141,11 +146,19 @@ class Publisher extends Model
         return Money::format($sum);
     }
 
-    /** What the withdrawal form will accept. Labelled "Available" in the panel. */
+    /**
+     * Cleared minus what has been requested but not yet debited. Labelled
+     * "Available" in the panel.
+     *
+     * Only `requested` is subtracted: `approve()` writes the ledger entry the
+     * moment a withdrawal turns `processing`, so from then on the cleared
+     * balance already excludes it — subtracting it again showed publishers an
+     * Available figure short by the payout in flight.
+     */
     public function withdrawableBalance(): string
     {
         $open = $this->withdrawals()
-            ->whereIn('status', [WithdrawalStatus::Requested, WithdrawalStatus::Processing])
+            ->where('status', WithdrawalStatus::Requested)
             ->sum('amount');
 
         return bcsub($this->clearedBalance(), Money::format($open), Money::SCALE);

@@ -2,11 +2,11 @@
     /** @var \App\Services\Wall\WallContext $context */
     /** @var string $active */
     $params = $context->params();
+    $hasPartners = \App\Services\Wall\PartnerWall::available($context->app);
 @endphp
 
-{{-- Three tabs, always. A missing partner used to hide Offerwall, which made
-     the strip jump and a destination that exists 404. The page now names
-     the empty the way History does. --}}
+{{-- Offers and History always. Offerwall only when a partner wall is live —
+     an empty third tab is a destination that exists to say nothing. --}}
 <nav class="wall-tabs" aria-label="{{ __('wall.tabs.label') }}">
     <a class="wall-tab @if ($active === 'offers') is-on @endif"
        @if ($active === 'offers') aria-current="page" @endif
@@ -22,10 +22,12 @@
         {{ __('wall.tabs.history') }}
     </a>
 
-    <a class="wall-tab @if ($active === 'partners') is-on @endif"
-       @if ($active === 'partners') aria-current="page" @endif
-       href="{{ route('wall.partners') }}?{{ $params }}">
-        <svg class="wall-tab__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
-        {{ __('wall.tabs.partners') }}
-    </a>
+    @if ($hasPartners)
+        <a class="wall-tab @if ($active === 'partners') is-on @endif"
+           @if ($active === 'partners') aria-current="page" @endif
+           href="{{ route('wall.partners') }}?{{ $params }}">
+            <svg class="wall-tab__icon" aria-hidden="true"><use href="#ic-grid"/></svg>
+            {{ __('wall.tabs.partners') }}
+        </a>
+    @endif
 </nav>

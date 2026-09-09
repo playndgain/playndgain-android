@@ -1,0 +1,90 @@
+- generic [ref=f15e1]:
+  - generic [ref=f15e2]:
+    - link "Skip to content" [ref=f15e3] [cursor=pointer]:
+      - /url: "#fi-main-content"
+    - complementary [aria-hidden] [ref=f15e4]:
+      - generic [ref=f15e5]: PLAYNDGAIN
+      - generic [ref=f15e12]:
+        - paragraph [ref=f15e13]: Rewarded monetisation for apps and games
+        - paragraph [ref=f15e14]: Turn playtime into payouts.
+        - paragraph [ref=f15e15]: Players complete offers inside your app. You are paid for every verified action — signed, on a ledger that is never edited, paid monthly.
+        - list [ref=f15e16]:
+          - listitem [ref=f15e17]: ✓ Live in a day
+          - listitem [ref=f15e18]: ✓ Your brand on the wall
+          - listitem [ref=f15e19]: ✓ Monthly payouts
+      - generic [ref=f15e22]:
+        - generic [ref=f15e23]: ✓
+        - generic [ref=f15e24]:
+          - text: +640 Coins
+          - generic [ref=f15e25]: credited in 0.4 s
+    - button "User menu" [ref=f15e31] [cursor=pointer]:
+      - img "Avatar of demo@playndgain.test" [ref=f15e32]
+    - main [ref=f15e34]:
+      - generic [ref=f15e36]:
+        - heading "Profile" [level=1] [ref=f15e38]
+        - generic [ref=f15e39]:
+          - generic [ref=f15e42]:
+            - generic [ref=f15e46]:
+              - generic [ref=f15e49]:
+                - generic [ref=f15e53]:
+                  - text: Name
+                  - superscript [ref=f15e54]: "*"
+                - textbox "Name*" [ref=f15e58]: demo@playndgain.test
+              - generic [ref=f15e61]:
+                - generic [ref=f15e65]:
+                  - text: Email address
+                  - superscript [ref=f15e66]: "*"
+                - textbox "Email address*" [ref=f15e70]: demo@playndgain.test
+              - generic [ref=f15e73]:
+                - generic [ref=f15e74]: New password
+                - generic [ref=f15e79]:
+                  - textbox "New password" [ref=f15e81]
+                  - button "Show password" [ref=f15e84] [cursor=pointer]
+              - generic [ref=f15e90]:
+                - generic [ref=f15e91]: Timezone
+                - generic [ref=f15e95]:
+                  - generic [ref=f15e100]:
+                    - combobox "Timezone" [ref=f15e101] [cursor=pointer]:
+                      - generic [ref=f15e102]: UTC (platform default)
+                    - status [ref=f15e104]
+                  - generic [ref=f15e105]: Every date and time shown in this panel is rendered in it.
+              - generic [ref=f15e111]:
+                - generic [ref=f15e112]: Email me about
+                - generic [ref=f15e116]:
+                  - generic [ref=f15e117]:
+                    - generic [ref=f15e118]:
+                      - checkbox "Postback delivery failures" [checked] [ref=f15e119]
+                      - generic [ref=f15e120] [cursor=pointer]: Postback delivery failures
+                    - generic [ref=f15e125]:
+                      - checkbox "Withdrawal status changes" [checked] [ref=f15e126]
+                      - generic [ref=f15e127] [cursor=pointer]: Withdrawal status changes
+                    - generic [ref=f15e132]:
+                      - checkbox "Account status changes" [checked] [ref=f15e133]
+                      - generic [ref=f15e134] [cursor=pointer]: Account status changes
+                    - generic [ref=f15e139]:
+                      - checkbox "Monthly earnings summary" [active] [ref=f15e140]
+                      - generic [ref=f15e141] [cursor=pointer]: Monthly earnings summary
+                  - generic [ref=f15e146]: A credit note is emailed when a payout is marked paid. The monthly run emails you if it cannot request a payout. Postback, account, and monthly summary senders are not live yet.
+            - generic [ref=f15e154]:
+              - button "Save changes" [ref=f15e155] [cursor=pointer]
+              - button "Cancel" [ref=f15e157] [cursor=pointer]
+          - generic [ref=f15e160]:
+            - generic [ref=f15e161]: Two-factor authentication (2FA)
+            - generic [ref=f15e172]:
+              - generic [ref=f15e173]:
+                - generic [ref=f15e174]: Authenticator app
+                - generic [ref=f15e175]: Disabled
+              - button "Set up" [ref=f15e182] [cursor=pointer]
+              - generic [ref=f15e186]: Use a secure app to generate a temporary code for login verification.
+          - region [ref=f15e193]:
+            - generic [ref=f15e195]:
+              - heading "Browser sessions" [level=2] [ref=f15e196]
+              - paragraph [ref=f15e197]: Where this account is signed in. Sign out of everything else if you do not recognise one.
+            - generic [ref=f15e199]:
+              - paragraph [ref=f15e202]:
+                - text: This deployment keeps sessions in
+                - code [ref=f15e203]: redis
+                - text: ", which stores no per-session row to list. Signing out other sessions still works."
+              - button "Log out other sessions" [ref=f15e208] [cursor=pointer]
+  - generic:
+    - status

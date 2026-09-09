@@ -16,10 +16,10 @@
   <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_180px] lg:items-start lg:gap-12">
 
     <div class="min-w-0">
-      <h1 class="display text-[2.1rem] font-bold leading-tight tracking-tight text-chalk">{{ $page['title'] }}</h1>
+      <h1 class="display-2 text-[2.1rem] text-mist-50">{{ $page['title'] }}</h1>
 
       @if ($page['description'])
-        <p class="mt-3 max-w-[62ch] text-[16px] leading-relaxed text-steel-300">{{ $page['description'] }}</p>
+        <p class="mt-3 max-w-[62ch] text-[16px] leading-relaxed text-mist-300">{{ $page['description'] }}</p>
       @endif
 
       <article class="doc-prose mt-10 max-w-[72ch]">{!! $page['html'] !!}</article>
@@ -29,8 +29,8 @@
          page this long — so it is a labelled landmark instead. --}}
     @if ($page['toc'])
       <aside class="mt-14 hidden lg:sticky lg:top-28 lg:mt-0 lg:block" x-data="docsToc" aria-label="On this page">
-        <p class="num mb-2 text-[11px] uppercase tracking-wider text-steel-400">On this page</p>
-        <div class="doc-toc border-l border-steel-700">
+        <p class="num mb-2 text-[11px] uppercase tracking-wider text-mist-400">On this page</p>
+        <div class="doc-toc border-l border-line-800">
           @foreach ($page['toc'] as $item)
             <a href="#{{ $item['id'] }}" class="lvl-{{ $item['level'] }}"
                :class="{ 'is-on': active === '{{ $item['id'] }}' }">{{ $item['text'] }}</a>

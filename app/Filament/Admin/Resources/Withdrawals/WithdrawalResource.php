@@ -3,14 +3,16 @@
 namespace App\Filament\Admin\Resources\Withdrawals;
 
 use App\Enums\ConversionStatus;
+use App\Enums\PaymentMethodType;
 use App\Enums\WithdrawalStatus;
 use App\Filament\Admin\Resources\Withdrawals\Pages\ListWithdrawals;
+use App\Filament\Admin\Support\DateRangeFilter;
 use App\Models\Publisher;
 use App\Models\Withdrawal;
+use App\Services\Money\Money;
 use App\Services\Money\WithdrawalService;
 use BackedEnum;
 use Filament\Actions\Action;
-use App\Enums\PaymentMethodType;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -19,6 +21,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontFamily;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -53,7 +56,8 @@ class WithdrawalResource extends Resource
     {
         return $schema->components([
             Section::make('Payout Destination')->columns(3)->schema([
-                TextEntry::make('amount')->label('Amount to Pay')->money('USD'),
+                TextEntry::make('amount')->label('Amount to Pay')->fontFamily(FontFamily::Mono)
+                    ->formatStateUsing(fn (string $state): string => Money::display($state)),
                 TextEntry::make('method')->badge(),
                 TextEntry::make('status')->badge()->color(fn (WithdrawalStatus $state): string => match ($state) {
                     WithdrawalStatus::Paid => 'success',
@@ -119,7 +123,8 @@ class WithdrawalResource extends Resource
             Section::make('Publisher & Fraud Metrics')->columns(4)->schema([
                 TextEntry::make('publisher.user.name')->label('Publisher'),
                 TextEntry::make('publisher.pub_id')->label('Publisher ID')->prefix('#'),
-                TextEntry::make('publisher.lifetime_earnings')->label('Lifetime earnings')->money('USD'),
+                TextEntry::make('publisher.lifetime_earnings')->label('Lifetime earnings')->fontFamily(FontFamily::Mono)
+                    ->formatStateUsing(fn (string $state): string => Money::display($state)),
                 TextEntry::make('account_age')->label('Account age')
                     ->state(fn (Withdrawal $record): string => (string) $record->publisher?->created_at?->diffForHumans()),
                 TextEntry::make('reversal_rate')->label('Reversal rate')
@@ -129,9 +134,9 @@ class WithdrawalResource extends Resource
                         ->where('created_at', '>=', now()->subDays(30))
                         ->count() ?? 0),
                 TextEntry::make('previous_paid')->label('Previously paid')
-                    ->state(fn (Withdrawal $record): string => '$'.number_format((float) ($record->publisher?->withdrawals()
+                    ->state(fn (Withdrawal $record): string => Money::display($record->publisher?->withdrawals()
                         ->where('status', WithdrawalStatus::Paid)
-                        ->sum('amount') ?? 0), 2)),
+                        ->sum('amount') ?? 0)),
                 TextEntry::make('requested_at')->label('Requested')->dateTime(),
             ]),
         ]);
@@ -145,7 +150,8 @@ class WithdrawalResource extends Resource
                 TextColumn::make('id')->label('#')->sortable(),
                 TextColumn::make('publisher.user.name')->label('Publisher')->searchable()
                     ->description(fn (Withdrawal $record): string => '#'.$record->publisher?->pub_id),
-                TextColumn::make('amount')->money('USD')->sortable(),
+                TextColumn::make('amount')->fontFamily(FontFamily::Mono)->sortable()
+                    ->formatStateUsing(fn (string $state): string => Money::display($state)),
                 TextColumn::make('method')->badge(),
                 TextColumn::make('destination')->label('Destination')
                     ->state(fn (Withdrawal $record): string => self::maskDestination($record))
@@ -168,6 +174,9 @@ class WithdrawalResource extends Resource
             ->filters([
                 SelectFilter::make('status')->options(WithdrawalStatus::class)
                     ->default(WithdrawalStatus::Requested->value),
+                SelectFilter::make('publisher_id')->label('Publisher')->relationship('publisher', 'company_name')->searchable(),
+                SelectFilter::make('method')->options(PaymentMethodType::class),
+                DateRangeFilter::make('requested_at', 'requested'),
             ])
             ->recordActions([
                 ViewAction::make()->slideOver(),
@@ -178,7 +187,7 @@ class WithdrawalResource extends Resource
                     ->requiresConfirmation()
                     ->modalDescription(fn (Withdrawal $record): string => sprintf(
                         'Moves to processing and writes the negative ledger entry. Pay $%s to %s externally, then mark it paid.',
-                        number_format((float) $record->amount, 2),
+                        Money::display($record->amount),
                         self::destinationSummary($record),
                     ))
                     ->action(fn (Withdrawal $record) => self::run(fn () => app(WithdrawalService::class)->approve($record, Auth::user()))),
@@ -189,7 +198,7 @@ class WithdrawalResource extends Resource
                     ->visible(fn (Withdrawal $record): bool => $record->status === WithdrawalStatus::Processing)
                     ->modalDescription(fn (Withdrawal $record): string => sprintf(
                         'Paying $%s to %s. Enter the transaction reference below.',
-                        number_format((float) $record->amount, 2),
+                        Money::display($record->amount),
                         self::destinationSummary($record),
                     ))
                     ->schema([
@@ -274,9 +283,7 @@ class WithdrawalResource extends Resource
      */
     public static function decodeDetails(Withdrawal $record): array
     {
-        $details = json_decode((string) $record->payment_details, true);
-
-        return is_array($details) ? $details : [];
+        return $record->destination();
     }
 
     public static function destinationSummary(Withdrawal $record): string
@@ -291,7 +298,6 @@ class WithdrawalResource extends Resource
             PaymentMethodType::Crypto => sprintf('%s (%s) — %s', $details['asset'] ?? '', $details['network'] ?? '', $details['address'] ?? ''),
             PaymentMethodType::Paypal, PaymentMethodType::Wise => (string) ($details['email'] ?? '—'),
             PaymentMethodType::Bank => sprintf('%s · IBAN: %s%s', $details['account_name'] ?? '', $details['iban'] ?? '', isset($details['swift']) ? ' · SWIFT: '.$details['swift'] : ''),
-            default => (string) ($details['address'] ?? $details['email'] ?? $details['account'] ?? '—'),
         };
     }
 
@@ -316,4 +322,3 @@ class WithdrawalResource extends Resource
         return mb_substr($value, 0, 4).str_repeat('*', 4).mb_substr($value, -4);
     }
 }
-

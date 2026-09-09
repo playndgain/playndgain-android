@@ -1,40 +1,40 @@
 ---
 title: Conversion statuses
-description: The four states a conversion can be in, and which of them pay.
+description: The four states a conversion can be in, which of them pay, and why your handler only ever sees two.
 ---
 
 A conversion is in exactly one of four states.
 
 | Status | Money moved | Postback sent | Meaning |
 |---|---|---|---|
-| `pending` | No | No | Held for review — a fraud rule flagged it, or the network sent it as pending |
-| `approved` | Yes | Yes | Cleared. A ledger entry was written and your balance went up |
+| `pending` | No | No | Held for review. A fraud rule flagged it, or the partner sent it as pending |
+| `approved` | Yes | Yes | Cleared. A ledger entry was written and your balance moved |
 | `reversed` | Yes, negative | Yes | The advertiser rejected it after it was credited |
 | `rejected` | No | No | Blocked on arrival. No ledger entry, no postback, ever |
 
 **Only `approved` writes a ledger entry.** Only `approved` and `reversed` produce a postback.
 
-## What sends you where
+## What sends a conversion where
 
 ```txt
-network postback arrives
+partner postback arrives
         │
         ├── fails a blocking fraud rule ──────────►  rejected
         │
         ├── fails a flagging fraud rule ──────────►  pending  ──► approved
         │                                                      └─► rejected
-        ├── network says "pending" ───────────────►  pending  ──► approved
+        ├── partner says "pending" ───────────────►  pending  ──► approved
         │
         └── clean ────────────────────────────────►  approved ──► reversed
 ```
 
-`pending` is not a waiting room with a timer. It is a review queue a human works through. Most conversions never enter it.
+`pending` is not a waiting room with a timer on it. It is a review queue a person works through. Most conversions never enter it.
 
-`rejected` is terminal. `approved` can still become `reversed` — for as long as the advertiser's refund window runs, which is typically 30 days and occasionally longer.
+`rejected` is terminal. `approved` is not: it can still become `reversed` for as long as the advertiser's refund window runs, typically 30 days and occasionally longer.
 
-## The postback status is not this status
+## Your handler only sees two values
 
-The `{status}` macro carries only two values:
+The `{status}` macro carries two values, and they are not these four:
 
 | Conversion status | `{status}` on the postback |
 |---|---|
@@ -43,21 +43,23 @@ The `{status}` macro carries only two values:
 | `pending` | no postback |
 | `rejected` | no postback |
 
-Your handler only ever sees `credited` or `reversed`. Branch on the sign of the amount for the arithmetic, and use `status` for the audit trail — see [Chargebacks & reversals](/docs/chargebacks-reversals).
+So `credited` or `reversed`, and nothing else, ever. Use `status` for your audit trail and branch on the **sign of the amount** for the arithmetic. [Reversals](/docs/chargebacks-reversals) explains why the sign is the safer branch.
 
-## Where you see them
+## Two different words called pending
 
-**Conversions** in the dashboard, filterable by status. Each row shows the offer, the end user, the payout, the status and — for approved conversions — the date the hold clears.
+A conversion with status `pending` is under review and has moved no money.
 
-A conversion that is `approved` but not yet cleared shows in your **pending balance**, not your withdrawable balance. That is the calendar-month hold and it is a different thing from the `pending` status, which is a review state. The dashboard names them separately for exactly this reason.
+Money in your **pending balance** has moved, is yours, and is waiting out the calendar-month hold. It came from a conversion that is `approved`.
 
-## What you should do with each
+They are unrelated, and the dashboard names them separately for exactly this reason. [Statements and payouts](/docs/statements-and-payouts) covers the hold.
+
+## What each one asks of you
 
 | Status | Your side |
 |---|---|
 | `pending` | Nothing. You are not told about it |
-| `approved` | Credit the user |
+| `approved` | Credit the player |
 | `reversed` | Deduct what you credited |
 | `rejected` | Nothing. You are not told about it |
 
-If a user swears they completed an offer and nothing arrived, check Conversions before checking Postback Reports. A `pending` or `rejected` conversion produces no postback at all, and no amount of debugging your endpoint will find it.
+When a player swears they completed an offer and nothing arrived, check **Conversions** before you check Postback Reports. A `pending` or `rejected` conversion produces no postback at all, and no amount of debugging your endpoint will find one.

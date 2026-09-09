@@ -36,7 +36,7 @@ class TopCountriesTable extends ChartWidget
             'datasets' => [[
                 'label' => 'Clicks',
                 'data' => $rows->map(fn (object $row): int => (int) $row->clicks)->all(),
-                'backgroundColor' => '#F5A524',
+                'backgroundColor' => '#DFC08A',
             ]],
             'labels' => $rows->map(fn (object $row): string => (string) $row->bucket)->all(),
         ];

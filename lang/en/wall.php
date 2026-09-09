@@ -3,6 +3,9 @@
 return [
 
     'title' => 'Offers',
+    // The app bar's title, in the app's own currency: "Earn Coins". The
+    // wall wears the publisher's brand, so the first words on it are theirs.
+    'earn' => 'Earn :currency',
     'search' => 'Search offers',
     'search_placeholder' => 'Search...',
     'clear' => 'Clear search',
@@ -99,10 +102,10 @@ return [
         'apply' => 'Apply',
     ],
 
-    // The user's own clicks. Statuses are text and never colour: green and red
-    // mean money direction and nothing else on any AdVault surface, and a list
-    // of green "Credited" pills would spend the one signal the product
-    // reserves. The credited amount is the green thing, because it is money.
+    // The user's own clicks. Statuses are text and never colour: a list of
+    // coloured "Credited" pills would spend the one signal this screen
+    // reserves. The credited amount is the thing in the publisher's colour,
+    // because it is the one thing here that is money.
     'history' => [
         'status' => [
             'started' => 'Started',
@@ -178,6 +181,16 @@ return [
         'blocked_risk' => [
             'title' => 'Offers unavailable on this connection',
             'body' => 'We could not verify this connection. Try again from a mobile or home internet connection.',
+        ],
+        // Deliberately says nothing. The neighbours above name a category
+        // because a real person on a VPN or a corporate network does not know
+        // that is why their wall is empty, and telling them is what turns them
+        // back into a served user. Nobody reaches an offerwall on an emulator by
+        // accident, so there is no honest reader here to help — naming the
+        // signal would only tell a farm which string to change.
+        'blocked_unavailable' => [
+            'title' => 'Offers unavailable',
+            'body' => 'We could not show offers here. Please try again later.',
         ],
         // Test mode only. The wording is deliberately about what just happened
         // to the integrator's own system, because that is who is reading it.

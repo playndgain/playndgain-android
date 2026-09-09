@@ -6,6 +6,7 @@ use App\Enums\ConversionType;
 use App\Enums\DeviceType;
 use App\Enums\OfferStatus;
 use App\Filament\Admin\Resources\Offers\Pages\ListOffers;
+use App\Filament\Support\InitialsChip;
 use App\Filament\Support\ViewOfferEventsAction;
 use App\Models\AuditLog;
 use App\Models\Network;
@@ -34,6 +35,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
+use Leek\FilamentRightClick\Menu\ContextMenuItem;
+use Leek\FilamentRightClick\Menu\ContextMenuSeparator;
 
 /**
  * The catalogue — docs/07 §4.
@@ -190,12 +193,41 @@ class OfferResource extends Resource
                     'conversions as conversions_7d' => fn (Builder $query) => $query->where('created_at', '>=', now()->subDays(7)),
                 ]))
             ->columns([
-                ImageColumn::make('icon_url')->label('')->circular()->imageSize(32),
+                ImageColumn::make('icon_url')
+                    ->label('')
+                    ->circular()
+                    ->imageSize(32)
+                    // A missing icon left a hole in the row and a dead one left
+                    // the browser's broken-image glyph. The fallback is drawn
+                    // from the offer's own name, matching the publisher-side
+                    // column so the two lists read alike.
+                    // `defaultImageUrl` covers a null column; `onerror` covers
+                    // an icon URL that stops resolving, which happens on its
+                    // own schedule upstream.
+                    ->defaultImageUrl(fn (Offer $record): string => InitialsChip::for($record->name))
+                    ->extraImgAttributes(fn (Offer $record): array => [
+                        'onerror' => "this.onerror=null;this.src='".InitialsChip::for($record->name)."'",
+                    ]),
                 TextColumn::make('name')->searchable()->limit(40)->sortable()
                     ->description(fn (Offer $record): string => $record->external_id),
-                TextColumn::make('network.name')->sortable(),
-                TextColumn::make('payout')->money('USD')->sortable(),
-                TextColumn::make('conversion_type')->badge(),
+                // The four filters an admin reaches for most sit in the column
+                // headers they filter; the rest stay in the Filters panel.
+                TextColumn::make('network.name')->sortable()
+                    // A native select: the searchable one entangles deferred
+                    // filter state the header row does not carry.
+                    ->headerFilter(SelectFilter::make('network_id')->label('Network')->relationship('network', 'name')),
+                TextColumn::make('payout')->money('USD')->sortable()
+                    ->headerFilter(Filter::make('payout')
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('min')->numeric()->placeholder('Min'),
+                            TextInput::make('max')->numeric()->placeholder('Max'),
+                        ])
+                        ->query(fn (Builder $query, array $data): Builder => $query
+                            ->when(filled($data['min'] ?? null), fn (Builder $q) => $q->where('payout', '>=', $data['min']))
+                            ->when(filled($data['max'] ?? null), fn (Builder $q) => $q->where('payout', '<=', $data['max'])))),
+                TextColumn::make('conversion_type')->badge()
+                    ->headerFilter(SelectFilter::make('conversion_type')->options(ConversionType::class)),
                 // Views, not formatters: Filament hands a `formatStateUsing`
                 // closure one array item at a time, so a whole-list renderer
                 // never sees the list.
@@ -205,15 +237,13 @@ class OfferResource extends Resource
                     OfferStatus::Active => 'success',
                     OfferStatus::Blocked => 'danger',
                     OfferStatus::Inactive => 'gray',
-                })->description(fn (Offer $record): ?string => $record->blocked_reason),
+                })->description(fn (Offer $record): ?string => $record->blocked_reason)
+                    ->headerFilter(SelectFilter::make('status')->options(OfferStatus::class)),
                 TextColumn::make('clicks_7d')->label('Clicks 7d')->numeric()->sortable(),
                 TextColumn::make('conversions_7d')->label('Conv 7d')->numeric()->sortable(),
                 TextColumn::make('last_seen_at')->label('Last seen')->since()->sortable(),
             ])
             ->filters([
-                SelectFilter::make('network_id')->label('Network')->relationship('network', 'name')->searchable(),
-                SelectFilter::make('status')->options(OfferStatus::class),
-                SelectFilter::make('conversion_type')->options(ConversionType::class),
                 SelectFilter::make('featured')->label('Featured')
                     ->options(['1' => 'Featured only'])
                     ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
@@ -231,14 +261,6 @@ class OfferResource extends Resource
                     ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                         ? $query->whereJsonContains('devices', $data['value'])
                         : $query),
-                Filter::make('payout')
-                    ->schema([
-                        TextInput::make('min')->numeric()->prefix('$'),
-                        TextInput::make('max')->numeric()->prefix('$'),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when(filled($data['min'] ?? null), fn (Builder $q) => $q->where('payout', '>=', $data['min']))
-                        ->when(filled($data['max'] ?? null), fn (Builder $q) => $q->where('payout', '<=', $data['max']))),
                 Filter::make('has_conversions')
                     ->label('Has conversions')
                     ->toggle()
@@ -247,41 +269,25 @@ class OfferResource extends Resource
             ->recordActions([
                 ViewOfferEventsAction::make(),
                 ActionGroup::make([
-                    EditAction::make()
-                        ->label('Edit offer')
-                        ->icon(Heroicon::OutlinedPencilSquare)
-                        // Only ours. A network's offer is rewritten by the next
-                        // sync, so editing one is a change that quietly reverts.
-                        ->visible(fn (Offer $record): bool => $record->network?->driver === DirectDriver::key())
-                        ->after(fn (Offer $record) => AuditLog::record('offer.updated', $record)),
-                    Action::make('block')
-                        ->label('Block globally')
-                        ->icon(Heroicon::OutlinedNoSymbol)
-                        ->color('danger')
-                        ->visible(fn (Offer $record): bool => $record->status !== OfferStatus::Blocked)
-                        ->schema([TextInput::make('reason')->required()->maxLength(191)])
-                        ->action(function (Offer $record, array $data): void {
-                            $record->update(['status' => OfferStatus::Blocked, 'blocked_reason' => $data['reason']]);
-
-                            AuditLog::record('offer.blocked', $record, null, ['reason' => $data['reason']]);
-                        }),
-                    Action::make('unblock')
-                        ->icon(Heroicon::OutlinedCheck)
-                        ->visible(fn (Offer $record): bool => $record->status === OfferStatus::Blocked)
-                        ->requiresConfirmation()
-                        ->action(function (Offer $record): void {
-                            $record->update(['status' => OfferStatus::Active, 'blocked_reason' => null]);
-
-                            AuditLog::record('offer.unblocked', $record);
-                        }),
-                    Action::make('feature')
-                        ->label(fn (Offer $record): string => $record->is_featured ? 'Unfeature' : 'Feature')
-                        ->icon(Heroicon::OutlinedStar)
-                        ->action(fn (Offer $record) => $record->update(['is_featured' => ! $record->is_featured])),
+                    self::editAction('edit'),
+                    self::blockAction('block'),
+                    self::unblockAction('unblock'),
+                    self::featureAction('feature'),
                     Action::make('preview')
                         ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                         ->url(fn (Offer $record): string => self::previewUrl($record), shouldOpenInNewTab: true),
                 ]),
+            ])
+            // The same actions on right-click, under their own names: the menu
+            // registers them as table actions too, and two actions called
+            // `block` would collide. A hidden action (edit on a synced offer,
+            // block on an already-blocked one) refuses to mount server-side.
+            ->contextMenuActions([
+                ContextMenuItem::for(self::editAction('ctx_edit'))->label('Edit offer')->icon(Heroicon::OutlinedPencilSquare),
+                ContextMenuItem::for(self::featureAction('ctx_feature'))->label('Feature / unfeature')->icon(Heroicon::OutlinedStar),
+                ContextMenuSeparator::make(),
+                ContextMenuItem::for(self::blockAction('ctx_block'))->label('Block globally')->icon(Heroicon::OutlinedNoSymbol)->color('danger'),
+                ContextMenuItem::for(self::unblockAction('ctx_unblock'))->label('Unblock')->icon(Heroicon::OutlinedCheck),
             ])
             ->defaultSort('last_seen_at', 'desc');
     }
@@ -296,7 +302,7 @@ class OfferResource extends Resource
     /** @return Builder<Offer> */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->onActiveNetwork();
+        return parent::getEloquentQuery()->scopes('onActiveNetwork');
     }
 
     /** @return array<int, string> */
@@ -313,6 +319,56 @@ class OfferResource extends Resource
     public static function directNetwork(): ?Network
     {
         return Network::query()->where('driver', DirectDriver::key())->first();
+    }
+
+    /**
+     * Only ours. A network's offer is rewritten by the next sync, so editing one
+     * is a change that quietly reverts.
+     */
+    private static function editAction(string $name): EditAction
+    {
+        return EditAction::make($name)
+            ->label('Edit offer')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->visible(fn (Offer $record): bool => $record->network?->driver === DirectDriver::key())
+            ->after(fn (Offer $record) => AuditLog::record('offer.updated', $record));
+    }
+
+    private static function blockAction(string $name): Action
+    {
+        return Action::make($name)
+            ->label('Block globally')
+            ->icon(Heroicon::OutlinedNoSymbol)
+            ->color('danger')
+            ->visible(fn (Offer $record): bool => $record->status !== OfferStatus::Blocked)
+            ->schema([TextInput::make('reason')->required()->maxLength(191)])
+            ->action(function (Offer $record, array $data): void {
+                $record->update(['status' => OfferStatus::Blocked, 'blocked_reason' => $data['reason']]);
+
+                AuditLog::record('offer.blocked', $record, null, ['reason' => $data['reason']]);
+            });
+    }
+
+    private static function unblockAction(string $name): Action
+    {
+        return Action::make($name)
+            ->label('Unblock')
+            ->icon(Heroicon::OutlinedCheck)
+            ->visible(fn (Offer $record): bool => $record->status === OfferStatus::Blocked)
+            ->requiresConfirmation()
+            ->action(function (Offer $record): void {
+                $record->update(['status' => OfferStatus::Active, 'blocked_reason' => null]);
+
+                AuditLog::record('offer.unblocked', $record);
+            });
+    }
+
+    private static function featureAction(string $name): Action
+    {
+        return Action::make($name)
+            ->label(fn (Offer $record): string => $record->is_featured ? 'Unfeature' : 'Feature')
+            ->icon(Heroicon::OutlinedStar)
+            ->action(fn (Offer $record) => $record->update(['is_featured' => ! $record->is_featured]));
     }
 
     /**

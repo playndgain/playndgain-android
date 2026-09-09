@@ -9,8 +9,8 @@ use App\Filament\Publisher\Resources\Apps\Pages\CreateApp;
 use App\Filament\Publisher\Resources\Apps\Pages\EditApp;
 use App\Filament\Publisher\Widgets\EarningsStats;
 use App\Filament\Publisher\Widgets\LatestTransactions;
+use App\Filament\Publisher\Widgets\PaymentsSummary;
 use App\Filament\Publisher\Widgets\PostbackHealth;
-use App\Filament\Publisher\Widgets\WithdrawalSummary;
 use App\Models\App;
 use App\Models\Conversion;
 use App\Models\OutgoingPostback;
@@ -60,6 +60,16 @@ it('keeps a banned publisher out of the panel', function () {
     $this->get('/dashboard')->assertForbidden();
 });
 
+it('keeps a suspended publisher out of the panel', function () {
+    $publisher = Publisher::factory()->create(['status' => PublisherStatus::Suspended]);
+
+    $this->actingAs($publisher->user);
+
+    expect($publisher->user->canAccessPanel(Filament::getPanel('publisher')))->toBeFalse();
+
+    $this->get('/dashboard')->assertForbidden();
+});
+
 it('paints the create-app preview with the wall\'s own chrome', function () {
     $publisher = Publisher::factory()->create(['rev_share' => 70]);
 
@@ -74,12 +84,19 @@ it('paints the create-app preview with the wall\'s own chrome', function () {
         ])
         ->assertSee('wall-card', false)
         ->assertSee('wall-reward', false)
-        ->assertSee(__('wall.all_offers'))
-        ->assertSee(__('wall.featured_offers'))
+        // The preview renders the wall's own chrome in the wall's own order:
+        // lockup, capsule filters, featured rail, then All Offers.
+        ->assertSee('wall-filters', false)
+        ->assertSee('wall-chips', false)
+        ->assertSee('wall-devices', false)
+        ->assertSee('wall-rail', false)
+        ->assertSee('wall-catalogue__title', false)
+        ->assertSee('Rewards Hub')
         ->assertSee('Coin Master')
         ->assertSee('+2,940')
         ->assertSee('app-macros', false)
-        ->assertDontSee('Earn Coins');
+        // The app bar still names the currency, exactly as the live wall does.
+        ->assertSee('Earn Coins');
 });
 
 it('renders the currency example at several rates and shares', function (float $revShare, float $rate, string $expected) {
@@ -97,10 +114,10 @@ it('renders the currency example at several rates and shares', function (float $
 it('accepts a callback url that carries the documented macros', function () {
     // Laravel's `url` rule rejects the braces. The same tab lists them.
     // A trailing space is what a mobile paste actually sends.
-    $pasted = 'https://rewardshub.us/api/postback/advalut?user_id={user_id}&trans_id={trans_id}&campaign_id={offer_id}&campaign_name={offer_name}&amount={currency_amount}&payout={payout_usd}&ip={ip}&status={status}&signature={signature} ';
+    $pasted = 'https://rewardshub.us/api/postback/playndgain?user_id={user_id}&trans_id={trans_id}&campaign_id={offer_id}&campaign_name={offer_name}&amount={currency_amount}&payout={payout_usd}&ip={ip}&status={status}&signature={signature} ';
 
     expect(MacroResolver::isHttpsTemplate($pasted))->toBeTrue()
-        ->and(MacroResolver::isHttpsTemplate('https://rewardshub.us/api/postback/advalut?u'))->toBeTrue()
+        ->and(MacroResolver::isHttpsTemplate('https://rewardshub.us/api/postback/playndgain?u'))->toBeTrue()
         ->and(MacroResolver::isHttpsTemplate('http://rewardshub.us/cb'))->toBeFalse()
         ->and(MacroResolver::isHttpsTemplate('javascript:alert(1)'))->toBeFalse();
 
@@ -118,7 +135,7 @@ it('accepts a callback url that carries the documented macros', function () {
 });
 
 it('accepts the same callback url on the admin app form', function () {
-    Config::set('advault.require_admin_2fa', false);
+    Config::set('playndgain.require_admin_2fa', false);
 
     $this->actingAs(User::factory()->admin()->create([
         'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
@@ -126,7 +143,7 @@ it('accepts the same callback url on the admin app form', function () {
     ]));
 
     $app = App::factory()->create();
-    $url = 'https://rewardshub.us/api/postback/advalut?user_id={user_id}&trans_id={trans_id}&campaign_id={offer_id}&campaign_name={offer_name}&amount={currency_amount}&payout={payout_usd}&ip={ip}&status={status}&signature={signature}';
+    $url = 'https://rewardshub.us/api/postback/playndgain?user_id={user_id}&trans_id={trans_id}&campaign_id={offer_id}&campaign_name={offer_name}&amount={currency_amount}&payout={payout_usd}&ip={ip}&status={status}&signature={signature}';
 
     Livewire::test(AdminEditApp::class, ['record' => $app->getRouteKey()])
         ->fillForm(['postback_url' => $url])
@@ -266,7 +283,7 @@ it('keeps the page-specific widgets off the dashboard', function () {
     $dashboard = Filament::getPanel('publisher')->getWidgets();
 
     expect($dashboard)
-        ->not->toContain(WithdrawalSummary::class)
+        ->not->toContain(PaymentsSummary::class)
         ->not->toContain(PostbackHealth::class)
         ->toContain(EarningsStats::class);
 });
@@ -334,6 +351,25 @@ it('reads an unset notification preference as on, and an unticked one as off', f
         // Not a type at all. A stale key cannot switch on something we never
         // agreed to send.
         ->and($publisher->wantsNotification('everything'))->toBeFalse();
+});
+
+it('does not change the email from the profile page', function () {
+    $publisher = Publisher::factory()->create();
+    $email = $publisher->user->email;
+
+    $this->actingAs($publisher->user);
+
+    Livewire::test(EditProfile::class)
+        ->assertFormFieldIsDisabled('email')
+        ->fillForm([
+            'name' => $publisher->user->name,
+            'email' => 'hijacked@example.com',
+            'currentPassword' => 'password',
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($publisher->user->fresh()->email)->toBe($email);
 });
 
 it('saves the timezone and the notification preferences off the profile page', function () {

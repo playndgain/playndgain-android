@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Widgets;
 
 use App\Enums\ConversionStatus;
 use App\Filament\Admin\Resources\Conversions\ConversionResource;
+use App\Filament\Support\AppColumns;
 use App\Models\Conversion;
 use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
@@ -24,13 +25,13 @@ class LatestConversions extends TableWidget
             ->heading('Latest conversions')
             ->query(fn (): Builder => Conversion::query()
                 ->withoutGlobalScopes()
-                ->with(['publisher:id,pub_id', 'app:id,name'])
+                ->with(['publisher:id,pub_id', AppColumns::eager()])
                 ->latest('created_at')
                 ->limit(10))
             ->columns([
                 TextColumn::make('created_at')->label('When')->since(),
                 TextColumn::make('publisher.pub_id')->label('Pub')->prefix('#'),
-                TextColumn::make('app.name')->label('App')->limit(16),
+                AppColumns::show()->searchable(false),
                 TextColumn::make('offer_name')->label('Offer')->limit(24),
                 TextColumn::make('payout')->money('USD'),
                 TextColumn::make('status')->badge()->color(fn (ConversionStatus $state): string => match ($state) {

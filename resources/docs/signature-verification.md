@@ -1,9 +1,9 @@
 ---
-title: Signature verification
+title: Verifying the signature
 description: Complete, runnable callback handlers in PHP, Node.js, Python, Go and Ruby.
 ---
 
-Every postback carries a signature computed from the transaction, the payout and your app secret:
+Every postback carries a signature over the transaction, the payout and your app secret:
 
 ```txt
 signature = sha256( trans_id + payout_usd + app_secret )
@@ -11,17 +11,21 @@ signature = sha256( trans_id + payout_usd + app_secret )
 
 Plain concatenation, no separators, lower-case hex.
 
-## Three rules that decide whether this works
+Until you check it, your callback URL is an open endpoint that credits any player any amount to anyone who guesses it.
 
-1. **Hash the string exactly as it arrived.** `payout_usd` is six decimal places and it may carry a minus sign. Parse it to a float, round it, or reformat it before hashing and the signature will never match. Read the raw query value, hash it, and only then convert it to a number.
-2. **Compare in constant time.** `hash_equals`, `timingSafeEqual`, `hmac.compare_digest`, `subtle.ConstantTimeCompare`, `OpenSSL.secure_compare` — not `==`.
-3. **Reject before you do anything else.** No database write, no logging of the amount, no partial credit. A `403` and nothing else.
+## Three rules
+
+**Hash the string exactly as it arrived.** `payout_usd` has six decimal places and may carry a minus sign. Parse it to a float, round it, or reformat it before hashing, and the signature will never match. Read the raw query value, hash that, and convert to a number afterwards.
+
+**Compare in constant time.** `hash_equals`, `timingSafeEqual`, `hmac.compare_digest`, `subtle.ConstantTimeCompare`, `OpenSSL.secure_compare`. Not `==`.
+
+**Reject before you do anything else.** No database write, no logging of the amount, no partial credit. A `403` and nothing else.
 
 ## Complete handlers
 
-Each of these runs as written. The only thing you supply is `ADVAULT_SECRET` in the environment.
+Each of these runs as written. The only thing you supply is `PLAYNDGAIN_SECRET` in the environment.
 
-They read the macro names as parameter keys — `payout_usd`, `currency_amount`, `signature`. If your callback URL uses shorter keys, as the [quick start](/docs/quick-start) does, change the lookups to match your own URL.
+They read the macro names as parameter keys: `payout_usd`, `currency_amount`, `signature`. If your callback URL uses shorter keys, as the [quick start](/docs/quick-start) does, change the lookups to match your own URL.
 
 <div class="doc-tabs" x-data="{ lang: 'php' }"><div class="doc-tabs-bar" role="tablist" aria-label="Language" x-cloak><button type="button" role="tab" @click="lang='php'" :aria-selected="lang==='php'" :class="{ 'is-on': lang==='php' }">PHP</button><button type="button" role="tab" @click="lang='node'" :aria-selected="lang==='node'" :class="{ 'is-on': lang==='node' }">Node.js</button><button type="button" role="tab" @click="lang='python'" :aria-selected="lang==='python'" :class="{ 'is-on': lang==='python' }">Python</button><button type="button" role="tab" @click="lang='go'" :aria-selected="lang==='go'" :class="{ 'is-on': lang==='go' }">Go</button><button type="button" role="tab" @click="lang='ruby'" :aria-selected="lang==='ruby'" :class="{ 'is-on': lang==='ruby' }">Ruby</button></div>
 
@@ -29,12 +33,12 @@ They read the macro names as parameter keys — `payout_usd`, `currency_amount`,
 
 ```php
 <?php
-// Complete AdVault callback handler.
-// Run with:  ADVAULT_SECRET=… php -S localhost:8080 callback.php
+// Complete PLAYNDGAIN callback handler.
+// Run with:  PLAYNDGAIN_SECRET=… php -S localhost:8080 callback.php
 
-$secret = getenv('ADVAULT_SECRET');
+$secret = getenv('PLAYNDGAIN_SECRET');
 
-$db = new PDO('sqlite:advault.db', options: [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$db = new PDO('sqlite:playndgain.db', options: [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
 // (trans_id, status), never trans_id alone: a reversal carries the SAME
 // trans_id as the credit it undoes, and a key on trans_id alone would
@@ -45,7 +49,7 @@ $db->exec('CREATE TABLE IF NOT EXISTS tx (
 
 $transId = $_GET['trans_id'] ?? '';
 $status  = $_GET['status'] ?? '';
-$payout  = $_GET['payout_usd'] ?? '';   // the string as sent — never round it
+$payout  = $_GET['payout_usd'] ?? '';   // the string as sent, never round it
 
 $expected = hash('sha256', $transId . $payout . $secret);
 
@@ -61,7 +65,7 @@ try {
     // race when two retries land on two workers in the same millisecond.
     $db->prepare('INSERT INTO tx VALUES (?, ?, ?)')->execute([$transId, $status, $amount]);
 } catch (PDOException) {
-    exit('ok');   // already processed — still a 2xx, or we retry it again
+    exit('ok');   // already processed. Still a 2xx, or we retry it
 }
 
 if ($amount < 0) {
@@ -88,13 +92,13 @@ function debit_user(string $userId, float $amount): void
 <div class="doc-tab" x-show="lang==='node'" x-cloak>
 
 ```js
-// Complete AdVault callback handler. Zero dependencies.
-// Run with:  ADVAULT_SECRET=… node callback.mjs
+// Complete PLAYNDGAIN callback handler. Zero dependencies.
+// Run with:  PLAYNDGAIN_SECRET=… node callback.mjs
 
 import { createServer } from 'node:http';
 import { createHash, timingSafeEqual } from 'node:crypto';
 
-const SECRET = process.env.ADVAULT_SECRET;
+const SECRET = process.env.PLAYNDGAIN_SECRET;
 
 // In production this is a UNIQUE index on (trans_id, status), and you catch
 // the constraint violation. A Set is enough to see the shape.
@@ -116,12 +120,12 @@ const debitUser  = (userId, amount) => console.log('debit ', userId, amount.toFi
 createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
 
-  if (url.pathname !== '/advault/callback') return void res.writeHead(404).end();
+  if (url.pathname !== '/playndgain/callback') return void res.writeHead(404).end();
 
   const q = url.searchParams;
   const transId = q.get('trans_id') ?? '';
   const status  = q.get('status') ?? '';
-  const payout  = q.get('payout_usd') ?? '';   // the string as sent — never round it
+  const payout  = q.get('payout_usd') ?? '';   // the string as sent, never round it
 
   const expected = createHash('sha256').update(transId + payout + SECRET).digest('hex');
 
@@ -151,8 +155,8 @@ createServer((req, res) => {
 <div class="doc-tab" x-show="lang==='python'" x-cloak>
 
 ```python
-# Complete AdVault callback handler. Standard library only.
-# Run with:  ADVAULT_SECRET=… python callback.py
+# Complete PLAYNDGAIN callback handler. Standard library only.
+# Run with:  PLAYNDGAIN_SECRET=… python callback.py
 
 import hashlib
 import hmac
@@ -161,9 +165,9 @@ import sqlite3
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qs, urlparse
 
-SECRET = os.environ["ADVAULT_SECRET"]
+SECRET = os.environ["PLAYNDGAIN_SECRET"]
 
-db = sqlite3.connect("advault.db", check_same_thread=False)
+db = sqlite3.connect("playndgain.db", check_same_thread=False)
 
 # (trans_id, status), never trans_id alone: a reversal carries the SAME
 # trans_id as the credit it undoes, and a key on trans_id alone would dedupe
@@ -188,7 +192,7 @@ class Callback(BaseHTTPRequestHandler):
 
         trans_id = query.get("trans_id", "")
         status = query.get("status", "")
-        payout = query.get("payout_usd", "")  # the string as sent — never round it
+        payout = query.get("payout_usd", "")  # the string as sent, never round it
 
         expected = hashlib.sha256((trans_id + payout + SECRET).encode()).hexdigest()
 
@@ -226,8 +230,8 @@ HTTPServer(("", 8080), Callback).serve_forever()
 <div class="doc-tab" x-show="lang==='go'" x-cloak>
 
 ```go
-// Complete AdVault callback handler. Standard library only.
-// Run with:  ADVAULT_SECRET=… go run callback.go
+// Complete PLAYNDGAIN callback handler. Standard library only.
+// Run with:  PLAYNDGAIN_SECRET=… go run callback.go
 
 package main
 
@@ -243,7 +247,7 @@ import (
 )
 
 var (
-	secret = os.Getenv("ADVAULT_SECRET")
+	secret = os.Getenv("PLAYNDGAIN_SECRET")
 
 	// In production this is a UNIQUE index on (trans_id, status), and you
 	// check the constraint error. A map is enough to see the shape.
@@ -261,7 +265,7 @@ func debitUser(userID string, amount float64)  { log.Printf("debit  %s %.2f", us
 func callback(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	transID := q.Get("trans_id")
-	payout := q.Get("payout_usd") // the string as sent — never round it
+	payout := q.Get("payout_usd") // the string as sent, never round it
 
 	sum := sha256.Sum256([]byte(transID + payout + secret))
 	expected := hex.EncodeToString(sum[:])
@@ -299,7 +303,7 @@ func callback(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/advault/callback", callback)
+	http.HandleFunc("/playndgain/callback", callback)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 ```
@@ -309,14 +313,14 @@ func main() {
 <div class="doc-tab" x-show="lang==='ruby'" x-cloak>
 
 ```ruby
-# Complete AdVault callback handler.
-# Run with:  gem install sinatra && ADVAULT_SECRET=… ruby callback.rb
+# Complete PLAYNDGAIN callback handler.
+# Run with:  gem install sinatra && PLAYNDGAIN_SECRET=… ruby callback.rb
 
 require "sinatra"
 require "digest"
 require "openssl"
 
-SECRET = ENV.fetch("ADVAULT_SECRET")
+SECRET = ENV.fetch("PLAYNDGAIN_SECRET")
 
 # In production this is a UNIQUE index on (trans_id, status), and you rescue
 # the constraint error. A Hash is enough to see the shape.
@@ -335,9 +339,9 @@ def debit_user(user_id, amount)
   puts format("debit  %s %.2f", user_id, amount)
 end
 
-get "/advault/callback" do
+get "/playndgain/callback" do
   trans_id = params["trans_id"].to_s
-  payout   = params["payout_usd"].to_s   # the string as sent — never round it
+  payout   = params["payout_usd"].to_s   # the string as sent, never round it
 
   expected = Digest::SHA256.hexdigest(trans_id + payout + SECRET)
 
@@ -369,7 +373,7 @@ end
 
 </div>
 
-## Testing your handler by hand
+## Test your handler by hand
 
 Compute a signature for a fake transaction and call your own endpoint:
 
@@ -379,21 +383,21 @@ TRANS='OFFER19624243-Gw2CpY'
 
 fire () {   # fire <payout_usd> <currency_amount> <status>
   SIG=$(printf '%s' "$TRANS$1$SECRET" | sha256sum | cut -d' ' -f1)
-  curl -i "http://localhost:8080/advault/callback\
+  curl -i "http://localhost:8080/playndgain/callback\
 ?user_id=USER_123&trans_id=$TRANS&payout_usd=$1&currency_amount=$2&status=$3&signature=$SIG"
 }
 
 fire 0.091000 91.00 credited     # credits 91
-fire 0.091000 91.00 credited     # a retry — must credit nothing, must return 200
-fire -0.091000 -91.00 reversed   # the reversal — must DEBIT 91
+fire 0.091000 91.00 credited     # a retry. Must credit nothing, must return 200
+fire -0.091000 -91.00 reversed   # the reversal. Must DEBIT 91
 ```
 
-Three calls and you have tested everything that matters: the signature, the [dedupe](/docs/idempotency), and the [reversal branch](/docs/chargebacks-reversals).
+Three calls test everything that matters: the signature, the [dedupe](/docs/retries-and-failure), and the [reversal branch](/docs/chargebacks-reversals).
 
-Note that the third call reuses the **same** `trans_id` — that is what a real reversal does. If your dedupe key is `trans_id` alone, the third call is swallowed as a duplicate and the user keeps coins you were charged back for. Key on `(trans_id, status)`.
+The third call reuses the **same** `trans_id`, because that is what a real reversal does. If your dedupe key is `trans_id` alone, that call is swallowed as a duplicate and your player keeps coins you were charged back for. Key on `(trans_id, status)`.
 
-Change one character of the signature and confirm you get a `403` and no credit. That is the fourth call, and then you are finished.
+Then change one character of the signature and confirm you get a `403` and no credit. That is the fourth call, and then you are finished.
 
 ## When it always fails
 
-See [Troubleshooting](/docs/troubleshooting). The cause is almost always one of two things: the payout string was reformatted before hashing, or the secret in your environment belongs to a different app.
+Almost always one of two things: the payout string was reformatted before hashing, or the secret in your environment belongs to a different app. [Troubleshooting](/docs/troubleshooting) has the four causes in the order they actually occur, and a two-line debug print that identifies which one you have.

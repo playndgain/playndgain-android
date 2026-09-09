@@ -2,7 +2,10 @@
 
 namespace App\Services\Wall;
 
+use App\Models\App;
 use App\Models\Network;
+use App\Support\AppNetworks;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * A partner's own hosted wall, addressed by macro template — docs/03 §2.
@@ -22,6 +25,38 @@ final class PartnerWall
             && is_string($network->wall_url)
             // Not `str_contains`: `javascript:alert('https://')` contains it.
             && str_starts_with(strtolower($network->wall_url), 'https://');
+    }
+
+    /**
+     * Partner walls this placement can actually open. Request-memoised so the
+     * tab strip, the app-nav and the menu agree without a second query.
+     *
+     * @return Collection<int, Network>
+     */
+    public static function catalogue(App $app): Collection
+    {
+        $key = 'wall.partnerCatalogue.'.$app->id;
+
+        if (request()->attributes->has($key)) {
+            /** @var Collection<int, Network> */
+            return request()->attributes->get($key);
+        }
+
+        $blocked = AppNetworks::blockedIds($app);
+
+        $catalogue = Network::query()->embeddable()->get()
+            ->filter(self::isEmbeddable(...))
+            ->reject(fn (Network $partner): bool => in_array($partner->id, $blocked, true))
+            ->values();
+
+        request()->attributes->set($key, $catalogue);
+
+        return $catalogue;
+    }
+
+    public static function available(App $app): bool
+    {
+        return self::catalogue($app)->isNotEmpty();
     }
 
     public static function url(Network $network, WallContext $context, string $subId): string

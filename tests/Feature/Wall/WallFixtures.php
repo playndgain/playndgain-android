@@ -50,6 +50,17 @@ function wallOffer(Network $network, array $attributes = []): Offer
 }
 
 /**
+ * @param  array<string, mixed>  $attributes
+ */
+function partnerNetwork(array $attributes = []): Network
+{
+    return Network::factory()->create([
+        'wall_url' => 'https://p.test/w?s={sub_id}&u={user_id}',
+        ...$attributes,
+    ]);
+}
+
+/**
  * The real binding places nobody (no GeoLite2 on disk), which is exactly the
  * unknown-country path — so a test that wants a country has to say so.
  */

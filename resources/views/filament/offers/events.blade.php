@@ -62,7 +62,7 @@
             This offer pays once.
         @endif
         @if ($publisherFacing)
-            Amounts are yours after rev share.
+            Amounts shown are what you earn.
         @endif
         @if (filled($rewardNote ?? null))
             {{ $rewardNote }}

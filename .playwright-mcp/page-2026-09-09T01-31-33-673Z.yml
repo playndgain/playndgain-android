@@ -1,0 +1,51 @@
+- generic [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e11]:
+      - generic [ref=e12]: P
+      - generic [ref=e13]: L
+      - generic [ref=e14]: A
+      - generic [ref=e15]: "Y"
+      - generic [ref=e16]: "N"
+      - generic [ref=e17]: D
+      - generic [ref=e18]: G
+      - generic [ref=e19]: A
+      - generic [ref=e20]: I
+      - generic [ref=e21]: "N"
+    - complementary [aria-hidden] [ref=e24]:
+      - generic [ref=e25]: PLAYNDGAIN
+      - generic [ref=e32]:
+        - paragraph [ref=e33]: Operations
+        - paragraph [ref=e34]: Every click, rule and cent, in one place.
+        - paragraph [ref=e35]: Inventory, fraud verdicts, the ledger and payouts — the other side of the wall.
+        - list [ref=e36]:
+          - listitem [ref=e37]: ✓ Append-only ledger
+          - listitem [ref=e38]: ✓ Rules that explain themselves
+          - listitem [ref=e39]: ✓ Signed postbacks
+      - generic [ref=e42]:
+        - generic [ref=e43]: ✓
+        - generic [ref=e44]:
+          - text: +640 Coins
+          - generic [ref=e45]: credited in 0.4 s
+    - main [ref=e47]:
+      - generic [ref=e49]:
+        - heading "Sign in" [level=1] [ref=e51]
+        - generic [ref=e55]:
+          - generic [ref=e59]:
+            - generic [ref=e62]:
+              - generic [ref=e66]:
+                - text: Email address
+                - superscript [ref=e67]: "*"
+              - textbox "Email address*" [active] [ref=e71]
+            - generic [ref=e74]:
+              - generic [ref=e78]:
+                - text: Password
+                - superscript [ref=e79]: "*"
+              - generic [ref=e81]:
+                - textbox "Password*" [ref=e83]
+                - button "Show password" [ref=e86] [cursor=pointer]
+            - generic [ref=e95]:
+              - checkbox "Remember me" [ref=e96]
+              - generic [ref=e97]: Remember me
+          - button "Sign in" [ref=e103] [cursor=pointer]
+  - generic:
+    - status
