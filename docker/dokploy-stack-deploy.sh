@@ -32,11 +32,15 @@ command -v docker >/dev/null 2>&1 || die "docker not found on PATH"
 log "building image (project=${STACK_NAME})"
 docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" build
 
-# One-time cutover helpers: old Compose containers, and a leftover
-# ${STACK_NAME}_default bridge that blocks Swarm if the compose file still
-# tried to create it. Current compose maps `default` → dokploy-network.
-log "stopping previous Compose project if present (one-time cutover)"
-docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" down --remove-orphans >/dev/null 2>&1 || true
+# One-time cutover: force-remove leftover Compose containers/networks. Do NOT
+# use `compose down` without a short -t — horizon's stop_grace_period is 3600s
+# and would hang the deploy for an hour.
+log "force-removing previous Compose containers if present (one-time cutover)"
+ids="$(docker ps -aq --filter "name=${STACK_NAME}" 2>/dev/null || true)"
+if [ -n "$ids" ]; then
+    # shellcheck disable=SC2086
+    docker rm -f $ids >/dev/null 2>&1 || true
+fi
 docker network rm "${STACK_NAME}_default" >/dev/null 2>&1 || true
 
 log "resolving compose for stack deploy → ${RESOLVED}"
