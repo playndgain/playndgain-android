@@ -256,11 +256,11 @@ it('keeps the container nginx blocks in step with the deployed ones', function (
         ->and($container('docker/nginx/nginx.conf'))->toContain('real_ip_recursive on;');
 });
 
-it('rolls app replicas start-first for Dokploy Stack deploys', function () {
+it('rolls app start-first for Dokploy Stack deploys', function () {
     $compose = (string) file_get_contents(base_path('docker-compose.yml'));
 
     expect($compose)->toContain('order: start-first')
-        ->and($compose)->toContain('replicas: 2')
+        ->and($compose)->toContain('replicas: 1')
         ->and($compose)->toContain('failure_action: rollback')
         ->and($compose)->toContain('playndgain-storage')
         ->and(is_file(base_path('docker/dokploy-stack-deploy.sh')))->toBeTrue()

@@ -63,7 +63,7 @@ at the root.
 **Compose Type must be Stack** (Docker Swarm), not plain Docker Compose.
 Plain Compose ignores `deploy.update_config`, so every redeploy would still
 stop the old container before the new one is healthy. Stack honors
-`order: start-first` and `parallelism: 1` on `app` (two replicas).
+`order: start-first` and `parallelism: 1` on `app`.
 
 If the service was already created as Docker Compose, recreate it as Stack —
 Dokploy does not convert the type in place.
@@ -138,15 +138,15 @@ replicas never race), builds the caches, and starts nginx. Horizon and the
 scheduler wait until that lock is free and `migrate:status` shows nothing
 Pending, so nothing processes a job against a half schema.
 
-Swarm then keeps **two** `app` tasks. On each AutoDeploy, the new task becomes
-healthy before an old one stops (`start-first`); horizon and scheduler roll
-only after `app` has finished updating.
+Swarm keeps one `app` task (plus horizon and scheduler). On each AutoDeploy,
+the new task becomes healthy before the old one stops (`start-first`); horizon
+and scheduler roll only after `app` has finished updating.
 
 Then, once, by hand — the historical payout statements, per
 [docs/06-ledger-payouts.md](06-ledger-payouts.md) §9:
 
 ```bash
-# Pick any running app task (two replicas share the schema).
+# Pick any running app task.
 APP_TASK=$(docker ps -q -f name=<stack>_app | head -1)
 docker exec -u www-data "$APP_TASK" php artisan payouts:backfill-statements --dry-run
 docker exec -u www-data "$APP_TASK" php artisan payouts:backfill-statements

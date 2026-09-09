@@ -6,9 +6,9 @@
 # backups, their storage and their lifecycle survive a redeploy of this stack.
 #
 # Deploy as a Dokploy **Stack** (Docker Swarm), not plain Compose, so
-# `deploy.update_config` is honored: app replicas roll one-at-a-time with
-# start-first (new healthy task before old stops). Dokploy Advanced → Command
-# runs `docker/dokploy-stack-deploy.sh` via a `docker run` wrapper (see docs/13).
+# `deploy.update_config` is honored: start-first (new healthy task before old
+# stops). Dokploy Advanced → Command runs `docker/dokploy-stack-deploy.sh`
+# via a `docker run` wrapper (see docs/13).
 
 x-playndgain: &playndgain
   build:
@@ -28,8 +28,8 @@ x-playndgain: &playndgain
 
   # Nightly backups, the GeoIP databases (several hundred megabytes, refreshed
   # weekly) and anything written to the `local` disk. Shared by all three roles:
-  # the scheduler fetches the GeoIP files and the wall reads them. Both app
-  # replicas must see the same volume.
+  # the scheduler fetches the GeoIP files and the wall reads them. All roles
+  # must see the same volume.
   volumes:
     - playndgain-storage:/var/www/html/storage/app
 
@@ -44,8 +44,8 @@ services:
     environment:
       CONTAINER_ROLE: app
       # The one place migrations run. Entrypoint takes a MySQL advisory lock so
-      # two replicas never migrate in parallel. Set false for a deploy where you
-      # want to run them by hand first.
+      # a future multi-replica layout never migrates in parallel. Set false for
+      # a deploy where you want to run them by hand first.
       RUN_MIGRATIONS: "true"
     # Enough grace for in-flight HTTP while Swarm starts the replacement first.
     stop_grace_period: 60s
@@ -57,7 +57,7 @@ services:
       retries: 5
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
       update_config:
         parallelism: 1
         delay: 10s

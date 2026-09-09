@@ -6,9 +6,12 @@
 # This script bridges both: build the image with Compose, resolve the file, then
 # `docker stack deploy` so Swarm rolls replicas with start-first.
 #
-# Services update in order: app (both replicas, one at a time via Swarm) →
-# horizon → scheduler. Autodeploy on push still works: set this script as the
-# Dokploy Compose Advanced → Command and enable AutoDeploy.
+# Services update in order: app → horizon → scheduler. Autodeploy on push
+# still works: set this script as the Dokploy Compose Advanced → Command and
+# enable AutoDeploy.
+#
+# Horizon/scheduler use long stop_grace_period; force updates must override
+# it or --detach=false hangs for up to an hour on rollback/shutdown.
 #
 # Usage (Dokploy Advanced → Command):
 #   sh docker/dokploy-stack-deploy.sh <dokploy-compose-appName>
@@ -58,7 +61,8 @@ docker stack deploy -c "$RESOLVED" --prune --with-registry-auth "$STACK_NAME"
 update_service() {
     service="${STACK_NAME}_$1"
     log "rolling update ${service}"
-    docker service update --force --detach=false "$service"
+    # Cap stop grace for the update so Swarm does not wait hour-long drains.
+    docker service update --force --stop-grace-period 60s --detach=false "$service"
 }
 
 update_service app
