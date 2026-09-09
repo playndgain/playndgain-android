@@ -11,3 +11,9 @@ parameters:
 
     excludePaths:
         - app/Filament/*/Resources/*/Pages/*
+
+    # Macroable::macro() registrations are invisible to PHPStan. These stubs
+    # declare the Filament table macros from leek/filament-header-filters,
+    # leek/filament-right-click, and zpmlabs/filament-popup.
+    stubFiles:
+        - stubs/filament-plugin-macros.stub

@@ -3,11 +3,13 @@
 namespace App\Filament\Auth;
 
 use Filament\Auth\Pages\EditProfile as BaseEditProfile;
+use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use LogicException;
 use SensitiveParameter;
 
 /**
@@ -35,7 +37,13 @@ abstract class EditProfile extends BaseEditProfile
      */
     protected function getEmailFormComponent(): Component
     {
-        return parent::getEmailFormComponent()
+        $email = parent::getEmailFormComponent();
+
+        if (! $email instanceof TextInput) {
+            throw new LogicException('Profile email field must be a TextInput.');
+        }
+
+        return $email
             ->disabled()
             ->dehydrated(false)
             ->copyable()

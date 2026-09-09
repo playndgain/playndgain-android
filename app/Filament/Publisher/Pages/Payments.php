@@ -53,6 +53,8 @@ use Illuminate\Support\Facades\Gate;
  * statements with a detail modal per row. Crypto, PayPal and bank transfer
  * are offered; Wise survives in the enum for the history of payouts already
  * made. There is no "request" button — payouts open themselves on the 1st.
+ *
+ * @property-read bool $canWrite Livewire computed via getCanWriteProperty().
  */
 class Payments extends Page implements HasActions, HasSchemas, HasTable
 {

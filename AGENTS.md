@@ -129,3 +129,26 @@ Answer each honestly. Any "yes" means go back.
 - Does anything move on scroll?
 - Did I draw a mock of the product instead of using a real capture?
 - Would the owner have to ask "why is this different from the rest of the site"?
+
+## Learned User Preferences
+
+- Keep Playndgain design distinct from the Advault sibling; do not copy Advault `design.md`, theme, or tokens.
+- Treat reference UIs as structure-only; match this repo's tokens and existing components.
+- For design work: inspect, plan, get approval, then implement.
+- Profile email is locked (shown/copyable, not writable) on both panels.
+- Prefer persistent Filament table filters where the product already uses them.
+- ID fields should copy the full value, not a truncated display.
+- Prefer installed Filament analytics packages over bespoke chart stacks when they already cover the need.
+- Hide empty partner-wall tabs; theme surfaces must use real wall tokens, not placeholders.
+- Do not add an Advertisers marketing surface unless explicitly requested.
+- Browser-verify visual fixes before calling UI work done.
+
+## Learned Workspace Facts
+
+- Local site is `playndgain.test` with panels at `/admin` and `/dashboard`.
+- This repo is a Playndgain fork of the Advault sibling codebase.
+- Production deploy target is Dokploy on `176.97.212.171`; GitHub remote is `zsnakeee/playndgain`.
+- Cloudflare sits in front; `TrustCloudflare` plus nginx `real_ip` restore the visitor IP; country comes from GeoIP on that IP, not `CF-IPCountry`.
+- Transactional mail uses Mailgun.
+- IP intelligence uses Proxycheck/IPQS-style providers behind `IpIntelligence`.
+- Wall clicks go through the routed `/click/{offer}` path, not raw network URLs.
