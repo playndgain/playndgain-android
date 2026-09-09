@@ -21,6 +21,14 @@ return [
         'scheme' => 'https',
     ],
 
+    // Hostinger Mail API (not SMTP). Create the token under Agentic Mail → API access.
+    // Mailbox resource IDs look like AC… — list them via GET /api/v1/me.
+    'hostinger' => [
+        'token' => env('HOSTINGER_MAIL_API_TOKEN'),
+        'mailbox_id' => env('HOSTINGER_MAIL_MAILBOX_ID'),
+        'base_url' => env('HOSTINGER_MAIL_BASE_URL', 'https://api.mail.hostinger.com'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

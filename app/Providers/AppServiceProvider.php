@@ -6,6 +6,7 @@ use App\Fraud\Contracts\IpIntelligence;
 use App\Fraud\LocalIpIntelligence;
 use App\Fraud\NullIpIntelligence;
 use App\Fraud\RuleRegistry;
+use App\Mail\Transport\HostingerTransport;
 use App\Models\App as PublisherApp;
 use App\Models\AuditLog;
 use App\Models\BannedEndUser;
@@ -41,9 +42,11 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\HttpClient\HttpClient;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -184,6 +187,7 @@ class AppServiceProvider extends ServiceProvider
         $this->localGeo();
         $this->filamentTables();
         $this->panelSwitch();
+        $this->hostingerMailer();
 
         // The announcements resource checks this gate on top of the panel.
         // A string, not a closure, so config:cache can serialise the config.
@@ -252,5 +256,30 @@ class AppServiceProvider extends ServiceProvider
             IpIntelligence::class,
             fn (IpIntelligence $reader): IpIntelligence => new LocalIpIntelligence($reader, $country),
         );
+    }
+
+    /**
+     * Hostinger Mail API transport so MAIL_MAILER=hostinger works with Mail:: /
+     * notifications without a third-party Laravel package.
+     */
+    private function hostingerMailer(): void
+    {
+        Mail::extend('hostinger', function (array $config = []): HostingerTransport {
+            $token = (string) ($config['token'] ?? config('services.hostinger.token') ?? '');
+            $mailboxId = (string) ($config['mailbox_id'] ?? config('services.hostinger.mailbox_id') ?? '');
+            $baseUrl = (string) ($config['base_url'] ?? config('services.hostinger.base_url') ?? 'https://api.mail.hostinger.com');
+
+            if ($token === '' || $mailboxId === '') {
+                throw new \InvalidArgumentException(
+                    'Hostinger mailer requires HOSTINGER_MAIL_API_TOKEN and HOSTINGER_MAIL_MAILBOX_ID.',
+                );
+            }
+
+            $client = isset($config['client']) && is_array($config['client'])
+                ? HttpClient::create($config['client'])
+                : null;
+
+            return new HostingerTransport($token, $mailboxId, $baseUrl, $client);
+        });
     }
 }

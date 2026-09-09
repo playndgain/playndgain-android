@@ -142,13 +142,15 @@ Answer each honestly. Any "yes" means go back.
 - Hide empty partner-wall tabs; theme surfaces must use real wall tokens, not placeholders.
 - Do not add an Advertisers marketing surface unless explicitly requested.
 - Browser-verify visual fixes before calling UI work done.
+- Do not claim work finished while lint, tests, CI, or verification failures remain; fix or report blockers first.
 
 ## Learned Workspace Facts
 
 - Local site is `playndgain.test` with panels at `/admin` and `/dashboard`.
 - This repo is a Playndgain fork of the Advault sibling codebase.
-- Production deploy target is Dokploy on `176.97.212.171`; GitHub remote is `zsnakeee/playndgain`.
+- Production deploy target is Dokploy on `176.97.212.171:3000`; GitHub remote is `zsnakeee/playndgain`.
 - Cloudflare sits in front; `TrustCloudflare` plus nginx `real_ip` restore the visitor IP; country comes from GeoIP on that IP, not `CF-IPCountry`.
 - Transactional mail uses Mailgun.
 - IP intelligence uses Proxycheck/IPQS-style providers behind `IpIntelligence`.
 - Wall clicks go through the routed `/click/{offer}` path, not raw network URLs.
+- GitHub Actions CI gates on Pint, static analysis, tests, and Lighthouse.

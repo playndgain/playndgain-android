@@ -56,6 +56,11 @@ return [
             // ],
         ],
 
+        'hostinger' => [
+            'transport' => 'hostinger',
+            // Token + mailbox from config/services.php (HOSTINGER_MAIL_*).
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],
