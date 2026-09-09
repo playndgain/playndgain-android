@@ -32,6 +32,13 @@ command -v docker >/dev/null 2>&1 || die "docker not found on PATH"
 log "building image (project=${STACK_NAME})"
 docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" build
 
+# One-time cutover helpers: old Compose containers, and a leftover
+# ${STACK_NAME}_default bridge that blocks Swarm if the compose file still
+# tried to create it. Current compose maps `default` → dokploy-network.
+log "stopping previous Compose project if present (one-time cutover)"
+docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" down --remove-orphans >/dev/null 2>&1 || true
+docker network rm "${STACK_NAME}_default" >/dev/null 2>&1 || true
+
 log "resolving compose for stack deploy → ${RESOLVED}"
 # Swarm rejects the top-level `name:` field Compose V2 emits.
 docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" config | grep -v '^name:' > "$RESOLVED"

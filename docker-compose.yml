@@ -7,9 +7,8 @@
 #
 # Deploy as a Dokploy **Stack** (Docker Swarm), not plain Compose, so
 # `deploy.update_config` is honored: app replicas roll one-at-a-time with
-# start-first (new healthy task before old stops). Use
-# `docker/dokploy-stack-deploy.sh` as the Advanced → Command (build + stack
-# deploy). Plain `docker compose up` ignores rolling update settings.
+# start-first (new healthy task before old stops). Dokploy Advanced → Command
+# runs `docker/dokploy-stack-deploy.sh` via a `docker run` wrapper (see docs/13).
 
 x-playndgain: &playndgain
   build:
@@ -34,10 +33,10 @@ x-playndgain: &playndgain
   volumes:
     - playndgain-storage:/var/www/html/storage/app
 
-  # Every service needs this network, not just the one with the domains: it is
-  # also how they reach the Dokploy MySQL and Redis services.
+  # Attach only to Dokploy's shared network (declared as external `default`
+  # below) so Swarm does not also create `${stack}_default`.
   networks:
-    - dokploy-network
+    - default
 
 services:
   app:
@@ -123,5 +122,9 @@ volumes:
   playndgain-storage:
 
 networks:
-  dokploy-network:
+  # External name `dokploy-network`, referenced as `default` so Swarm does not
+  # invent `${stack}_default` (that name often already exists as a leftover
+  # Compose bridge and breaks the first Stack cutover).
+  default:
+    name: dokploy-network
     external: true
