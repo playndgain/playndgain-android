@@ -117,6 +117,81 @@ wait_for_database() {
 }
 
 # ---------------------------------------------------------------------------
+# Migrations — single-flight under a MySQL advisory lock
+# ---------------------------------------------------------------------------
+#
+# Rolling deploys run two `app` replicas. Without a lock, both can enter
+# `migrate --force` on the same boot and one dies holding a half-applied
+# schema. GET_LOCK is connection-scoped, so migrate-locked.php holds one PDO
+# open for the whole migrate (a separate acquire-then-exit process would
+# release the lock immediately).
+#
+# Horizon and the scheduler must not process jobs until that finishes, so
+# they wait until the lock is free and `migrate:status` reports no Pending
+# rows (docs/13 rolling deploy).
+
+MIGRATE_LOCK_NAME="${MIGRATE_LOCK_NAME:-playndgain_migrate}"
+MIGRATE_LOCK_TIMEOUT="${MIGRATE_LOCK_TIMEOUT:-300}"
+
+php_lock_in_use() {
+    php -r '
+        $dsn = sprintf(
+            "mysql:host=%s;port=%s;dbname=%s",
+            getenv("DB_HOST") ?: "mysql",
+            getenv("DB_PORT") ?: "3306",
+            getenv("DB_DATABASE") ?: "playndgain"
+        );
+        $pdo = new PDO($dsn, getenv("DB_USERNAME") ?: "root", getenv("DB_PASSWORD") ?: "", [
+            PDO::ATTR_TIMEOUT => 5,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        ]);
+        $name = getenv("MIGRATE_LOCK_NAME") ?: "playndgain_migrate";
+        $stmt = $pdo->prepare("SELECT IS_USED_LOCK(?)");
+        $stmt->execute([$name]);
+        $holder = $stmt->fetchColumn();
+        echo ($holder === false || $holder === null) ? "0" : "1";
+    '
+}
+
+run_migrations_locked() {
+    export MIGRATE_LOCK_NAME MIGRATE_LOCK_TIMEOUT
+    log "running migrations under lock ${MIGRATE_LOCK_NAME}"
+    # www-data owns the app tree; migrate must run as that user like every
+    # other artisan call. The lock script only opens PDO with the DB_* user.
+    if ! su-exec www-data php /usr/local/bin/migrate-locked.php; then
+        die "migrate --force failed under lock ${MIGRATE_LOCK_NAME}"
+    fi
+}
+
+wait_for_schema() {
+    attempt=0
+    max="${SCHEMA_WAIT_ATTEMPTS:-90}"
+
+    export MIGRATE_LOCK_NAME
+
+    while [ "$attempt" -lt "$max" ]; do
+        in_use="$(php_lock_in_use 2>/dev/null || echo 1)"
+
+        if [ "$in_use" = "0" ]; then
+            if status="$($ARTISAN migrate:status --no-ansi 2>/dev/null)"; then
+                if ! printf '%s\n' "$status" | grep -qi 'pending'; then
+                    if printf '%s\n' "$status" | grep -q .; then
+                        log "schema ready (no pending migrations)."
+                        return 0
+                    fi
+                fi
+            fi
+        fi
+
+        attempt=$((attempt + 1))
+        [ $((attempt % 10)) -eq 0 ] && log "waiting for migrations to finish (${attempt}/${max})..."
+        sleep 2
+    done
+
+    die "schema was not ready after $((max * 2))s — app migrations may have failed."
+}
+
+# ---------------------------------------------------------------------------
 # Caches
 # ---------------------------------------------------------------------------
 #
@@ -162,10 +237,11 @@ case "$ROLE" in
         wait_for_database
 
         if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
-            log "running migrations"
-            $ARTISAN migrate --force
+            log "running migrations (advisory lock)"
+            run_migrations_locked
         else
             log "RUN_MIGRATIONS is not \"true\" — skipping migrations"
+            wait_for_schema
         fi
 
         build_caches
@@ -189,12 +265,12 @@ case "$ROLE" in
     horizon)
         log "role: horizon"
         wait_for_database
+        # No migrations here — app owns them under the advisory lock. Wait until
+        # that lock is free and nothing is Pending so jobs never hit a half
+        # schema during a rolling deploy.
+        wait_for_schema
         build_caches
 
-        # No migrations here. Two containers running `migrate --force` against
-        # one database on the same boot is a race whose loser dies holding a
-        # half-applied schema.
-        #
         # SIGTERM reaches Horizon directly because it is PID 1's exec target:
         # it stops accepting jobs and lets the ones in flight finish, which is
         # the `stopwaitsecs=3600` behaviour docs/11 §3 asks supervisor for.
@@ -204,6 +280,7 @@ case "$ROLE" in
     scheduler)
         log "role: scheduler"
         wait_for_database
+        wait_for_schema
         build_caches
 
         # `schedule:work` is the crontab line from docs/11 §4 as a foreground

@@ -256,6 +256,19 @@ it('keeps the container nginx blocks in step with the deployed ones', function (
         ->and($container('docker/nginx/nginx.conf'))->toContain('real_ip_recursive on;');
 });
 
+it('rolls app replicas start-first for Dokploy Stack deploys', function () {
+    $compose = (string) file_get_contents(base_path('docker-compose.yml'));
+
+    expect($compose)->toContain('order: start-first')
+        ->and($compose)->toContain('replicas: 2')
+        ->and($compose)->toContain('failure_action: rollback')
+        ->and($compose)->toContain('playndgain-storage')
+        ->and(is_file(base_path('docker/dokploy-stack-deploy.sh')))->toBeTrue()
+        ->and(is_file(base_path('docker/migrate-locked.php')))->toBeTrue()
+        ->and((string) file_get_contents(base_path('Dockerfile')))
+        ->toContain('migrate-locked.php');
+});
+
 it('keeps APP_DEBUG off in production', function () {
     // Asserted against the wiring rather than the running environment: this
     // suite runs with APP_ENV=testing, so `config('app.debug')` here says

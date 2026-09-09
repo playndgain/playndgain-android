@@ -138,6 +138,7 @@ COPY docker/php/php.ini                             /usr/local/etc/php/conf.d/zz
 COPY docker/php/www.conf                            /usr/local/etc/php-fpm.d/zz-playndgain.conf
 COPY docker/supervisord.conf                        /etc/supervisord.conf
 COPY docker/entrypoint.sh                           /usr/local/bin/playndgain-entrypoint
+COPY docker/migrate-locked.php                      /usr/local/bin/migrate-locked.php
 
 RUN chmod +x /usr/local/bin/playndgain-entrypoint
 

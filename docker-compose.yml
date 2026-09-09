@@ -5,15 +5,17 @@
 # NOT here — they are Dokploy services created once in the panel, so their
 # backups, their storage and their lifecycle survive a redeploy of this stack.
 #
-# Point a Dokploy Compose application at this file, add the three domains to
-# the `app` service on port 80, and deploy.
+# Deploy as a Dokploy **Stack** (Docker Swarm), not plain Compose, so
+# `deploy.update_config` is honored: app replicas roll one-at-a-time with
+# start-first (new healthy task before old stops). Use
+# `docker/dokploy-stack-deploy.sh` as the Advanced → Command (build + stack
+# deploy). Plain `docker compose up` ignores rolling update settings.
 
 x-playndgain: &playndgain
   build:
     context: .
     dockerfile: Dockerfile
   image: playndgain-app:latest
-  restart: unless-stopped
 
   # Dokploy writes the variables from the Environment tab to a .env file beside
   # this compose file. Compose uses that file for ${...} interpolation on its
@@ -27,7 +29,8 @@ x-playndgain: &playndgain
 
   # Nightly backups, the GeoIP databases (several hundred megabytes, refreshed
   # weekly) and anything written to the `local` disk. Shared by all three roles:
-  # the scheduler fetches the GeoIP files and the wall reads them.
+  # the scheduler fetches the GeoIP files and the wall reads them. Both app
+  # replicas must see the same volume.
   volumes:
     - playndgain-storage:/var/www/html/storage/app
 
@@ -41,25 +44,38 @@ services:
     <<: *playndgain
     environment:
       CONTAINER_ROLE: app
-      # The one place migrations run. Set false for a deploy where you want to
-      # run them by hand first.
+      # The one place migrations run. Entrypoint takes a MySQL advisory lock so
+      # two replicas never migrate in parallel. Set false for a deploy where you
+      # want to run them by hand first.
       RUN_MIGRATIONS: "true"
+    # Enough grace for in-flight HTTP while Swarm starts the replacement first.
+    stop_grace_period: 60s
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/up"]
       interval: 15s
       timeout: 5s
       start_period: 120s
       retries: 5
+    deploy:
+      mode: replicated
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      rollback_config:
+        parallelism: 1
+        order: start-first
+      restart_policy:
+        condition: on-failure
+        delay: 5s
 
   horizon:
     <<: *playndgain
     environment:
       CONTAINER_ROLE: horizon
-    # Waits for the schema. `app` owns the migrations; a worker that starts
-    # first picks up jobs against tables that do not exist yet.
-    depends_on:
-      app:
-        condition: service_healthy
     # An hour of grace, which is docs/11 §3's `stopwaitsecs=3600`: in-flight
     # postbacks land instead of being killed mid-request on redeploy.
     stop_grace_period: 3600s
@@ -69,17 +85,39 @@ services:
       timeout: 10s
       start_period: 120s
       retries: 3
+    deploy:
+      mode: replicated
+      replicas: 1
+      # After app: the deploy script updates app first, then this service.
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
 
   scheduler:
     <<: *playndgain
     environment:
       CONTAINER_ROLE: scheduler
-    depends_on:
-      app:
-        condition: service_healthy
     # Long enough for a nightly backup or a GeoIP pull to finish rather than be
     # cut in half, leaving a truncated archive that looks like a real one.
     stop_grace_period: 600s
+    deploy:
+      mode: replicated
+      replicas: 1
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+        failure_action: rollback
+        monitor: 30s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
 
 volumes:
   playndgain-storage:

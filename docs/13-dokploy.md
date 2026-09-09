@@ -25,13 +25,13 @@ still carry the same asymmetry.
 
 ## 1. The shape
 
-One image. Three containers, differing only by `CONTAINER_ROLE`:
+One image. Three Swarm services, differing only by `CONTAINER_ROLE`:
 
-| Service | Role | What it is on the VPS |
-|---|---|---|
-| `app` | nginx + PHP-FPM under supervisor | The web server |
-| `horizon` | `artisan horizon` | `deploy/supervisor/playndgain-horizon.conf` |
-| `scheduler` | `artisan schedule:work` | The crontab line in §4 of docs/11 |
+| Service | Role | Replicas | What it is on the VPS |
+|---|---|---|---|
+| `app` | nginx + PHP-FPM under supervisor | **2** (roll `start-first`) | The web server |
+| `horizon` | `artisan horizon` | 1 (updates after `app`) | `deploy/supervisor/playndgain-horizon.conf` |
+| `scheduler` | `artisan schedule:work` | 1 (updates after `horizon`) | The crontab line in §4 of docs/11 |
 
 One build means a worker can never be running last week's code against this
 week's schema.
@@ -59,6 +59,36 @@ external port, and neither should have one.
 
 Add a **Compose** application pointing at this repository, `docker-compose.yml`
 at the root.
+
+**Compose Type must be Stack** (Docker Swarm), not plain Docker Compose.
+Plain Compose ignores `deploy.update_config`, so every redeploy would still
+stop the old container before the new one is healthy. Stack honors
+`order: start-first` and `parallelism: 1` on `app` (two replicas).
+
+If the service was already created as Docker Compose, recreate it as Stack —
+Dokploy does not convert the type in place.
+
+#### Advanced → Command (required)
+
+Stack cannot `build:` by itself. Set the custom command to:
+
+```bash
+sh docker/dokploy-stack-deploy.sh <this-compose-appName>
+```
+
+Replace `<this-compose-appName>` with the appName Dokploy shows on the General
+tab (same string it would pass to `docker stack deploy`). The script:
+
+1. Builds `playndgain-app:latest` with Compose
+2. Resolves the compose file for Swarm
+3. `docker stack deploy --prune`
+4. Force-rolls **app → horizon → scheduler** in that order (`start-first`)
+
+#### AutoDeploy
+
+On the same Compose application, enable **AutoDeploy** for the `main` branch
+(GitHub webhook). Each push runs that command; you do not click Deploy by hand
+for ordinary releases.
 
 ### 2.3 Fill in the environment
 
@@ -100,17 +130,24 @@ middleware to the wall domain in Traefik — §4 below.
 
 ### 2.5 Deploy
 
-The first boot runs migrations, builds the caches, and starts nginx. Horizon and
-the scheduler wait for `app` to report healthy before they start, so nothing
-processes a job against a schema that is not there yet.
+The first boot runs migrations (under a MySQL advisory lock so two `app`
+replicas never race), builds the caches, and starts nginx. Horizon and the
+scheduler wait until that lock is free and `migrate:status` shows nothing
+Pending, so nothing processes a job against a half schema.
+
+Swarm then keeps **two** `app` tasks. On each AutoDeploy, the new task becomes
+healthy before an old one stops (`start-first`); horizon and scheduler roll
+only after `app` has finished updating.
 
 Then, once, by hand — the historical payout statements, per
 [docs/06-ledger-payouts.md](06-ledger-payouts.md) §9:
 
 ```bash
-docker compose exec app su-exec www-data php artisan payouts:backfill-statements --dry-run
-docker compose exec app su-exec www-data php artisan payouts:backfill-statements
-docker compose exec app su-exec www-data php artisan payouts:reconcile-statements
+# Pick any running app task (two replicas share the schema).
+APP_TASK=$(docker ps -q -f name=<stack>_app | head -1)
+docker exec -u www-data "$APP_TASK" php artisan payouts:backfill-statements --dry-run
+docker exec -u www-data "$APP_TASK" php artisan payouts:backfill-statements
+docker exec -u www-data "$APP_TASK" php artisan payouts:reconcile-statements
 ```
 
 ---
@@ -125,8 +162,10 @@ for the same reasons:
    §10 checklist rows anywhere in this project.
 2. Wait for MySQL. Nothing sequences a Dokploy database against this container,
    and without the wait the first deploy races its own MySQL still initialising.
-3. `migrate --force` — **`app` only**. Two containers migrating one database on
-   the same boot is a race whose loser dies holding a half-applied schema.
+3. `migrate --force` — **`app` only**, and serialised with a MySQL `GET_LOCK`
+   (`docker/migrate-locked.php`) so two Swarm replicas never migrate in
+   parallel. Horizon and the scheduler wait for that lock and for an empty
+   pending list before they start work.
 4. `config:cache`, `route:cache`, `view:cache` as three commands. Written as one
    invocation with two arguments, the route and view caches are never built.
 5. `filament:optimize`, `storage:link`.
@@ -185,14 +224,16 @@ read like a database problem.
 ## 5. Operating it
 
 ```bash
-# Anything from docs/11 that you would have run on the box
-docker compose exec app su-exec www-data php artisan <command>
+# Anything from docs/11 that you would have run on the box (Stack tasks)
+APP_TASK=$(docker ps -q -f name=<stack>_app | head -1)
+docker exec -u www-data "$APP_TASK" php artisan <command>
 
 # Queue health — the numbers docs/11 §7 alerts on
-docker compose exec horizon su-exec www-data php artisan horizon:status
+HZ_TASK=$(docker ps -q -f name=<stack>_horizon | head -1)
+docker exec -u www-data "$HZ_TASK" php artisan horizon:status
 
 # Restart the workers on new code without touching the site
-docker compose exec app su-exec www-data php artisan horizon:terminate
+docker exec -u www-data "$APP_TASK" php artisan horizon:terminate
 ```
 
 `horizon` has an hour of stop grace, which is docs/11 §3's `stopwaitsecs=3600`:
