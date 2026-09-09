@@ -14,11 +14,11 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use RickDBCN\FilamentEmail\Filament\Resources\EmailResource as VendorEmailResource;
 use RickDBCN\FilamentEmail\Filament\Resources\EmailResource\Actions\AdvancedResendEmailAction;
 use RickDBCN\FilamentEmail\Filament\Resources\EmailResource\Actions\ResendEmailAction;
 use RickDBCN\FilamentEmail\Filament\Resources\EmailResource\Actions\ResendEmailBulkAction;
 use RickDBCN\FilamentEmail\Filament\Resources\EmailResource\Actions\ViewEmailAction;
+use RickDBCN\FilamentEmail\Filament\Resources\EmailResource as VendorEmailResource;
 use RickDBCN\FilamentEmail\Models\Email;
 
 class EmailResource extends VendorEmailResource
