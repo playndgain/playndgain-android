@@ -13,7 +13,7 @@
 ])
 {{-- The ink band at the top of the card, between the mark and the paper body. --}}
 <tr>
-<td class="hero-cell" bgcolor="#11131F">
+<td class="hero-cell{{ $tone === 'danger' ? ' hero-cell-danger' : '' }}" bgcolor="#11131F">
 @if ($eyebrow)
 <p class="eyebrow{{ $tone === 'danger' ? ' eyebrow-danger' : '' }}">{{ $eyebrow }}</p>
 @endif

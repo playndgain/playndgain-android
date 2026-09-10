@@ -21,6 +21,7 @@
 @media only screen and (max-width: 600px) {
     .inner-body, .footer { width: 100% !important; }
     .header-cell, .hero-cell, .content-cell { padding-left: 24px !important; padding-right: 24px !important; }
+    .header-kind { display: none !important; }
     .hero-title { font-size: 24px !important; }
     .hero-amount { font-size: 32px !important; }
 }

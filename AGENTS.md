@@ -143,14 +143,16 @@ Answer each honestly. Any "yes" means go back.
 - Do not add an Advertisers marketing surface unless explicitly requested.
 - Browser-verify visual fixes before calling UI work done.
 - Do not claim work finished while lint, tests, CI, or verification failures remain; fix or report blockers first.
+- Prefer Mailgun for transactional app mail; do not switch the default to Hostinger Mail API unless asked.
 
 ## Learned Workspace Facts
 
 - Local site is `playndgain.test` with panels at `/admin` and `/dashboard`.
 - This repo is a Playndgain fork of the Advault sibling codebase.
-- Production deploy target is Dokploy on `176.97.212.171:3000`; GitHub remote is `zsnakeee/playndgain`.
+- Production deploy target is Dokploy on `176.97.212.171:3000` (not the EnvKit MCP Dokploy on `176.97.212.177`); GitHub remote is `zsnakeee/playndgain`.
 - Cloudflare sits in front; `TrustCloudflare` plus nginx `real_ip` restore the visitor IP; country comes from GeoIP on that IP, not `CF-IPCountry`.
-- Transactional mail uses Mailgun.
+- Transactional mail uses Mailgun; a Hostinger Mail API transport exists but is not the default.
 - IP intelligence uses Proxycheck/IPQS-style providers behind `IpIntelligence`.
 - Wall clicks go through the routed `/click/{offer}` path, not raw network URLs.
 - GitHub Actions CI gates on Pint, static analysis, tests, and Lighthouse.
+- Production compose runs a single `app` replica; do not enable multi-replica HA unless explicitly requested.

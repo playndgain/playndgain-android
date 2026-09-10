@@ -1,6 +1,6 @@
 /* The brand lockup — one file, imported by all three bundles (site, wall,
-   panels), so the mark is the same mark wherever it renders. An amber tile
-   with a bold geometric P beside the wordmark. Plain CSS rather than
+   panels), so the mark is the same mark wherever it renders. The amber P/G
+   monogram sits beside the wordmark. Plain CSS rather than
    utilities: the panels and the wall build from other Tailwind entries and
    never see utilities written in resources/views/components.
 

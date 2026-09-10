@@ -3,7 +3,7 @@
    when the page's gate script set html.intro — a first visit in this tab,
    motion allowed — and holds while the real critical assets arrive: the face
    and the page's own capture, each a step of the line under the mark. Then
-   the mark flies onto the page's mark (one transform, from the two
+   the mark flies onto the page's mark (one transform, from the two measured
    rectangles) as the curtain fades and the page enters behind it. Never past
    the cap: a slow network gets the page with its skeletons, not a longer
    wait. Resolves the moment the curtain starts to lift, so whatever waits on

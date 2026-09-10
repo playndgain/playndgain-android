@@ -24,6 +24,9 @@ it('paints markdown mail with the brand palette, not Laravel grey', function () 
         ->toContain('#FFB020') // amber-400: the mark and the button
         ->toContain('#FFFFFF') // paper-0: the body
         ->toContain(Identity::name())
+        ->toContain('/img/brand/playndgain-symbol-2048.png')
+        ->toContain('Play. Complete. Gain.')
+        ->toContain('Platform message')
         ->not->toContain('laravel.com/img/notification-logo')
         ->not->toContain('#fafafa')
         ->not->toContain('#DFC08A'); // the Advault gold is gone
@@ -37,6 +40,7 @@ it('brands admin alert mail the same way', function () {
     expect($html)
         ->toContain('#FFB020')
         ->toContain('#0A0B14')
+        ->toContain('/img/brand/playndgain-symbol-2048.png')
         ->toContain(Identity::name())
         ->toContain('ledger.drift')
         ->toContain('cached publisher balance disagrees');

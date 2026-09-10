@@ -1,19 +1,25 @@
 @props(['url'])
-{{-- The mark, built from a table cell rather than an image or SVG: mail
-     clients strip inline SVG, and a hosted logo is a tracking pixel by another
-     name. Same geometry as components/brand-mark.blade.php — an amber tile
-     carrying a bold "P" beside the wordmark. An anchor must not wrap a table
-     (premailer and Outlook both close it early), so the wordmark is the link
-     and the tile sits beside it. --}}
+@php
+    // SVG support is still unreliable in inboxes, so mail uses the lossless
+    // PNG export of the approved mark. Its URL is stable and carries no
+    // recipient identifier; the adjacent wordmark remains when images are off.
+    $logoUrl = rtrim(\App\Support\Identity::url(), '/').'/img/brand/playndgain-symbol-2048.png';
+@endphp
 <tr>
 <td class="header-cell" bgcolor="#11131F">
-<table cellpadding="0" cellspacing="0" role="presentation">
+<table class="header-grid" width="100%" cellpadding="0" cellspacing="0" role="presentation">
 <tr>
-<td class="mark-tile" width="28" height="28" align="center" valign="middle" bgcolor="#FFB020">
-<span class="mark-glyph" aria-hidden="true">P</span>
+<td class="mark-image-cell" width="48" valign="middle">
+<a href="{{ $url }}" class="mark-image-link" aria-label="{{ \App\Support\Identity::name() }}">
+<img class="mark-image" src="{{ $logoUrl }}" width="48" height="48" alt="" />
+</a>
 </td>
 <td class="mark-word-cell">
 <a href="{{ $url }}" class="mark-word">{{ \App\Support\Identity::name() }}</a>
+<p class="mark-tagline">Play. Complete. Gain.</p>
+</td>
+<td class="header-kind" align="right" valign="middle">
+<span>Platform message</span>
 </td>
 </tr>
 </table>

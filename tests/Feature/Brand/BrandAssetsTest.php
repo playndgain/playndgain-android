@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Config;
  * asserted to be non-empty and actually linked, not just to exist.
  */
 it('uses the brand mark as the house network logo', function () {
-    expect(file_get_contents(public_path('img/networks/house.svg')))
+    expect(file_get_contents(public_path('img/brand/playndgain-symbol.svg')))
+        ->toBe(file_get_contents(public_path('favicon.svg')))
+        ->and(file_get_contents(public_path('img/networks/house.svg')))
         ->toBe(file_get_contents(public_path('favicon.svg')));
 });
 
@@ -69,17 +71,10 @@ it('gives both panels a favicon and a mark that still says which panel it is', f
         ->assertSee('Publisher', escape: false);
 });
 
-it('renders one mark per brand surface with no duplicate gradient ids', function () {
+it('renders the approved monogram geometry on every brand surface', function () {
     $html = $this->get('/')->assertSuccessful()->getContent();
 
-    // Header, footer and the page body all render the mark — the bowl of its
-    // "P" is the signature. The tile's gradient needs an id, and the same id
-    // rendered twice on one page is a collision the second loses, so every
-    // instance mints its own and no two may match.
-    expect(substr_count((string) $html, 'M21 19H33a11 11 0 0 1 0 22H21'))->toBeGreaterThanOrEqual(2);
-
-    preg_match_all('/<linearGradient id="([^"]+)"/', (string) $html, $matches);
-
-    expect($matches[1])->not->toBeEmpty()
-        ->and(count(array_unique($matches[1])))->toBe(count($matches[1]));
+    // Header, footer, page body and intro all carry the source path rather than
+    // a separately drawn approximation that can drift from the approved SVG.
+    expect(substr_count((string) $html, 'M 600.205 996.47'))->toBeGreaterThanOrEqual(2);
 });

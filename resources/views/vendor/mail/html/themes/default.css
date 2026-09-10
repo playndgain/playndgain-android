@@ -3,9 +3,9 @@
    value is copied here with its token name beside it. Change the token there,
    change it here.
 
-   The card: an ink header band (the mark, and for the app's own mails an
-   eyebrow, a headline and a money metric) over a paper body, on the ink page
-   ground. Money is only ever shown on ink — gain-500 on white is 2.7:1 and
+   The card: an ink banner (the mark, an eyebrow, a headline and for the app's
+   own mails a money metric) over a paper body, on the ink page ground. Money
+   is only ever shown on ink — gain-500 on white is 2.7:1 and
    there is no darker gain token — so the paper body never carries a figure.
 
    Contrast, verified against site-tokens.css values:
@@ -151,11 +151,11 @@ img {
 .inner-body {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
-    -premailer-width: 560px;
+    -premailer-width: 600px;
     margin: 0 auto;
     padding: 0;
     table-layout: fixed;
-    width: 560px;
+    width: 600px;
 }
 
 .inner-body a {
@@ -169,61 +169,96 @@ img {
     background-color: #11131F; /* ink-900 */
     border-color: #262A40; /* ink-700 */
     border-style: solid;
-    border-width: 3px 1px 0;
+    border-width: 4px 1px 0;
     border-top-color: #FFB020; /* amber-400: the one accent, as the card's top edge */
-    border-radius: 24px 24px 0 0;
-    padding: 28px 36px 24px;
+    border-radius: 32px 32px 0 0; /* --radius-xl */
+    padding: 30px 40px 26px;
 }
 
 .hero-cell {
     background-color: #11131F; /* ink-900 */
     border-color: #262A40; /* ink-700 */
     border-style: solid;
-    border-width: 0 1px;
-    padding: 0 36px 32px;
+    border-width: 0 1px 6px;
+    border-bottom-color: #FFB020; /* amber-400: the banner's status rail */
+    padding: 4px 40px 34px;
+}
+
+.hero-cell-danger {
+    border-bottom-color: #E5484D; /* loss-500: genuine failure */
 }
 
 .content-cell {
     background-color: #FFFFFF; /* paper-0 */
-    border-radius: 0 0 24px 24px;
+    border-radius: 0 0 32px 32px; /* --radius-xl */
     max-width: 100vw;
-    padding: 36px 36px 32px;
+    padding: 40px 40px 36px;
 }
 
 /* ── The mark ──────────────────────────────────────────────────────────── */
 
-.mark-tile {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background-color: #FFB020; /* amber-400 */
-    background-image: linear-gradient(135deg, #FFC554 0%, #F28C1A 100%); /* amber-300 → amber-500 */
-    text-align: center;
+.header-grid {
+    width: 100%;
+}
+
+.mark-image-cell {
     vertical-align: middle;
 }
 
-.mark-glyph {
+.mark-image-link {
     display: block;
-    color: #1A1000; /* on-amber */
-    font-size: 16px;
-    font-weight: 800;
-    line-height: 28px;
-    text-align: center;
+    line-height: 0;
+    text-decoration: none;
+}
+
+.mark-image {
+    display: block;
+    height: 48px;
+    max-width: 48px;
+    width: 48px;
 }
 
 .mark-word-cell {
-    padding-left: 10px;
+    padding-left: 14px;
     vertical-align: middle;
 }
 
 .mark-word {
     color: #F4F5FA; /* fog-50 */
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.02em;
     line-height: 1;
     text-decoration: none;
     text-transform: uppercase;
+}
+
+.mark-tagline {
+    color: #8B90A8; /* fog-500 */
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    line-height: 1.3;
+    margin: 6px 0 0;
+}
+
+.header-kind {
+    padding-left: 16px;
+    vertical-align: middle;
+}
+
+.header-kind span {
+    border: 1px solid #3A3E57; /* ink-600 */
+    border-radius: 999px; /* --radius-pill */
+    color: #C3C7D6; /* fog-300 */
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    line-height: 1;
+    padding: 9px 12px;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 /* ── The hero band ─────────────────────────────────────────────────────── */
@@ -244,7 +279,7 @@ img {
 
 .hero-title {
     color: #F4F5FA; /* fog-50 */
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.12;
@@ -294,11 +329,11 @@ img {
 .footer {
     -premailer-cellpadding: 0;
     -premailer-cellspacing: 0;
-    -premailer-width: 560px;
+    -premailer-width: 600px;
     margin: 0 auto;
     padding: 0;
     text-align: center;
-    width: 560px;
+    width: 600px;
 }
 
 .footer-cell {
