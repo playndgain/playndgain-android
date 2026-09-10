@@ -156,3 +156,4 @@ Answer each honestly. Any "yes" means go back.
 - Wall clicks go through the routed `/click/{offer}` path, not raw network URLs.
 - GitHub Actions CI gates on Pint, static analysis, tests, and Lighthouse.
 - Production compose runs a single `app` replica; do not enable multi-replica HA unless explicitly requested.
+- DB backups target Cloudflare R2 (Spatie nightly plus Dokploy MySQL dump, one bucket with separate prefixes); keep total R2 usage within the free-tier cap so storage never bills the linked card.

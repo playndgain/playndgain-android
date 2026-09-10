@@ -330,23 +330,16 @@ return [
     'monitor_backups' => [
         [
             'name' => env('APP_NAME', 'laravel-backup'),
-            'disks' => ['local'],
+            // Follow BACKUP_DISK so production monitors R2, not the VPS volume.
+            'disks' => [
+                env('BACKUP_DISK', 'local'),
+            ],
             'health_checks' => [
                 MaximumAgeInDays::class => 1,
-                MaximumStorageInMegabytes::class => 5000,
+                // Keep under Cloudflare R2 free-tier headroom (~8 GB combined).
+                MaximumStorageInMegabytes::class => 4096,
             ],
         ],
-
-        /*
-        [
-            'name' => 'name of the second app',
-            'disks' => ['local', 's3'],
-            'health_checks' => [
-                \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays::class => 1,
-                \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes::class => 5000,
-            ],
-        ],
-        */
     ],
 
     'cleanup' => [
@@ -365,21 +358,20 @@ return [
             /*
              * The number of days for which backups must be kept.
              *
-             * docs/11 §6 says 30 days for the MySQL dumps, so the thinning
-             * tiers below are switched off rather than tuned: keeping a weekly
-             * from four months ago is not the retention the spec asked for, and
-             * a backup old enough to predate a schema migration restores into
-             * an application that cannot read it. The default strategy never
+             * Free-tier R2 budget: 14 days of Spatie archives, capped below,
+             * plus Dokploy's last 7 dumps under dokploy/. docs/11 §6 still
+             * wants off-site nightly dumps; the day count is tightened so we
+             * never creep into paid R2 storage. The default strategy never
              * deletes the newest backup regardless.
              */
-            'keep_all_backups_for_days' => 30,
+            'keep_all_backups_for_days' => 14,
 
             /*
              * After the "keep_all_backups_for_days" period is over, the most recent backup
              * of that day will be kept. Older backups within the same day will be removed.
              * If you create backups only once a day, no backups will be removed yet.
              */
-            'keep_daily_backups_for_days' => 30,
+            'keep_daily_backups_for_days' => 14,
 
             /*
              * After the "keep_daily_backups_for_days" period is over, the most recent backup
@@ -405,7 +397,7 @@ return [
              * this amount of megabytes has been reached.
              * Set null for unlimited size.
              */
-            'delete_oldest_backups_when_using_more_megabytes_than' => 5000,
+            'delete_oldest_backups_when_using_more_megabytes_than' => 4096,
         ],
 
         /*
