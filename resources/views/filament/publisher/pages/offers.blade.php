@@ -3,6 +3,9 @@
         <label>
             <span class="fi-filter-label">Showing inventory for</span>
             <select wire:model.live="appId" class="fi-filter-field">
+                @if ($this->appId === null)
+                    <option value="" disabled selected>Waiting for approval</option>
+                @endif
                 @foreach ($this->appOptions as $id => $name)
                     <option value="{{ $id }}">{{ $name }}</option>
                 @endforeach

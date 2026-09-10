@@ -2,6 +2,7 @@
 
 namespace App\Filament\Publisher\Support;
 
+use App\Enums\AppStatus;
 use App\Enums\BlacklistType;
 use App\Enums\OfferStatus;
 use App\Models\App;
@@ -20,9 +21,40 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class EligibleOffers
 {
+    /**
+     * Same predicates as WallGate::isServable(): approved account, active app.
+     * Offers empty-state copy must call this rather than invent a second rule.
+     */
+    public static function catalogueOpen(?int $appId): bool
+    {
+        $publisher = CurrentPublisher::get();
+
+        if ($publisher === null || ! $publisher->isApproved()) {
+            return false;
+        }
+
+        if ($appId !== null) {
+            $app = App::query()
+                ->where('publisher_id', $publisher->id)
+                ->whereKey($appId)
+                ->first();
+
+            return $app !== null && $app->isActive();
+        }
+
+        return App::query()
+            ->where('publisher_id', $publisher->id)
+            ->where('status', AppStatus::Active)
+            ->exists();
+    }
+
     /** @return Builder<Offer> */
     public static function query(?int $appId): Builder
     {
+        if (! self::catalogueOpen($appId)) {
+            return Offer::query()->whereRaw('1 = 0');
+        }
+
         $publisherId = CurrentPublisher::id();
 
         $query = Offer::query()

@@ -78,11 +78,7 @@ class Offers extends Page implements HasActions, HasSchemas, HasTable
             ->where('publisher_id', CurrentPublisher::id())
             ->where('status', AppStatus::Active)
             ->orderBy('id')
-            ->value('id')
-            ?? App::query()
-                ->where('publisher_id', CurrentPublisher::id())
-                ->orderBy('id')
-                ->value('id');
+            ->value('id');
     }
 
     /** @return array<int, string> */
@@ -243,8 +239,14 @@ class Offers extends Page implements HasActions, HasSchemas, HasTable
                     ->tooltip('More actions'),
             ])
             ->defaultSort('payout', 'desc')
-            ->emptyStateHeading('Nothing eligible')
-            ->emptyStateDescription('No active offers match this app right now. Check your blacklists and blocked countries.');
+            ->emptyStateHeading(fn (): string => EligibleOffers::catalogueOpen($this->appId)
+                ? 'Nothing eligible'
+                : 'Waiting for approval')
+            ->emptyStateDescription(fn (): string => EligibleOffers::catalogueOpen($this->appId)
+                ? 'No active offers match this app right now. Check your blacklists and blocked countries.'
+                : ($this->appId === null
+                    ? 'Offers appear after your account and an app are approved.'
+                    : 'Offers appear after your account and this app are approved.'));
     }
 
     /**

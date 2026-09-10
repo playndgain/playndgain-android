@@ -23,9 +23,11 @@
     @param float                 $rate      Units per $1
     @param float                 $revShare  Percent
     @param bool                  $dark
+    @param bool                  $showSamples
 --}}
 @php
     $dark ??= true;
+    $showSamples ??= false;
     $currency = $currencyName;
 
     // Three shapes of inventory, so the preview shows what a payout range does
@@ -69,6 +71,10 @@
             'people' => 0,
         ],
     ];
+
+    if (! $showSamples) {
+        $samples = [];
+    }
 
     $reward = static fn (float $payout): string => number_format($payout * ($revShare / 100) * $rate);
 
@@ -210,8 +216,10 @@
         </nav>
     </div>
 
-    <p class="wall-preview__note">
-        Sample inventory at {{ number_format($rate) }} {{ $currencyName }} per $1.
-        Real offers are whatever is eligible for your traffic.
-    </p>
+    @if ($showSamples)
+        <p class="wall-preview__note">
+            Sample inventory at {{ number_format($rate) }} {{ $currencyName }} per $1.
+            Real offers are whatever is eligible for your traffic.
+        </p>
+    @endif
 </div>

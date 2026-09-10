@@ -4,6 +4,7 @@ use App\Enums\AppStatus;
 use App\Enums\BlacklistType;
 use App\Enums\NetworkStatus;
 use App\Enums\OfferStatus;
+use App\Enums\PublisherStatus;
 use App\Filament\Publisher\Pages\Offers;
 use App\Filament\Publisher\Support\EligibleOffers;
 use App\Models\App;
@@ -236,4 +237,100 @@ it('refuses to invent a payout when the session has no publisher', function () {
         ->assertDontSee('$0.0000');
 
     expect($publisher->rev_share)->toBe('70.00');
+});
+
+it('hides the catalogue from a pending publisher even with an active app', function () {
+    [$publisher, $app, $offer] = inventoryFixture();
+    $publisher->update([
+        'status' => PublisherStatus::Pending,
+        'approved_at' => null,
+    ]);
+
+    expect(EligibleOffers::catalogueOpen($app->id))->toBeFalse()
+        ->and(EligibleOffers::query($app->id)->count())->toBe(0)
+        ->and(EligibleOffers::impact($app->id, BlacklistType::Offer->value, (string) $offer->id))
+        ->toContain('No eligible offers to measure against yet');
+});
+
+it('hides the catalogue for a non-active app', function (AppStatus $status) {
+    [$publisher, $app] = inventoryFixture();
+    $app->update(['status' => $status]);
+
+    expect(EligibleOffers::catalogueOpen($app->id))->toBeFalse()
+        ->and(EligibleOffers::query($app->id)->count())->toBe(0);
+})->with([
+    AppStatus::Pending,
+    AppStatus::Paused,
+    AppStatus::Rejected,
+]);
+
+it('hides the all-apps catalogue when the publisher has no active app', function () {
+    [$publisher, $app] = inventoryFixture();
+    $app->update(['status' => AppStatus::Pending]);
+
+    expect(EligibleOffers::catalogueOpen(null))->toBeFalse()
+        ->and(EligibleOffers::query(null)->count())->toBe(0);
+});
+
+it('keeps the catalogue open for an approved publisher and an active app', function () {
+    [, $app, $offer] = inventoryFixture();
+
+    expect(EligibleOffers::catalogueOpen($app->id))->toBeTrue()
+        ->and(EligibleOffers::catalogueOpen(null))->toBeTrue()
+        ->and(EligibleOffers::query($app->id)->pluck('id')->all())->toBe([$offer->id]);
+});
+
+it('does not default the offers page to a pending app', function () {
+    $publisher = Publisher::factory()->create();
+    App::factory()->create([
+        'publisher_id' => $publisher->id,
+        'status' => AppStatus::Pending,
+        'name' => 'Still pending',
+    ]);
+    $network = Network::factory()->create(['status' => NetworkStatus::Active]);
+    Offer::factory()->create([
+        'network_id' => $network->id,
+        'status' => OfferStatus::Active,
+        'name' => 'Secret catalogue',
+    ]);
+
+    test()->actingAs($publisher->user);
+    Filament::setCurrentPanel('publisher');
+
+    Livewire::test(Offers::class)
+        ->assertSet('appId', null)
+        ->assertSee('<option value="" disabled selected>Waiting for approval</option>', false)
+        ->assertSee('Waiting for approval')
+        ->assertSee('Offers appear after your account and an app are approved.')
+        ->assertDontSee('Secret catalogue');
+});
+
+it('defaults the offers page to the first active app', function () {
+    [$publisher, $app, $offer] = inventoryFixture(['name' => 'Live offer']);
+    App::factory()->create([
+        'publisher_id' => $publisher->id,
+        'status' => AppStatus::Pending,
+    ]);
+
+    Filament::setCurrentPanel('publisher');
+
+    Livewire::test(Offers::class)
+        ->assertSet('appId', $app->id)
+        ->assertSee('Live offer')
+        ->assertDontSee('Waiting for approval');
+});
+
+it('shows the waiting empty state for a pending publisher on an active app', function () {
+    [$publisher, $app, $offer] = inventoryFixture(['name' => 'Live offer']);
+    $publisher->update([
+        'status' => PublisherStatus::Pending,
+        'approved_at' => null,
+    ]);
+
+    Filament::setCurrentPanel('publisher');
+
+    Livewire::test(Offers::class, ['appId' => $app->id])
+        ->assertSee('Waiting for approval')
+        ->assertSee('Offers appear after your account and this app are approved.')
+        ->assertDontSee('Live offer');
 });

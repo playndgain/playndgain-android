@@ -107,7 +107,7 @@ class AppResource extends PublisherScopedResource
     {
         return Group::make([
             Text::make('Live preview')->weight('semibold'),
-            Html::make(fn (Get $get): HtmlString => self::preview($get)),
+            Html::make(fn (Get $get, ?App $record): HtmlString => self::preview($get, $record)),
             // The one thing a local render cannot show: whether the real wall
             // serves. Only offered once it can — a link to the unavailable
             // notice teaches the publisher their integration is broken when it
@@ -341,7 +341,7 @@ class AppResource extends PublisherScopedResource
     }
 
     /** The wall as the form currently describes it. */
-    private static function preview(Get $get): HtmlString
+    private static function preview(Get $get, ?App $record): HtmlString
     {
         $publisher = CurrentPublisher::get();
         $radius = $get('theme.radius');
@@ -361,6 +361,7 @@ class AppResource extends PublisherScopedResource
             'rate' => (float) ($get('currency_rate') ?: 1000),
             'revShare' => $publisher === null ? 70.0 : (float) $publisher->rev_share,
             'dark' => (bool) ($get('theme.dark') ?? true),
+            'showSamples' => $record?->isActive() ?? false,
         ])->render());
     }
 

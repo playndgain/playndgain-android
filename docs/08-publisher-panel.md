@@ -40,7 +40,7 @@ Every resource extends this. Every model in the publisher's world also carries a
 
 | State | What the panel does |
 |---|---|
-| `pending` | Full navigation visible, persistent banner: *"Your account is under review. You can create apps now — they'll go live once approved."* App creation allowed, wall serves nothing. |
+| `pending` | Full navigation visible, persistent banner: *"Your account is under review. You can create apps now — they'll go live once approved."* App creation allowed, wall serves nothing, Offers catalogue and blacklist offer picker are empty. |
 | `approved` | Normal. |
 | `suspended` | Panel access blocked. Login blocked with a message explaining the suspension. |
 | `banned` | Login blocked with a message. |
@@ -133,6 +133,8 @@ The browsable offer catalogue. A publisher's answer to *"what can my users actua
 Read-only. Scoped to what is genuinely eligible for their apps right now: active offers on active networks, minus their own blacklists, minus offers blocked globally.
 
 **App selector at the top.** Eligibility is per-app — blacklists and country blocks differ between placements — so the list is meaningless without knowing which app it describes. Defaults to their first active app, never to "all".
+
+A pending, paused, or rejected app is never the default. Until the account is Approved and the selected app is Active the table is empty: heading **Waiting for approval**, body **Offers appear after your account and this app are approved.** (or **…and an app are approved.** when no app is selected). The page stays in the nav.
 
 **Columns:** icon · name · **your payout** (their rev-share applied, USD) · **user reward** (payout × currency rate, in their currency) · countries · devices · conversion type · clicks 7d · conversions 7d · CR 7d
 
@@ -239,7 +241,7 @@ Payment details are edited on the Payments page — §10.
 
 Their own blocks. Tabs: **Offers** · **Countries** · **Devices**.
 
-- Offers — searchable picker over the offers currently eligible for their apps, with payout shown.
+- Offers — searchable picker over the offers currently eligible for their apps, with payout shown. The picker is empty until the account is Approved and the chosen app (or at least one app, for “all apps”) is Active. Country and device blocks still save.
 - Countries — multi-select with flags.
 - Devices — checkboxes.
 
@@ -332,3 +334,5 @@ Its panel states the security property that matters to someone who did not reque
 - Blocking from the Offers page removes the offer from that app's wall and leaves it on the publisher's other apps.
 - Postback re-send is rate-limited.
 - Payment detail edit does not mutate an existing withdrawal's snapshot.
+- `EligibleOffers` is empty for a pending publisher, a non-active app, and `query(null)` when the publisher has no Active app.
+- The Offers page does not default `appId` to a pending app.

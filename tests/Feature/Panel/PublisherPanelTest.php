@@ -82,8 +82,8 @@ it('paints the create-app preview with the wall\'s own chrome', function () {
             'currency_name' => 'Coins',
             'currency_rate' => 1000,
         ])
-        ->assertSee('wall-card', false)
-        ->assertSee('wall-reward', false)
+        ->assertDontSee('class="wall-card', false)
+        ->assertDontSee('wall-reward', false)
         // The preview renders the wall's own chrome in the wall's own order:
         // lockup, capsule filters, featured rail, then All Offers.
         ->assertSee('wall-filters', false)
@@ -92,11 +92,39 @@ it('paints the create-app preview with the wall\'s own chrome', function () {
         ->assertSee('wall-rail', false)
         ->assertSee('wall-catalogue__title', false)
         ->assertSee('Rewards Hub')
-        ->assertSee('Coin Master')
-        ->assertSee('+2,940')
+        ->assertDontSee('Coin Master')
+        ->assertDontSee('+2,940')
+        ->assertDontSee('Sample inventory')
         ->assertSee('app-macros', false)
         // The app bar still names the currency, exactly as the live wall does.
         ->assertSee('Earn Coins');
+});
+
+it('hides sample preview cards on a pending app and shows them once active', function () {
+    $publisher = Publisher::factory()->create(['rev_share' => 70]);
+    $app = App::factory()->create([
+        'publisher_id' => $publisher->id,
+        'status' => AppStatus::Pending,
+        'name' => 'Rewards Hub',
+        'currency_name' => 'Coins',
+        'currency_rate' => 1000,
+    ]);
+
+    $this->actingAs($publisher->user);
+    Filament::setCurrentPanel('publisher');
+
+    Livewire::test(EditApp::class, ['record' => $app->getRouteKey()])
+        ->assertSee('Rewards Hub')
+        ->assertSee('wall-filters', false)
+        ->assertDontSee('class="wall-card', false)
+        ->assertDontSee('Coin Master')
+        ->assertDontSee('Sample inventory');
+
+    $app->update(['status' => AppStatus::Active]);
+
+    Livewire::test(EditApp::class, ['record' => $app->getRouteKey()])
+        ->assertSee('Coin Master')
+        ->assertSee('Sample inventory');
 });
 
 it('renders the currency example at several rates and shares', function (float $revShare, float $rate, string $expected) {
