@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'seed_admin_email' => env('PLAYNDGAIN_SEED_ADMIN_EMAIL', 'admin@playndgain.com'),
+    'seed_admin_email' => env('PLAYNDGAIN_SEED_ADMIN_EMAIL', 'ziadtallat33@gmail.com'),
     'seed_admin_password' => env('PLAYNDGAIN_SEED_ADMIN_PASSWORD'),
 
     /*
