@@ -80,11 +80,13 @@ services:
     # An hour of grace, which is docs/11 §3's `stopwaitsecs=3600`: in-flight
     # postbacks land instead of being killed mid-request on redeploy.
     stop_grace_period: 3600s
-    # PID 1 after `exec php artisan horizon` (docker/entrypoint.sh). Do not use
-    # the Redis status command (the old master makes the new task look healthy)
-    # and do not pgrep -f from CMD-SHELL (the probe's own argv matches).
+    # PID 1 is `php artisan horizon` after su-exec execs it. /proc/1/cmdline
+    # is NUL-separated, so a single "artisan horizon" needle never matches
+    # and Swarm marks every new task unhealthy. Do not ask Redis whether
+    # a master exists (the old one makes the new task look healthy) and
+    # do not pgrep -f (the probe's own argv matches).
     healthcheck:
-      test: ["CMD", "grep", "-aq", "artisan horizon", "/proc/1/cmdline"]
+      test: ["CMD-SHELL", "tr '\\0' ' ' < /proc/1/cmdline | grep -q 'php artisan horizon'"]
       interval: 15s
       timeout: 5s
       start_period: 120s

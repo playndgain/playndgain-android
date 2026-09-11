@@ -266,6 +266,7 @@ it('rolls app start-first for Dokploy Stack deploys', function () {
         ->and(substr_count($compose, 'order: stop-first'))->toBe(3)
         ->and($compose)->toContain('disable: true')
         ->and($compose)->toContain('/proc/1/cmdline')
+        ->and($compose)->toContain('php artisan horizon')
         ->and($compose)->not->toContain('horizon:status')
         ->and($compose)->toContain('playndgain-storage')
         ->and($script)->toContain('--detach=true')
