@@ -11,7 +11,9 @@ use App\Networks\Drivers\FakeNetworkDriver;
 use App\Networks\DTO\OfferDTO;
 use App\Networks\NetworkDriverManager;
 use App\Providers\NetworkServiceProvider;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 beforeEach(function () {
     $this->app->register(NetworkServiceProvider::class);
@@ -343,4 +345,66 @@ it('records a run for a network whose driver class no longer exists', function (
     $run = NetworkSync::query()->where('network_id', $orphan->id)->sole();
 
     expect($run->status)->toBe(SyncStatus::Failed);
+});
+
+it('records what a driver refused and why, alongside what it kept', function () {
+    // A real platform catalogue: some offers priced along a dimension the wall
+    // cannot filter on, and the operator needs the shortfall explained rather
+    // than inferred.
+    $network = Network::factory()->platform('affise')->create([
+        'credentials' => [
+            'api_base_url' => 'https://api-acme.affise.com',
+            'api_key' => 'affise-key',
+            'postback_secret' => 'affise-postback-secret',
+        ],
+    ]);
+
+    Http::fakeSequence()
+        ->push(json_decode((string) file_get_contents(base_path('tests/Fixtures/Networks/affise-offers-page1.json')), true))
+        ->push(json_decode((string) file_get_contents(base_path('tests/Fixtures/Networks/affise-offers-page2.json')), true));
+
+    (new SyncNetworkOffersJob($network))->handle($this->app->make(NetworkDriverManager::class));
+
+    $run = NetworkSync::query()->where('network_id', $network->id)->sole();
+
+    expect($run->status)->toBe(SyncStatus::Ok)
+        ->and($run->offers_seen)->toBe(5)
+        // Refusals, not dropped offers: a percent-priced offer records both the
+        // payment it refused and the empty variant list that leaves behind.
+        ->and($run->offers_skipped)->toBe(9)
+        ->and($run->skip_reasons)->toHaveKeys([
+            'percentage payout',
+            'country exclusion list',
+            'non-USD payout',
+            'offer stopped',
+        ])
+        ->and($run->skip_reasons['percentage payout']['count'])->toBe(1)
+        ->and($run->skip_reasons['percentage payout']['samples'])->toBe(['5718dac83b7d9bf8588b45bb'])
+        // The tooltip an admin reads, worst offender first.
+        ->and($run->skipSummary())->toContain('percentage payout: 1');
+});
+
+it('keeps the reasons a failed run had already collected', function () {
+    $network = Network::factory()->platform('affise')->create([
+        'credentials' => [
+            'api_base_url' => 'https://api-acme.affise.com',
+            'api_key' => 'affise-key',
+            'postback_secret' => 'affise-postback-secret',
+        ],
+    ]);
+
+    Offer::factory()->count(3)->create(['network_id' => $network->id, 'status' => OfferStatus::Active]);
+
+    Http::fake(['*' => Http::response(['status' => 0, 'message' => 'Invalid API key'], 403)]);
+
+    expect(fn () => (new SyncNetworkOffersJob($network))->handle($this->app->make(NetworkDriverManager::class)))
+        ->toThrow(RuntimeException::class);
+
+    $run = NetworkSync::query()->where('network_id', $network->id)->sole();
+
+    // The whole point of fetching every page before yielding: a catalogue that
+    // failed deactivates nothing, and the run that failed is still on the log.
+    expect($run->status)->toBe(SyncStatus::Failed)
+        ->and(Offer::query()->where('status', OfferStatus::Active)->count())->toBe(3)
+        ->and($run->offers_skipped)->toBe(0);
 });

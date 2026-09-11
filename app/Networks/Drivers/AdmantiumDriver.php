@@ -2,8 +2,10 @@
 
 namespace App\Networks\Drivers;
 
+use App\Enums\ConnectorCategory;
 use App\Models\Offer;
 use App\Networks\AbstractDriver;
+use App\Networks\Connector;
 use App\Networks\Drivers\Concerns\NormalizesFields;
 use App\Networks\DTO\ConnectionResult;
 use App\Networks\DTO\OfferDTO;
@@ -35,6 +37,11 @@ class AdmantiumDriver extends AbstractDriver
     public static function key(): string
     {
         return 'admantium';
+    }
+
+    public static function connector(): Connector
+    {
+        return new Connector('Admantium', ConnectorCategory::Direct, website: 'https://admantum.com');
     }
 
     /**

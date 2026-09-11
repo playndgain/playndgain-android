@@ -91,7 +91,16 @@ it('refuses to charge back a conversion that never credited anyone', function ()
     firePostback(postbackDto($click, status: 'pending'))->assertOk();
     firePostback(postbackDto($click, status: 'reversed'))->assertOk();
 
-    expect(Conversion::query()->sole()->status)->toBe(ConversionStatus::Reversed)
+    $conversion = Conversion::query()->sole();
+
+    // D2: a decline that arrives before anyone was credited is a rejection, not
+    // a reversal. The money outcome is identical — no ledger entry, no
+    // chargeback, no publisher callback — and `reversed` on a row nobody was
+    // paid for reads in the panels and the exports as a chargeback that never
+    // happened. docs/04 §3 carries the matrix.
+    expect($conversion->status)->toBe(ConversionStatus::Rejected)
+        ->and($conversion->rejected_reason)->toBe('network_rejected')
+        ->and($conversion->upstream_status)->toBe(ConversionStatus::Reversed)
         ->and(LedgerEntry::query()->count())->toBe(0)
         ->and($click->publisher->fresh()->balance)->toBe('0.000000');
 

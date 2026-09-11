@@ -111,7 +111,7 @@ enum AuditActionFamily: string implements HasColor, HasIcon, HasLabel
     {
         return match (Str::afterLast($action, '.')) {
             'approved', 'paid', 'unblocked', 'unbanned', 'email_verified' => 'success',
-            'rejected', 'banned', 'blocked', 'force_reversed', 'ban_made_permanent' => 'danger',
+            'rejected', 'banned', 'blocked', 'force_reversed', 'ban_made_permanent', 'deleted' => 'danger',
             'impersonated', 'impersonation_ended', 'revealed', 'credentials_revealed',
             'secret_regenerated', '2fa_reset', 'password_changed' => 'warning',
             'balance_adjusted', 'requested' => 'primary',
@@ -123,7 +123,7 @@ enum AuditActionFamily: string implements HasColor, HasIcon, HasLabel
     {
         return match (Str::afterLast($action, '.')) {
             'approved', 'paid', 'unblocked', 'unbanned', 'email_verified' => Heroicon::OutlinedCheckCircle,
-            'rejected', 'banned', 'blocked', 'force_reversed', 'ban_made_permanent' => Heroicon::OutlinedNoSymbol,
+            'rejected', 'banned', 'blocked', 'force_reversed', 'ban_made_permanent', 'deleted' => Heroicon::OutlinedNoSymbol,
             'impersonated', 'impersonation_ended' => Heroicon::OutlinedUserCircle,
             'revealed', 'credentials_revealed', 'secret_regenerated', '2fa_reset',
             'password_changed' => Heroicon::OutlinedKey,

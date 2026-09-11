@@ -2,18 +2,37 @@
 
 namespace App\Networks;
 
+use App\Enums\ConnectorCategory;
 use App\Models\Network;
 use App\Networks\Contracts\NetworkDriver;
+use App\Networks\Support\OfferSkips;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 abstract class AbstractDriver implements NetworkDriver
 {
+    /**
+     * Built on first use rather than in the constructor: most drivers never
+     * skip anything, and a driver is constructed on every postback.
+     */
+    private ?OfferSkips $skips = null;
+
     public function __construct(protected Network $network) {}
 
     public function network(): Network
     {
         return $this->network;
+    }
+
+    /**
+     * A direct partner with a headline-cased key, which is right for most of
+     * them and wrong for the ones whose brand has its own capitalisation.
+     * Those override; `Str::headline()` is the floor, not the intent.
+     */
+    public static function connector(): Connector
+    {
+        return new Connector(Str::headline(static::key()), ConnectorCategory::Direct);
     }
 
     /**
@@ -29,10 +48,13 @@ abstract class AbstractDriver implements NetworkDriver
      *
      * Braces stay unencoded — `http_build_query()` would turn `{USER_ID}`
      * into `%7BUSER_ID%7D`, which most dashboards then send back literally.
+     * The `#` in a Swaarm macro is part of the token and never a fragment,
+     * which is also why the query is appended after `url()` rather than passed
+     * through it.
      */
-    public static function postbackUrl(): string
+    public static function postbackPath(string $postbackKey): string
     {
-        $base = url('/postback/'.static::key());
+        $base = url('/postback/'.$postbackKey);
         $pairs = [];
 
         foreach (static::postbackQuery() as $key => $macro) {
@@ -40,6 +62,24 @@ abstract class AbstractDriver implements NetworkDriver
         }
 
         return $pairs === [] ? $base : $base.'?'.implode('&', $pairs);
+    }
+
+    public function postbackUrl(): string
+    {
+        return static::postbackPath((string) $this->network->postback_key);
+    }
+
+    /**
+     * @return array<string, array{count: int, samples: list<string>}>
+     */
+    public function skippedOffers(): array
+    {
+        return $this->skips()->all();
+    }
+
+    protected function skips(): OfferSkips
+    {
+        return $this->skips ??= new OfferSkips;
     }
 
     /** Every driver that talks to an API has one; `direct` overrides. */
@@ -58,11 +98,18 @@ abstract class AbstractDriver implements NetworkDriver
     /**
      * `throw: false` on the retry so a driver decides what a failed catalogue
      * pull means, rather than the HTTP client deciding for it.
+     *
+     * Redirects are not followed. Every driver here talks to a fixed host and
+     * none of them relies on a 3xx today, but two of the hosts are becoming
+     * admin-supplied (a platform tenant's own domain), and a redirect is the
+     * cheapest way to walk a validated public host to a private one. Refusing
+     * the hop keeps the URL we validated the URL we called.
      */
     protected function http(): PendingRequest
     {
         return Http::timeout(30)
             ->retry(3, 200, throw: false)
+            ->withoutRedirecting()
             ->withUserAgent('PLAYNDGAIN/1.0');
     }
 

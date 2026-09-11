@@ -86,14 +86,36 @@ All money figures on this page read `daily_stats` and `ledger_entries`. Never an
 
 ### Networks
 
-**Table:** logo · name · driver · status badge · offers count · last sync (relative) · sync status icon · priority
+**Table:** logo · name · **category** badge · driver · status badge · offers count · last sync (relative) · sync status icon · priority
+
+**Filters:** status · **category** · type
 
 **Actions per row:** Edit · **Test connection** · **Sync now** · Enable/Disable · View offers
 
+**New network** (header action on the list). The connector is picked from
+Radio Deck cards, not a dropdown: *Platform connectors* first — the ones
+several partners each run their own tenant on, where more than one row is
+legitimate — then *Internal*, then *Direct connectors*, which are hidden
+behind a **Show direct connectors** toggle because each of those holds one
+account. A card that is already taken is disabled and reads *Already added*;
+submitting one is refused with "This connector allows one account." The
+category comes from the driver class (`connector()`), not from a column, so
+the badge and the filter both resolve through the driver manager and a row
+whose class is gone reads *Unknown*. The edit page shows only the stored
+connector as one disabled card so the rest of the form is not buried under
+every driver.
+
+A new network always saves `disabled`; the status select is shown disabled on
+the create page to say so. It is switched on from the list once **Test
+connection** passes. Production does not seed accounts — this page is how
+every row gets there.
+
 **Form:**
-- Name, logo upload, website, priority, sync interval
+- Name, website, logo upload, priority, sync interval. Picking a connector
+  card fills name, website and the partner mark from `connector()`; the logo
+  is an image upload under `public/img/networks`, not a typed path.
 - **Credentials** — fields rendered dynamically from `driver::credentialSchema()`. Secret fields are password inputs, masked after save, with a *Reveal* action that writes to the audit log.
-- Postback IP allowlist (repeater), with the network's postback URL displayed and copyable: `https://api.playndgain.com/postback/{driver}`. Empty list rejects. **Allow any source IP** is the explicit opt-out when a partner will not publish addresses.
+- Postback IP allowlist (repeater), with **this account's** postback URL displayed: `https://api.playndgain.com/postback/{postback_key}`. The key is per row, so two accounts on one connector get two URLs. A literal `secret=` value in the displayed URL is masked; the *Copy postback URL* action copies the whole thing and writes `network.postback_url_copied` to the audit log. Empty list rejects. **Allow any source IP** is the explicit opt-out when a partner will not publish addresses.
 - Last sync error shown read-only when present
 
 **Test connection** calls `driver->testConnection()` and shows the returned offer count. Saving credentials without testing them is the most common way a network silently never syncs.

@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Networks\Pages;
 
 use App\Enums\NetworkIntegration;
 use App\Filament\Admin\Resources\Networks\NetworkResource;
+use App\Filament\Admin\Resources\Networks\Pages\Concerns\LogsPostbackUrlCopy;
 use App\Jobs\SyncNetworkOffersJob;
 use App\Models\AuditLog;
 use App\Models\Network;
@@ -15,6 +16,8 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditNetwork extends EditRecord
 {
+    use LogsPostbackUrlCopy;
+
     protected static string $resource = NetworkResource::class;
 
     /**

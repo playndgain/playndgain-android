@@ -8,6 +8,7 @@ use App\Enums\SyncStatus;
 use App\Models\Network;
 use App\Models\NetworkSync;
 use App\Models\Offer;
+use App\Networks\Contracts\NetworkDriver;
 use App\Networks\DTO\OfferDTO;
 use App\Networks\NetworkDriverManager;
 use App\Networks\OfferCacheFlusher;
@@ -69,6 +70,12 @@ class SyncNetworkOffersJob implements ShouldBeUnique, ShouldQueue
         $seen = [];
         $created = 0;
 
+        // Held outside the try so the failure path can still read back what the
+        // driver refused before it died. A run that threw on page three has
+        // usually skipped things on pages one and two, and those reasons are
+        // exactly what explains the shortfall an operator is looking at.
+        $driver = null;
+
         // Resolving the driver is inside the try, and the two values above are
         // measured before it, for one reason: a `networks` row naming a driver
         // class that no longer exists throws here, and outside the try that
@@ -104,7 +111,7 @@ class SyncNetworkOffersJob implements ShouldBeUnique, ShouldQueue
             // Recorded before the rethrow, with the partial counts: the offers
             // upserted before the network died are in the database either way,
             // and a run that logged nothing is a run nobody can explain.
-            $this->recordRun($runAt, $startedAt, $seen, $created, 0);
+            $this->recordRun($runAt, $startedAt, $seen, $created, 0, $driver);
             $this->alertOnRepeatedFailure();
 
             throw $e;
@@ -114,7 +121,7 @@ class SyncNetworkOffersJob implements ShouldBeUnique, ShouldQueue
             // The guard has already written the reason onto the network; this
             // is the run the operator will come looking for, so it gets a row
             // like any other — nothing was deactivated, which is the point.
-            $this->recordRun($runAt, $startedAt, $seen, $created, 0);
+            $this->recordRun($runAt, $startedAt, $seen, $created, 0, $driver);
 
             return;
         }
@@ -137,7 +144,7 @@ class SyncNetworkOffersJob implements ShouldBeUnique, ShouldQueue
             'offers_count' => count($seen),
         ]);
 
-        $this->recordRun($runAt, $startedAt, $seen, $created, $deactivated);
+        $this->recordRun($runAt, $startedAt, $seen, $created, $deactivated, $driver);
 
         OfferCacheFlusher::flushForNetwork($this->network);
     }
@@ -149,10 +156,22 @@ class SyncNetworkOffersJob implements ShouldBeUnique, ShouldQueue
      * every branch above has already written its verdict there, and reading it
      * is how the log and the networks table can never disagree.
      *
+     * Skips are read off the driver instance the run actually used, not from a
+     * freshly resolved one: the tally lives on the object the generator was
+     * iterated from.
+     *
      * @param  array<int, true>  $seen
      */
-    private function recordRun(Carbon $runAt, float $startedAt, array $seen, int $created, int $deactivated): void
-    {
+    private function recordRun(
+        Carbon $runAt,
+        float $startedAt,
+        array $seen,
+        int $created,
+        int $deactivated,
+        ?NetworkDriver $driver = null,
+    ): void {
+        $skips = $driver?->skippedOffers() ?? [];
+
         NetworkSync::create([
             'network_id' => $this->network->id,
             'started_at' => $runAt,
@@ -162,6 +181,8 @@ class SyncNetworkOffersJob implements ShouldBeUnique, ShouldQueue
             'offers_created' => $created,
             'offers_updated' => count($seen) - $created,
             'offers_deactivated' => $deactivated,
+            'offers_skipped' => array_sum(array_column($skips, 'count')),
+            'skip_reasons' => $skips === [] ? null : $skips,
             'status' => $this->network->last_sync_status ?? SyncStatus::Ok,
             'error' => $this->network->last_sync_error,
             'created_at' => now(),

@@ -119,11 +119,11 @@ A partner ad network we pull offers from.
 
 `wall_url` and `wall_new_tab` describe the second integration mode: instead of syncing a catalogue and redirecting clicks, we frame the partner's own wall. Both are null/false for an API network, which is most of them.
 
-Networks are **seeded as `disabled`** with empty credentials. An admin activates one by pasting credentials and hitting *Test connection*.
+Networks are created from **Networks → New network**. A new row is always `disabled` with empty credentials until an admin pastes keys and hits *Test connection*. Production never seeds accounts; the connector cards on that page are the catalogue.
 
-The seed covers the **five launch partners** — AdGate, Admantum, Monlix, Adscend Media, Notik — each with its mark in `public/img/networks/`, plus **PLAYNDGAIN (house)**, which has no API at all: it is the home for offers we sell ourselves, added by hand in the admin panel ([02 §6](02-network-adapters.md)), and it sorts below every partner because house inventory fills a gap rather than outranking a supplier.
+**PLAYNDGAIN (house)** is the same create flow with the `direct` connector: it has no API, and it is the home for offers we sell ourselves, added by hand in the admin panel ([02 §6](02-network-adapters.md)). It should sort below every partner because house inventory fills a gap rather than outranking a supplier.
 
-Two rules decide what is in that list, and they are different rules. A network is only seeded once its driver can talk to the real API — a row an admin can enable that then syncs nothing reads as a broken network rather than a missing one. And it is only seeded once there is an account behind it: Adswedmedia and Lootably have working, fixture-tested drivers and are deliberately absent, because a row for a network we have no credentials for is an invitation to switch on something that cannot earn. Adding one later is a row, not a deploy.
+Disable a row to take it off the wall. `conversions.network_id` cascades, so a network that has been paid through is not deleted from the panel.
 
 ### `offers`
 
@@ -504,4 +504,4 @@ users → settings → networks → publishers → apps → offers
       → daily_stats → audit_logs
 ```
 
-**Seeders:** `SettingsSeeder`, `NetworkSeeder` (9 networks, all `disabled`), `FraudRuleSeeder` (day-1 rules), `AdminUserSeeder`.
+**Seeders:** `SettingsSeeder`, `FraudRuleSeeder` (day-1 rules), `IpProviderSeeder`, `AdminUserSeeder`. Networks are not seeded in production.

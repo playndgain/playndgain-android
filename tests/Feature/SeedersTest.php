@@ -101,11 +101,11 @@ it('creates exactly one admin, with no default password', function () {
 });
 
 it('never wipes the credentials off a network an admin configured', function () {
-    // `db:seed` is a command someone runs on production the day a tenth network
-    // is added. The seeder used to pass `credentials => null` and
-    // `status => Disabled` on every run, so that day also emptied the API keys
-    // off every live network and switched them all off — no offers, no inbound
-    // conversions accepted, nothing in the log saying why.
+    // `db:seed --class=NetworkSeeder` on a local box used to pass
+    // `credentials => null` and `status => Disabled` on every run, so that
+    // day also emptied the API keys off every live network and switched
+    // them all off — no offers, no inbound conversions accepted, nothing
+    // in the log saying why. Production never reaches this seeder.
     $this->seed(NetworkSeeder::class);
 
     $network = Network::query()->where('driver', 'monlix')->sole();
@@ -128,9 +128,17 @@ it('is idempotent — reseeding does not duplicate anything', function () {
     $this->seed();
     $this->seed();
 
-    expect(Network::query()->count())->toBe(17)
+    expect(Network::query()->count())->toBe(0)
         ->and(FraudRule::query()->count())->toBe(23)
         ->and(User::query()->where('role', 'admin')->count())->toBe(1);
+});
+
+it('does not seed networks in production', function () {
+    $this->app->detectEnvironment(fn (): string => 'production');
+
+    (new NetworkSeeder)->run();
+
+    expect(Network::query()->count())->toBe(0);
 });
 
 it('seeds the postback allowlist for a network whose only auth it is', function () {

@@ -5,14 +5,19 @@ namespace App\Models;
 use App\Enums\NetworkIntegration;
 use App\Enums\NetworkStatus;
 use App\Enums\SyncStatus;
+use App\Networks\Connector;
 use App\Networks\NetworkDriverManager;
+use App\Networks\OfferCacheFlusher;
 use Database\Factories\NetworkFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
+use LogicException;
 use Throwable;
 
+/** @property-read int|null $conversions_count */
 class Network extends Model
 {
     /** @use HasFactory<NetworkFactory> */
@@ -35,6 +40,93 @@ class Network extends Model
         'hosts_wall' => 'bool',
         'integration' => NetworkIntegration::class,
     ];
+
+    /**
+     * Callback identity is minted here, not in a form or a seeder.
+     *
+     * A network with no `postback_key` has no reachable callback URL, and the
+     * column is unique and not null, so every way a row can be created — admin,
+     * seeder, factory, tinker — has to produce one. Doing it in the model is
+     * the only place all four pass through.
+     *
+     * `account_scope` is the second half of `unique(driver, account_scope)`. It
+     * stays empty for a connector that holds one account, which is what keeps
+     * the database refusing a second `ogads` row; a platform connector scopes
+     * by its own key so its tenants are unique per account rather than per
+     * class.
+     *
+     * The connector is read statically off the driver class: this runs on an
+     * unsaved model, and constructing a driver needs a Network that exists.
+     * An unregistered driver leaves the scope empty, which is the strict
+     * direction — a typo'd key then behaves like a single-account connector
+     * rather than silently allowing duplicates.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (Network $network): void {
+            if (blank($network->postback_key)) {
+                $network->postback_key = Str::lower(Str::random(32));
+            }
+
+            if (blank($network->account_scope)) {
+                $network->account_scope = self::connectorFor((string) $network->driver)?->supportsMultipleAccounts
+                    ? (string) $network->postback_key
+                    : '';
+            }
+        });
+
+        // `conversions.network_id` cascades. A delete that reached the
+        // database would take the money history with it, so the model is
+        // the last gate every path — panel, tinker, a job — has to pass.
+        static::deleting(function (Network $network): void {
+            if (! $network->canBeDeleted()) {
+                throw new LogicException('A network with conversions cannot be deleted.');
+            }
+
+            OfferCacheFlusher::flushForNetwork($network);
+        });
+    }
+
+    /**
+     * Unused accounts can go. One that has been paid through cannot.
+     */
+    public function canBeDeleted(): bool
+    {
+        return ($this->conversions_count ?? $this->conversions()->count()) === 0;
+    }
+
+    /** Null when the driver is unregistered — a removed class, or a row typed by hand. */
+    public function connector(): ?Connector
+    {
+        return self::connectorFor((string) $this->driver);
+    }
+
+    public static function connectorFor(string $driver): ?Connector
+    {
+        $manager = app(NetworkDriverManager::class);
+
+        if ($driver === '' || ! $manager->has($driver)) {
+            return null;
+        }
+
+        return $manager->all()[$driver]::connector();
+    }
+
+    /**
+     * The URL an admin pastes into this account's dashboard.
+     *
+     * Null rather than a bare path when the driver is unregistered: the macro
+     * template is the driver's, and a URL without it is one a partner would
+     * accept and then fire with no parameters we read.
+     */
+    public function postbackUrl(): ?string
+    {
+        try {
+            return app(NetworkDriverManager::class)->make($this)->postbackUrl();
+        } catch (Throwable) {
+            return null;
+        }
+    }
 
     /**
      * What this partner brings, asked two different ways on purpose.

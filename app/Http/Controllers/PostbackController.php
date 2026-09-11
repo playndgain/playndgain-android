@@ -9,6 +9,7 @@ use App\Models\Network;
 use App\Networks\Exceptions\UnknownDriverException;
 use App\Networks\NetworkDriverManager;
 use App\Services\Money\ConversionProcessor;
+use App\Services\Money\Redactor;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
@@ -17,7 +18,7 @@ use Illuminate\Support\Arr;
  * Inbound network postbacks — docs/04-conversions-postbacks.md §1.
  *
  *   1. Log the raw request to incoming_postbacks — FIRST, before anything can fail
- *   2. Resolve the network by driver key            → 404, result=error
+ *   2. Resolve the network by postback key          → 404, result=error
  *   3. Source IP against networks.postback_ips      → 403, result=rejected
  *      (`allow_any_postback_ip` skips this; empty list does not)
  *   4. driver->verifyPostback()                     → 403, result=rejected
@@ -31,9 +32,13 @@ class PostbackController extends Controller
     /** Written to `reject_reason`; `postbacks:replay-chargebacks` reads it back. */
     public const INACTIVE_REASON = 'network is not active';
 
-    /** Networks put credentials in the payload; none of it belongs in a log row. */
-    private const REDACTED_INPUT = ['password', 'secret', 'key'];
-
+    /**
+     * Two headers are dropped rather than masked. Both carry a credential of
+     * *ours* in full — a bearer token, a session cookie — so there is nothing
+     * to learn from the fact that they arrived. Everything else is the
+     * partner's own payload and goes through `Redactor`, which masks the value
+     * and keeps the name.
+     */
     private const REDACTED_HEADERS = ['authorization', 'cookie'];
 
     public function __construct(
@@ -41,30 +46,37 @@ class PostbackController extends Controller
         private readonly ConversionProcessor $processor,
     ) {}
 
-    public function __invoke(Request $request, string $driver): Response
+    public function __invoke(Request $request, string $postbackKey): Response
     {
         // Step 1 is first for a reason. When a network says "we sent you 400
         // conversions yesterday", this row is the only thing that can confirm
         // or refute it — and a log written after validation only records the
         // requests that were already fine.
+        //
+        // `driver` starts as the route segment because that is all we know
+        // before the lookup, and the column must never be empty on a row that
+        // exists to explain an unresolvable fire. It is replaced with the real
+        // driver the moment the network is found, so the replay command's
+        // `--driver` filter keeps meaning the class.
         $log = IncomingPostback::create([
-            'driver' => $driver,
+            'driver' => $postbackKey,
+            'postback_key' => $postbackKey,
             'method' => $request->method(),
-            'query' => $request->query(),
-            'body' => $request->except(self::REDACTED_INPUT),
-            'headers' => Arr::except($request->headers->all(), self::REDACTED_HEADERS),
+            'query' => Redactor::keys((array) $request->query()),
+            'body' => Redactor::keys($request->all()),
+            'headers' => Redactor::keys(Arr::except($request->headers->all(), self::REDACTED_HEADERS)),
             'ip' => (string) $request->ip(),
             'result' => IncomingPostbackResult::Error,
             'created_at' => now(),
         ]);
 
-        $network = Network::query()->where('driver', $driver)->first();
+        $network = Network::query()->where('postback_key', $postbackKey)->first();
 
         if ($network === null) {
-            return $this->stop($log, IncomingPostbackResult::Error, 'unknown driver', Response::HTTP_NOT_FOUND);
+            return $this->stop($log, IncomingPostbackResult::Error, 'unknown postback key', Response::HTTP_NOT_FOUND);
         }
 
-        $log->update(['network_id' => $network->id]);
+        $log->update(['network_id' => $network->id, 'driver' => $network->driver]);
 
         if (! $this->ipAllowed($request, $network)) {
             return $this->stop(

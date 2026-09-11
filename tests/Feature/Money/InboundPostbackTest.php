@@ -90,7 +90,11 @@ it('strips credentials out of the stored request', function () {
 
     $log = IncomingPostback::query()->sole();
 
-    expect($log->body)->toBe(['tx' => 'abc'])
+    // Masked, not dropped. A missing key and a wrong key are different support
+    // conversations, and only the mask can tell them apart. `authorization`
+    // stays dropped: it carries a credential of ours, so its arrival says
+    // nothing worth keeping.
+    expect($log->body)->toEqual(['tx' => 'abc', 'secret' => 'REDACTED', 'key' => 'REDACTED', 'password' => 'REDACTED'])
         ->and(array_keys($log->headers ?? []))->not->toContain('authorization')
         ->and(array_keys($log->headers ?? []))->toContain('x-trace');
 });

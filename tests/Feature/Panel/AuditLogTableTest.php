@@ -47,6 +47,7 @@ it('classifies known admin actions into families', function (string $action, Aud
     ['payment_method.revealed', AuditActionFamily::Access],
     ['network.credentials_revealed', AuditActionFamily::Access],
     ['network.status', AuditActionFamily::Status],
+    ['network.deleted', AuditActionFamily::Catalog],
     ['offer.created', AuditActionFamily::Catalog],
     ['offer.blocked', AuditActionFamily::Status],
     ['offer.unblocked', AuditActionFamily::Status],

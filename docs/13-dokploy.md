@@ -207,9 +207,11 @@ asymmetry is expressed in the server blocks and asserted by
 to the wall domain would sit outside both and would break every integration at
 once.
 
-**Logs go to stdout.** `LOG_CHANNEL=stderr`, nginx and PHP-FPM to the container
-log, so Dokploy's log view is the whole story and nothing grows into the disk
-alert.
+**Logs go to stderr and a daily file.** `LOG_CHANNEL=stderr` still feeds
+Dokploy's container log (nginx and PHP-FPM do the same). Laravel remaps that
+channel onto `stderr_and_daily` so Log Viewer can open `storage/logs/laravel-YYYY-MM-DD.log`.
+Those files rotate after `LOG_DAILY_DAYS` (14) and sit in the container
+writable layer, not on `playndgain-storage`, so a redeploy clears them.
 
 **`storage/app` is a named volume shared by all three containers.** The
 scheduler fetches the GeoIP databases weekly and the wall reads them; the

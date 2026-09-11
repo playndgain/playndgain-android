@@ -40,7 +40,7 @@ These were settled during design. They are not open questions.
 | Market sides | Aggregator only. No advertiser signup, no direct campaigns. |
 | Offerwall delivery | Hosted iframe only. No REST catalogue API, no JS SDK, no mobile SDK in v1. |
 | Payout model | Rev-share % per publisher, calendar-month hold (clears on the 1st), $20 minimum, manual admin approval. |
-| Partner integration | One generic adapter interface + concrete drivers. Seeded partners start `disabled`; an admin enables one by pasting credentials. `adswedmedia` and `lootably` keep their drivers and are seeded only once there is an account behind them. A `direct` row is the house channel: offers we sell ourselves, added by hand. |
+| Partner integration | One generic adapter interface + concrete drivers. Accounts are created from **Networks → New network**, start `disabled`, and are enabled after credentials pass Test connection. A `direct` row is the house channel: offers we sell ourselves, added by hand. |
 | Fraud | Admin-tunable rules engine. Every block logged with a reason. |
 | Infrastructure | Single VPS: nginx + PHP-FPM + MySQL + Redis + Horizon. |
 | Chargebacks | Partner reversal fires a `status=reversed` postback to the publisher with a negative amount and writes a negative ledger entry. |

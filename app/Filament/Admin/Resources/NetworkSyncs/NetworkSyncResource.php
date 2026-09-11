@@ -62,6 +62,13 @@ class NetworkSyncResource extends Resource
                 // The number a complaint is about: every one of these left a wall.
                 TextColumn::make('offers_deactivated')->label('Deactivated')->numeric()->sortable()
                     ->color(fn (NetworkSync $record): string => (int) $record->offers_deactivated > 0 ? 'warning' : 'gray'),
+                // The answer to "the partner lists four thousand, we show nine
+                // hundred". Every one of these was refused on purpose; the
+                // tooltip says on what grounds.
+                TextColumn::make('offers_skipped')->label('Skipped')->numeric()->sortable()
+                    ->placeholder('0')
+                    ->color(fn (NetworkSync $record): string => (int) $record->offers_skipped > 0 ? 'warning' : 'gray')
+                    ->tooltip(fn (NetworkSync $record): ?string => $record->skipSummary()),
                 TextColumn::make('status')->badge()
                     ->color(fn (SyncStatus $state): string => $state === SyncStatus::Ok ? 'success' : 'danger'),
                 TextColumn::make('error')->placeholder('—')->wrap()->limit(80)->searchable(),

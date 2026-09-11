@@ -25,7 +25,10 @@ it('pays once when a network sends the same transaction twice', function () {
         ->and($logs)->toHaveCount(2)
         ->and($logs[0]->result)->toBe(IncomingPostbackResult::Accepted)
         ->and($logs[1]->result)->toBe(IncomingPostbackResult::Duplicate)
-        ->and($logs[1]->conversion_id)->toBeNull();
+        // The duplicate names the conversion it was a duplicate *of*. Left null
+        // it was the one log row an admin could not follow to the money, which
+        // is the row they open when a partner disputes a count.
+        ->and($logs[1]->conversion_id)->toBe(Conversion::query()->sole()->id);
 });
 
 it('keeps the idempotency key scoped to the network that sent it', function () {

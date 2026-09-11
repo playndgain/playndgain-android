@@ -154,6 +154,17 @@ final readonly class PostbackDTO
 }
 ```
 
+**`rejected` and `reversed` are not interchangeable, and the driver does not
+choose between them on the strength of the word.** An upstream decline —
+Affise status `3`, a Swaarm `Rejected`, anything a partner calls *declined* —
+is `rejected`. `ConversionProcessor` then decides what it costs from the row it
+lands on: a refusal on a pending conversion, and a charge-back on a credited
+one when the connector declares `rejectedAfterCreditReverses` (docs/04 §3).
+Emit `reversed` only when the partner sends an explicitly negative payout —
+that is a chargeback *amount*, which is a fact rather than a decision. A driver
+that reads a decline as a reversal takes the choice away from the matrix and
+claws money back on connectors that never meant it.
+
 ### `ConnectionResult`
 
 ```php
@@ -284,7 +295,26 @@ Each new driver is a self-contained unit. To add one:
 
 1. **Read the network's docs.** Note: auth method, offers endpoint, pagination style, subid parameter name, postback format, reversal signalling.
 2. **Create `app/Networks/Drivers/{Name}Driver.php`** extending `AbstractDriver`.
-3. **`credentialSchema()`** — return the fields the admin form should render:
+3. **`connector()`** — the driver's human name and what kind of thing it is:
+   ```php
+   public static function connector(): Connector
+   {
+       return new Connector('AdGateMedia', ConnectorCategory::Direct);
+   }
+   ```
+   `AbstractDriver` defaults to `Str::headline(key())` and `Direct`, which is
+   right for the shape and usually wrong for the capitalisation, so every driver
+   overrides it. `Platform` marks a connector several partners run their own
+   tenant on; set `supportsMultipleAccounts: true` there, and the admin create
+   form will allow more than one `networks` row on it. `rejectedAfterCreditReverses`
+   declares whether an upstream `rejected` arriving after we credited takes the
+   money back — false for every per-partner integration here. `listedInAdmin`
+   is false only on the test double: it stays registered for demo rows and
+   pipeline tests, but New network does not offer it. `website` and `logo`
+   are the identity New network fills when the card is picked; `logo` is a
+   filename under `public/img/networks`, or omitted when `{key}.svg|png|webp`
+   already exists.
+4. **`credentialSchema()`** — return the fields the admin form should render:
    ```php
    public static function credentialSchema(): array
    {
@@ -295,12 +325,43 @@ Each new driver is a self-contained unit. To add one:
        ];
    }
    ```
-4. **`fetchOffers()`** — paginate to exhaustion, `yield` an `OfferDTO` per offer, normalize countries to uppercase ISO-2 and payout to USD.
-5. **`buildTrackingUrl()`** — put `$clickId` in the network's subid slot. Get this wrong and conversions arrive with no click to attach to.
-6. **`parsePostback()` / `verifyPostback()`** — signature check *and* IP allowlist.
-7. **Register** in `NetworkDriverManager::$drivers`.
-8. **Seed** a `networks` row with `status = disabled`.
-9. **Test** with a recorded fixture (`tests/Fixtures/Networks/{name}-offers.json`) — never a live call.
+5. **`fetchOffers()`** — paginate to exhaustion, `yield` an `OfferDTO` per offer, normalize countries to uppercase ISO-2 and payout to USD. Record anything you drop with `$this->skips()->skip($externalId, $reason)`; the sync job reads the tally back through `skippedOffers()`.
+6. **`buildTrackingUrl()`** — put `$clickId` in the network's subid slot. Get this wrong and conversions arrive with no click to attach to.
+7. **`parsePostback()` / `verifyPostback()`** — signature check *and* IP allowlist.
+8. **Register** in `NetworkDriverManager::$drivers`.
+9. **Create** the account from **Networks → New network**. The connector card fills identity; the row always saves `disabled`. Production does not seed `networks` rows.
+10. **Test** with a recorded fixture (`tests/Fixtures/Networks/{name}-offers.json`) — never a live call.
+
+### 7. Payout variants
+
+A *platform* connector prices one upstream offer several ways — Affise carries a `payments[]` matrix with an entry per country, Swaarm carries a base payout plus `targeted_payouts[]`. `offers` has one `payout` column, and the wall already filters by country and device and ranks by payout, so the representation is **one `offers` row per clean payout variant**. `app/Networks/Drivers/Concerns/ExpandsPayoutVariants` does the expansion; the driver supplies the variants and builds the DTO.
+
+A variant is accepted only when it is expressible as **countries and devices and nothing else**. Cities, regions, zip codes, OS version bounds, ISPs, browsers, sub-id lists and exclusion flags are dimensions the wall cannot filter on, so an offer priced along one would be shown to users it cannot pay for. Those are skipped with a reason, never guessed at.
+
+Two rules do the work:
+
+- **Overlap.** A specific variant and a broader one both matching the same user would put two tiles at two prices on their wall. Where the broader row names its countries, the specific ones are subtracted. Where it is *worldwide* there is nothing to subtract from — inverting an empty list into "everywhere except US" is a list we do not have — so the base is skipped as `base payout unbounded with country variants`.
+- **Conflict.** Two variants with the same `(countries, devices)` key and different payouts cannot both be true, so the whole offer is skipped as `conflicting variants`. Picking one would be a guess about money.
+
+Row identity has to survive a re-sync: a single-variant offer keeps the bare upstream id, a multi-variant offer numbers its rows `{id}~{n}` over a deterministic sort of the variants. Both country and device lists are sorted before the key is built, so a partner reordering its array does not churn every `external_id`.
+
+Skips are read back by `SyncNetworkOffersJob` through `skippedOffers()` and land on the sync row as `offers_skipped` and `skip_reasons` — visible in the admin's Sync Log as a **Skipped** column with the reasons in its tooltip.
+
+### 8. Admin-supplied hosts
+
+A platform connector's API host is typed by an admin, which makes the catalogue pull a server-side request to wherever someone pasted. `app/Networks/Support/TenantUrl` is the gate: https only, no userinfo, no port but 443, a DNS name rather than an address, no `.local`/`.internal`/`.arpa`/`localhost`, and a host on a suffix the connector owns, matched on a label boundary. Declare it on the credential field with a `rule` entry and re-validate inside the driver — a `networks` row can be written by a console command that never saw the form. `AbstractDriver::http()` does not follow redirects, so the URL that was validated is the URL that is dialled.
+
+### The postback URL
+
+`postbackUrl()` is an **instance** method. Each `networks` row carries its own
+`postback_key` and the route is `/postback/{postbackKey}`, so two accounts on
+one platform connector get two callback URLs. Existing rows were backfilled with
+`postback_key = driver`, so every URL already pasted into a partner dashboard
+still resolves to the same network.
+
+`postbackPath($key)` is the static form, for rendering the paste template
+without a saved row (docs and tests). `postbackQuery()` stays static: the macro
+template belongs to the class.
 
 ### Reference implementation sketch
 
@@ -352,11 +413,11 @@ class OGAdsDriver extends AbstractDriver
 >
 > **The catalogue half is ported from working integrations; the postback half is not.** Every driver's `parsePostback()`/`verifyPostback()` carries an `ASSUMPTION` comment naming what still needs checking against a live fire — parameter names, the reversal signal, and the signature recipe. Verify those before a network takes live traffic: a wrong reversal reading credits a chargeback, and a wrong signature recipe rejects every postback while looking exactly like a network outage.
 >
-> A network with no adapter behind it is not registered and not seeded. An enabled row that syncs nothing is worse than a missing one.
+> A network with no adapter behind it is not registered. An enabled row that syncs nothing is worse than a missing one.
 
 ### `direct` — offers we sell ourselves
 
-Manual offers are not a second kind of offer. They are rows on the seeded `direct` network, so clicks, postbacks, the fraud pass, the ledger and publisher postbacks all run the same code a network's offer runs.
+Manual offers are not a second kind of offer. They are rows on the house `direct` network, so clicks, postbacks, the fraud pass, the ledger and publisher postbacks all run the same code a network's offer runs. Create that account from New network before adding a house offer.
 
 An admin adds one from **Offers → Add offer**. The tracking URL is the advertiser's, and must contain `{click_id}`; nothing appends it silently, because an untracked click is an unpaid conversion. `external_id` is generated (`direct-…`) since the advertiser has no id of their own to give us.
 

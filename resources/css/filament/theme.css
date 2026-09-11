@@ -26,6 +26,7 @@
 @source '../../views/vendor/announcements';
 @source '../../../vendor/bezhansalleh/filament-panel-switch/resources/views/**/*.blade.php';
 @source '../../../vendor/vitisstudio/filament-choosable-chips/resources/views';
+@source '../../../vendor/jaocero/radio-deck/resources/views';
 @source '../../../vendor/zpmlabs/filament-popup/resources/views/**/*';
 
 /* ── Names for the utilities the custom views use. `panel-*` are the chrome's

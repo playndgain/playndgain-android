@@ -2,8 +2,10 @@
 
 namespace App\Networks\Drivers;
 
+use App\Enums\ConnectorCategory;
 use App\Models\Offer;
 use App\Networks\AbstractDriver;
+use App\Networks\Connector;
 use App\Networks\Drivers\Concerns\NormalizesFields;
 use App\Networks\DTO\ConnectionResult;
 use App\Networks\DTO\OfferDTO;
@@ -29,6 +31,11 @@ class AdswedmediaDriver extends AbstractDriver
     public static function key(): string
     {
         return 'adswedmedia';
+    }
+
+    public static function connector(): Connector
+    {
+        return new Connector('Adswedmedia', ConnectorCategory::Direct, website: 'https://adswedmedia.com');
     }
 
     /**

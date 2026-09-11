@@ -8,6 +8,7 @@ use App\Networks\Drivers\AdmantiumDriver;
 use App\Networks\Drivers\AdscendMediaDriver;
 use App\Networks\Drivers\AdswedmediaDriver;
 use App\Networks\Drivers\AdtogameDriver;
+use App\Networks\Drivers\AffiseDriver;
 use App\Networks\Drivers\AyetStudiosDriver;
 use App\Networks\Drivers\ClickwallDriver;
 use App\Networks\Drivers\DirectDriver;
@@ -22,6 +23,7 @@ use App\Networks\Drivers\NotikDriver;
 use App\Networks\Drivers\OfferyDriver;
 use App\Networks\Drivers\OGAdsDriver;
 use App\Networks\Drivers\SkylupDriver;
+use App\Networks\Drivers\SwaarmDriver;
 use App\Networks\Drivers\ToroxDriver;
 use App\Networks\NetworkDriverManager;
 use Illuminate\Support\ServiceProvider;
@@ -54,6 +56,10 @@ class NetworkServiceProvider extends ServiceProvider
         KlinkDriver::class,
         ClickwallDriver::class,
         SkylupDriver::class,
+        // The platform connectors. Unlike every key above, more than one
+        // `networks` row may legitimately use these.
+        SwaarmDriver::class,
+        AffiseDriver::class,
     ];
 
     public function boot(): void

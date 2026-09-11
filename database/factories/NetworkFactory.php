@@ -22,6 +22,11 @@ class NetworkFactory extends Factory
 
         return [
             'driver' => Str::slug($name),
+            // Mirrors the identity migration's backfill, so every test that
+            // posts to `/postback/{driver}` keeps resolving without being
+            // rewritten. A platform account gets a random key instead — see
+            // `platform()`.
+            'postback_key' => fn (array $attributes): string => Str::substr((string) ($attributes['driver'] ?? Str::random(32)), 0, 64),
             'name' => $name,
             'status' => NetworkStatus::Active,
             'credentials' => ['api_key' => Str::random(32)],
@@ -37,6 +42,27 @@ class NetworkFactory extends Factory
             'offers_count' => 0,
             'integration' => NetworkIntegration::Api,
         ];
+    }
+
+    /**
+     * A second, third, nth account on a connector that hosts many.
+     *
+     * The default key is the driver, which is exactly what a platform cannot
+     * have: two rows on the same driver would collide on the unique key and on
+     * the callback URL. Both halves of the identity are set together because
+     * `account_scope` is what the composite unique index reads.
+     */
+    public function platform(string $driver): static
+    {
+        return $this->state(function () use ($driver): array {
+            $key = Str::lower(Str::random(32));
+
+            return [
+                'driver' => $driver,
+                'postback_key' => $key,
+                'account_scope' => $key,
+            ];
+        });
     }
 
     public function disabled(): static

@@ -10,7 +10,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             SettingsSeeder::class,
-            NetworkSeeder::class,
             FraudRuleSeeder::class,
             IpProviderSeeder::class,
             AdminUserSeeder::class,

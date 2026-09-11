@@ -72,5 +72,11 @@ function firePostback(?PostbackDTO $dto, array $payload = [], string $driver = '
 {
     FakeNetworkDriver::shouldParsePostback($dto);
 
-    return test()->post("/postback/{$driver}", $payload);
+    // The route resolves a per-row `postback_key`, not the driver. The factory
+    // mirrors the migration's backfill, so these are the same string for every
+    // fixture here — the lookup is what keeps that an implementation detail
+    // rather than something every caller has to know.
+    $key = Network::query()->where('driver', $driver)->value('postback_key') ?? $driver;
+
+    return test()->post("/postback/{$key}", $payload);
 }

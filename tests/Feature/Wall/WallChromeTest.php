@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\Identity;
+
 require_once __DIR__.'/WallFixtures.php';
 
 /*
@@ -65,7 +67,7 @@ it('names the wall with the app lockup', function () {
     wallOffer($network, ['countries' => [], 'devices' => []]);
 
     wallGet($app)->assertOk()
-        ->assertSee('<title>'.e(\App\Support\Identity::name()).'</title>', false)
+        ->assertSee('<title>'.e(Identity::name()).'</title>', false)
         ->assertDontSee('<title>'.e(__('wall.title')).'</title>', false)
         ->assertSee('wall-topbar__mark', false)
         ->assertSee('wall-topbar__name', false)

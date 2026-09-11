@@ -48,17 +48,31 @@ it('shows the hangmyads postback url with the macros the driver reads', function
 
     Livewire::test(EditNetwork::class, ['record' => $network->getRouteKey()])
         ->assertFormSet([
-            'postback_url_display' => HangMyAdsDriver::postbackUrl(),
+            'postback_url_display' => HangMyAdsDriver::postbackPath($network->postback_key),
         ]);
 });
 
 it('copies the same postback url from the network list', function () {
     $network = Network::factory()->create(['driver' => 'hangmyads']);
 
-    expect(NetworkResource::postbackUrl($network))->toBe(HangMyAdsDriver::postbackUrl());
+    expect(NetworkResource::postbackUrl($network))->toBe(HangMyAdsDriver::postbackPath($network->postback_key));
 
     Livewire::test(ListNetworks::class)
         ->assertTableActionVisible('copy_postback', $network);
+});
+
+it('never masks a macro the partner is meant to substitute', function () {
+    // Direct and Monlix both put `secret={secret}` in their template. Masking
+    // the token rather than a literal value would hand the admin a paste string
+    // that fails silently, which is the one failure mode the helper text under
+    // this field exists to warn about.
+    foreach (['direct', 'monlix'] as $driver) {
+        $network = Network::factory()->create(['driver' => $driver]);
+
+        expect(NetworkResource::maskedPostbackUrl($network))
+            ->toBe(NetworkResource::postbackUrl($network))
+            ->toContain('secret=');
+    }
 });
 
 it('shows a bare postback url when the network sends a fixed payload', function () {
@@ -66,6 +80,6 @@ it('shows a bare postback url when the network sends a fixed payload', function 
 
     Livewire::test(EditNetwork::class, ['record' => $network->getRouteKey()])
         ->assertFormSet([
-            'postback_url_display' => NotikDriver::postbackUrl(),
+            'postback_url_display' => NotikDriver::postbackPath($network->postback_key),
         ]);
 });

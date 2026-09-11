@@ -47,6 +47,18 @@ return [
             'report' => false,
         ],
 
+        // Network marks live under `public/img/networks`, not the storage
+        // disk. The admin FileUpload has to see those seeded files and write
+        // replacements next to them, or every edit would 404 the preview.
+        'web' => [
+            'driver' => 'local',
+            'root' => public_path(),
+            'url' => rtrim((string) env('APP_URL', 'http://localhost'), '/'),
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

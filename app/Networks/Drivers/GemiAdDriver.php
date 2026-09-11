@@ -2,8 +2,10 @@
 
 namespace App\Networks\Drivers;
 
+use App\Enums\ConnectorCategory;
 use App\Models\Offer;
 use App\Networks\AbstractDriver;
+use App\Networks\Connector;
 use App\Networks\Drivers\Concerns\NormalizesFields;
 use App\Networks\DTO\ConnectionResult;
 use App\Networks\DTO\OfferDTO;
@@ -79,6 +81,11 @@ class GemiAdDriver extends AbstractDriver
     public static function key(): string
     {
         return 'gemiad';
+    }
+
+    public static function connector(): Connector
+    {
+        return new Connector('GemiAd', ConnectorCategory::Direct, website: 'https://gemiwall.com');
     }
 
     /**

@@ -15,13 +15,17 @@ use Illuminate\Database\Seeder;
  * it is not seeded: a row an admin can fill in and enable, that then syncs
  * nothing, is worse than no row at all.
  *
+ * **Local and tests only.** Production accounts are created from
+ * **Networks → New network**. This class is not in `DatabaseSeeder`, and
+ * `run()` is a no-op in production so `db:seed --class=NetworkSeeder` cannot
+ * put the launch set back after an admin deleted it.
+ *
  * **This is the launch set, not the full driver set.** The partners below
  * are the ones being applied to first, in the order they are worth pursuing;
  * `adswedmedia` and `lootably` keep their drivers and fixture-backed tests but
  * are deliberately not seeded, because a row for a network we have no account
  * with is an invitation to enable something that cannot earn. Adding one later
- * is a row, not a code change — which is the whole point of the adapter
- * interface.
+ * is a row on New network, not a code change.
  */
 class NetworkSeeder extends Seeder
 {
@@ -204,23 +208,19 @@ class NetworkSeeder extends Seeder
     ];
 
     /**
-     * Re-runnable on a live database, which `updateOrCreate` was not.
+     * Re-runnable on a local database, which `updateOrCreate` was not.
      *
-     * This seeder is in `DatabaseSeeder`, and `db:seed` is a command someone
-     * runs on production the day a tenth network is added. The previous version
-     * passed `credentials => null` and `status => Disabled` in the update
-     * payload, so that run also wiped the API keys off every configured network
-     * and switched them all off: no offers, no inbound conversions accepted,
-     * and nothing in the log saying why. It would equally have undone the
-     * credential-rename migration that ships beside it.
-     *
-     * So the split below is the whole point. Descriptive columns are the
-     * seeder's to own and are refreshed every run; anything an admin has since
-     * typed — credentials, status, the source-IP allowlist, sync cadence — is
-     * written once, at creation, and never again.
+     * Descriptive columns are the seeder's to own and are refreshed every
+     * run; anything an admin has since typed — credentials, status, the
+     * source-IP allowlist, sync cadence — is written once, at creation,
+     * and never again. Production never reaches this body.
      */
     public function run(): void
     {
+        if (app()->isProduction()) {
+            return;
+        }
+
         foreach (self::NETWORKS as $index => $network) {
             // Listed best-first, so the earlier a partner appears the higher it
             // sorts on a wall where two offers are otherwise equal.

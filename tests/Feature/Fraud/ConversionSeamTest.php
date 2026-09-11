@@ -133,11 +133,16 @@ it('rejects a conversion that arrived from a proxy and pays nobody', function ()
 });
 
 /**
- * `reverse()` charges back only what was credited. A conversion this rule
- * rejected never reached the ledger, so reversing it must move no money — the
- * `(network_id, network_txid)` row still exists and still matches.
+ * A conversion this rule rejected never reached the ledger, so a later
+ * reversal must move no money — the `(network_id, network_txid)` row still
+ * exists and still matches.
+ *
+ * It also must not move the *status*. Our own rule refused this conversion;
+ * a network declining something we had already declined tells us nothing new,
+ * and overwriting `rejected` with `reversed` would lose the rule key that says
+ * why we refused it. docs/04 §3.
  */
-it('reverses a proxy-rejected conversion without inventing a chargeback', function () {
+it('leaves a proxy-rejected conversion rejected when the network declines it too', function () {
     Queue::fake();
 
     $click = moneyFixture();
@@ -149,8 +154,10 @@ it('reverses a proxy-rejected conversion without inventing a chargeback', functi
 
     $conversion = Conversion::query()->sole();
 
-    expect($conversion->status)->toBe(ConversionStatus::Reversed)
-        ->and($conversion->reversed_at)->not->toBeNull()
+    expect($conversion->status)->toBe(ConversionStatus::Rejected)
+        ->and($conversion->rejected_reason)->toBe('conversion_proxy_ip')
+        ->and($conversion->reversed_at)->toBeNull()
+        ->and($conversion->upstream_status)->toBe(ConversionStatus::Reversed)
         ->and(LedgerEntry::query()->count())->toBe(0);
 });
 
@@ -169,4 +176,34 @@ it('credits a clean conversion even when the click itself came from a proxy', fu
 
     expect(Conversion::query()->sole()->status)->toBe(ConversionStatus::Approved)
         ->and(LedgerEntry::query()->count())->toBe(1);
+});
+
+it('runs the fraud pipeline once per postback, not twice', function () {
+    Queue::fake();
+
+    fraudRule('impossible_speed', FraudStage::PostConversion, FraudAction::Flag, weight: 10);
+
+    $click = moneyFixture();
+    // Instant conversion: the rule fires on every evaluation, so the number of
+    // events is the number of times the pipeline ran.
+    $click->forceFill(['created_at' => now()])->save();
+
+    // A `pending` postback never reaches the pipeline — only a credit does.
+    firePostback(postbackDto($click, status: 'pending'));
+
+    expect(FraudEvent::query()->count())->toBe(0);
+
+    // One inbound postback, one evaluation. The existence check in `record()`
+    // is what keeps the create path's run off a transaction that was only ever
+    // going to collide; the reconciler's run is the one with the existing
+    // conversion in its context, and it is the only one that happens.
+    firePostback(postbackDto($click, status: 'credited'))->assertOk();
+
+    expect(FraudEvent::query()->count())->toBe(1)
+        // Subject is the conversion, not the click: on this path the row exists.
+        ->and(FraudEvent::query()->sole()->subject_type)->toBe((new Conversion)->getMorphClass())
+        // Flagged, so it stays in the review queue rather than being paid.
+        ->and(Conversion::query()->sole()->status)->toBe(ConversionStatus::Pending)
+        ->and(Conversion::query()->sole()->upstream_status)->toBe(ConversionStatus::Approved)
+        ->and(LedgerEntry::query()->count())->toBe(0);
 });

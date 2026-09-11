@@ -2,8 +2,10 @@
 
 namespace App\Networks\Drivers;
 
+use App\Enums\ConnectorCategory;
 use App\Models\Offer;
 use App\Networks\AbstractDriver;
+use App\Networks\Connector;
 use App\Networks\Drivers\Concerns\NormalizesFields;
 use App\Networks\DTO\ConnectionResult;
 use App\Networks\DTO\OfferDTO;
@@ -50,6 +52,11 @@ class NotikDriver extends AbstractDriver
     public static function key(): string
     {
         return 'notik';
+    }
+
+    public static function connector(): Connector
+    {
+        return new Connector('Notik', ConnectorCategory::Direct, website: 'https://notik.me');
     }
 
     /**

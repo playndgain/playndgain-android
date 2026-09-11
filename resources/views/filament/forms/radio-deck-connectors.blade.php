@@ -1,0 +1,110 @@
+@php
+    use Filament\Support\Enums\Alignment;
+    use Filament\Support\Enums\IconPosition;
+
+    $id = $getId();
+    $isDisabled = $isDisabled();
+    $isMultiple = $isMultiple();
+    $statePath = $getStatePath();
+@endphp
+
+<x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
+    <div {{ $attributes->grid($getColumns())->class(['auto-cols-fr', 'gap-5']) }}>
+        @foreach ($getOptions() as $value => $label)
+            @php
+                $shouldOptionBeDisabled = $isDisabled || $isOptionDisabled($value, $label);
+            @endphp
+
+            <label class="flex cursor-pointer gap-x-3">
+                <input id="{{ $id }}-{{ $value }}" type="{{ $isMultiple ? 'checkbox' : 'radio' }}"
+                    value="{{ $value }}" wire:loading.attr="disabled"
+                    {{ $applyStateBindingModifiers('wire:model') }}="{{ $statePath }}"
+                    @if (! $isMultiple) name="{{ $id }}" @endif @disabled($shouldOptionBeDisabled)
+                    {{ $getExtraInputAttributeBag()->class(['peer hidden']) }} />
+
+                @php
+                    $iconExists = $hasIcons($value);
+                    $iconPosition = $getIconPosition();
+                    $alignment = $getAlignment();
+                    $gap = $getOptionsGap();
+                    $padding = $getPadding();
+                    $color = $getOptionColor($value);
+                    $icon = $getIcon($value);
+                    $iconIsImage = is_string($icon) && (str_starts_with($icon, '/') || str_starts_with($icon, 'http://') || str_starts_with($icon, 'https://'));
+                    $descriptionExists = $hasDescription($value);
+                    $description = $getDescription($value);
+                @endphp
+
+                <div {{ $getExtraCardsAttributeBag()->class([
+                    'flex w-full items-center rounded-lg bg-white text-sm leading-6 dark:bg-gray-900',
+                    $padding ?: 'px-4 py-2',
+                    $gap ?: 'gap-5',
+                    match ($iconPosition) {
+                        IconPosition::Before, 'before' => 'justify-start',
+                        IconPosition::After, 'after' => 'justify-between flex-row-reverse',
+                        default => 'justify-start',
+                    },
+                    match ($alignment) {
+                        Alignment::Center, 'center' => 'items-center',
+                        Alignment::Start, 'start' => 'items-start',
+                        Alignment::End, 'end' => 'items-end',
+                        default => 'items-center',
+                    },
+                    'ring-1 ring-gray-200 dark:ring-gray-700 peer-checked:ring-2',
+                    'peer-disabled:cursor-not-allowed peer-disabled:bg-gray-100/50 dark:peer-disabled:bg-gray-700/50',
+                    match ($color) {
+                        'gray' => 'peer-checked:ring-gray-600 dark:peer-checked:ring-gray-500',
+                        default => 'fi-color-custom peer-checked:ring-2 peer-checked:ring-custom-600 dark:peer-checked:ring-custom-500',
+                    },
+                ]) }}
+                    @style([
+                        \Filament\Support\get_color_css_variables($color, shades: [600, 500]) => $color !== 'gray',
+                    ])>
+                    @if ($iconExists)
+                        @php
+                            $iconSizeValue = $getIconSize() ?? 'md';
+
+                            $iconSizeClass = match ($iconSizeValue) {
+                                'xs' => 'h-4 w-4',
+                                'sm' => 'h-5 w-5',
+                                'md' => 'h-6 w-6',
+                                'lg' => 'h-8 w-8',
+                                'xl' => 'h-10 w-10',
+                                '2xl' => 'h-12 w-12',
+                                default => $iconSizeValue,
+                            };
+                        @endphp
+
+                        @if ($iconIsImage)
+                            <img src="{{ $icon }}" alt="" class="{{ $iconSizeClass }} shrink-0 object-contain" />
+                        @else
+                            <x-filament::icon :icon="$icon" @class([
+                                'flex-shrink-0',
+                                $iconSizeClass,
+                                match ($color) {
+                                    'gray' => 'fi-color-gray text-gray-600 dark:text-gray-500',
+                                    default => 'fi-color-custom text-custom-600 dark:text-custom-500',
+                                },
+                            ]) @style([
+                                \Filament\Support\get_color_css_variables($color, shades: [600, 500]) => $color !== 'gray',
+                            ]) />
+                        @endif
+                    @endif
+
+                    <div {{ $getExtraOptionsAttributeBag()->merge(['class' => 'place-items-start']) }}>
+                        <span class="font-medium text-gray-950 dark:text-white">
+                            {{ $label }}
+                        </span>
+
+                        @if ($descriptionExists)
+                            <p
+                                {{ $getExtraDescriptionsAttributeBag()->merge(['class' => 'text-gray-500 dark:text-gray-400']) }}>
+                                {{ $description }}
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            </label>
+        @endforeach
+    </div>
+</x-dynamic-component>

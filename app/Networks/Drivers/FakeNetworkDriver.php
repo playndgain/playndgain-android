@@ -2,8 +2,10 @@
 
 namespace App\Networks\Drivers;
 
+use App\Enums\ConnectorCategory;
 use App\Models\Offer;
 use App\Networks\AbstractDriver;
+use App\Networks\Connector;
 use App\Networks\DTO\ConnectionResult;
 use App\Networks\DTO\OfferDTO;
 use App\Networks\DTO\PostbackDTO;
@@ -33,6 +35,12 @@ class FakeNetworkDriver extends AbstractDriver
     public static function key(): string
     {
         return 'fake';
+    }
+
+    /** Never registered in production, so it is ours and never a partner. */
+    public static function connector(): Connector
+    {
+        return new Connector('Fake network (dev)', ConnectorCategory::Internal, listedInAdmin: false);
     }
 
     /**

@@ -24,14 +24,14 @@ beforeEach(function () {
 it('exposes a postback url every registered driver can render', function () {
     foreach ($this->manager->all() as $driver => $class) {
         expect($class::postbackQuery())->toBeArray()
-            ->and($class::postbackUrl())
+            ->and($class::postbackPath($driver))
             ->toStartWith(url('/postback/'.$driver))
             ->not->toContain('%7B');
     }
 });
 
 it('builds the documented paste url for a network that writes its own template', function (string $class, string $query) {
-    expect($class::postbackUrl())
+    expect($class::postbackPath($class::key()))
         ->toBe(url('/postback/'.$class::key()).'?'.$query);
 })->with([
     'ayetstudios' => [
@@ -82,7 +82,7 @@ it('builds the documented paste url for a network that writes its own template',
 
 it('leaves the path bare when the network fires a fixed payload', function (string $class) {
     expect($class::postbackQuery())->toBe([])
-        ->and($class::postbackUrl())->toBe(url('/postback/'.$class::key()));
+        ->and($class::postbackPath($class::key()))->toBe(url('/postback/'.$class::key()));
 })->with([
     'notik' => [NotikDriver::class],
     'offery' => [OfferyDriver::class],

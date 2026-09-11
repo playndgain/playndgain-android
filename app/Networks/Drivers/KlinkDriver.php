@@ -2,8 +2,10 @@
 
 namespace App\Networks\Drivers;
 
+use App\Enums\ConnectorCategory;
 use App\Models\Offer;
 use App\Networks\AbstractDriver;
+use App\Networks\Connector;
 use App\Networks\Drivers\Concerns\NormalizesFields;
 use App\Networks\DTO\ConnectionResult;
 use App\Networks\DTO\OfferDTO;
@@ -62,6 +64,11 @@ class KlinkDriver extends AbstractDriver
     public static function key(): string
     {
         return 'klink';
+    }
+
+    public static function connector(): Connector
+    {
+        return new Connector('Klink', ConnectorCategory::Direct, website: 'https://publisher.klinklabs.com');
     }
 
     /**

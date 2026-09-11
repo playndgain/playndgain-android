@@ -84,3 +84,7 @@ it('refuses the log viewer api with a wrong bearer token', function () {
         ->getJson(route('log-viewer.files'))
         ->assertUnauthorized();
 });
+
+it('fans the production stderr channel into a daily file for log viewer', function () {
+    expect(config('logging.channels.stderr_and_daily.channels'))->toBe(['stderr', 'daily']);
+});

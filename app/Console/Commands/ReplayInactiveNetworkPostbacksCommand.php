@@ -50,7 +50,8 @@ class ReplayInactiveNetworkPostbacksCommand extends Command
     /** @var array<string, int> */
     private array $tally = [
         'reversed' => 0,
-        'already reversed' => 0,
+        'rejected' => 0,
+        'already settled' => 0,
         'no conversion' => 0,
         'not a reversal' => 0,
         'unparseable' => 0,
@@ -145,12 +146,17 @@ class ReplayInactiveNetworkPostbacksCommand extends Command
             return;
         }
 
-        $processor->reverse($dto, $network, $log);
+        $conversion = $processor->reverse($dto, $network, $log);
 
-        $outcome = match ($log->result) {
-            IncomingPostbackResult::Accepted => 'reversed',
-            IncomingPostbackResult::Duplicate => 'already reversed',
-            default => 'no conversion',
+        // A reversal that lands on a row nobody was credited for is a rejection
+        // now, not a reversal (docs/04 §3, D2). The two move the same money —
+        // none — but reporting eleven "reversed" for eleven declines nobody was
+        // ever paid for overstates what this command did.
+        $outcome = match (true) {
+            $log->result === IncomingPostbackResult::Duplicate => 'already settled',
+            $log->result !== IncomingPostbackResult::Accepted => 'no conversion',
+            $conversion?->status === ConversionStatus::Rejected => 'rejected',
+            default => 'reversed',
         };
 
         // `reverse()` writes the result but has no reason to know the row is
@@ -177,7 +183,7 @@ class ReplayInactiveNetworkPostbacksCommand extends Command
         $key = $network->id.'|'.$dto->networkTxId;
 
         if (isset($this->seen[$key])) {
-            $this->tally[$this->seen[$key] === 'no conversion' ? 'no conversion' : 'already reversed']++;
+            $this->tally[$this->seen[$key] === 'no conversion' ? 'no conversion' : 'already settled']++;
 
             return;
         }
@@ -190,7 +196,11 @@ class ReplayInactiveNetworkPostbacksCommand extends Command
 
         $this->seen[$key] = match ($status) {
             null => 'no conversion',
-            ConversionStatus::Reversed => 'already reversed',
+            // Already settled one way or the other: a reversed row is a
+            // duplicate, and a rejected one stays rejected.
+            ConversionStatus::Reversed, ConversionStatus::Rejected => 'already settled',
+            // Nobody was credited, so the decline lands as a rejection.
+            ConversionStatus::Pending => 'rejected',
             default => 'reversed',
         };
 

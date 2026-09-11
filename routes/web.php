@@ -132,7 +132,10 @@ Route::get('/docs/{slug?}', DocsController::class)
 // Inbound network postbacks  →  docs/04-conversions-postbacks.md
 // ---------------------------------------------------------------------------
 //
-// One route, driver resolved from the path segment. CSRF is exempted for
+// One route; the network is resolved from the path segment against
+// `networks.postback_key`. The segment used to be the driver key, and every row
+// backfilled its key from its driver, so URLs already pasted into partner
+// dashboards still land on the same network. CSRF is exempted for
 // `postback/*` in bootstrap/app.php.
 //
 // Throttled per source IP — docs/11 §10. The controller writes an
@@ -148,6 +151,6 @@ Route::get('/docs/{slug?}', DocsController::class)
 Route::redirect('/dashboard/withdrawals', '/dashboard/payments', 301);
 Route::redirect('/dashboard/payment-methods', '/dashboard/payments', 301);
 
-Route::match(['get', 'post'], '/postback/{driver}', PostbackController::class)
+Route::match(['get', 'post'], '/postback/{postbackKey}', PostbackController::class)
     ->middleware('throttle:postback')
     ->name('postback');

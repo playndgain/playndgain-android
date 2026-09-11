@@ -236,7 +236,38 @@ Admin and publisher both get a **Re-send** action on a failed postback. It re-re
 
 ---
 
-## 3. Chargebacks & Reversals
+## 3. Status reconciliation, chargebacks & reversals
+
+Upstream statuses arrive as a **sequence**, not a verdict: `pending`, then `approved` when the advertiser confirms, then possibly `rejected` a week later when they audit. The `(network_id, network_txid)` unique index settles the *first* write; every postback after it goes to `ConversionProcessor::reconcile()`.
+
+`conversions.status` stays the only money truth. `upstream_status` and `upstream_updated_at` record what the network last said, normalised into our own vocabulary (`pending|approved|rejected|reversed` — a driver's `credited` is stored as `approved`). Nothing reads them to decide whether to pay.
+
+### The matrix
+
+Rows are the status we hold; columns are what just arrived. "dup" writes nothing but the two audit columns.
+
+| existing \ incoming | pending | credited | rejected | reversed |
+|---|---|---|---|---|
+| **pending** | dup | fraud pipeline decides: **approved** → credit + Credit callback · **flagged** → stays pending · **blocked** → rejected with the rule key | rejected, `network_rejected`, no chargeback, no callback | same as rejected |
+| **approved** | dup | dup | connector-gated: reverse if `Connector::rejectedAfterCreditReverses`, otherwise dup + admin alert `conversion.upstream_rejected_after_credit` | reverse: one chargeback, Reversal callback |
+| **rejected** (`network_rejected`) | dup | as pending + credited — the network is un-rejecting something only it ever rejected | dup | dup |
+| **rejected** (fraud key or admin reason) | dup | refused: stays rejected, log result `rejected`, reason `internal rejection stands` | dup | dup |
+| **reversed** | dup | dup | dup | dup |
+
+Four things the table encodes that are easy to get wrong:
+
+- **A decline before any credit is a rejection, not a reversal.** The money outcome is identical — no ledger entry, no chargeback, no callback — and `reversed` on a row nobody was paid for reads in the panels and the exports as a chargeback that never happened.
+- **A late `rejected` is not universally a chargeback.** MyChips and Offery send it routinely and have never meant money back by it. Whether it does is a fact about the connector, declared once on `Connector::$rejectedAfterCreditReverses`, and false for every per-partner integration.
+- **Our own rejection outranks an upstream approval.** A fraud rule or an admin decided it; the network does not get to overturn either. A `network_rejected` row is different — we never made a decision of our own about it, so a later approval sends it back through the fraud pipeline.
+- **Amounts come from the confirming postback, not the first one.** A partner that cannot price an event until it settles fires `pending` at $0.00. `rev_share_applied` is read off the row, so a rev-share change between the two fires does not rewrite a conversion the publisher already earned. `clears_at` is recomputed at approval, because a conversion that sat pending through a month boundary must not become withdrawable the instant it is confirmed.
+
+### Concurrency
+
+Fraud evaluation runs **outside** every lock (it makes an `IpIntelligence` call over HTTP). The cell is then chosen a second time from the status a `lockForUpdate()` re-read actually found, never from the read that preceded it: two workers reconciling one transaction both see `pending` outside the lock, and only the re-read tells the second one that the first already paid. Ledger writes happen inside the lock; publisher callbacks are dispatched after the commit.
+
+A reversal for a txid with **no row at all** keeps its behaviour: logged as an error, HTTP 200, visible to an admin. No tombstone row is invented from a postback that cannot be attached to a click.
+
+### The write itself
 
 A partner reverses a conversion when the advertiser rejects it — fraud, a refunded purchase, a duplicate install.
 

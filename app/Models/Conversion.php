@@ -26,9 +26,14 @@ class Conversion extends Model
         'rev_share_applied' => 'decimal:2',
         'currency_amount' => 'decimal:4',
         'status' => ConversionStatus::class,
+        // The last thing the network said, normalised into our own vocabulary.
+        // Audit only — `status` is the money truth and nothing reads this to
+        // decide whether to pay.
+        'upstream_status' => ConversionStatus::class,
         'is_test' => 'boolean',
         'clears_at' => 'datetime',
         'reversed_at' => 'datetime',
+        'upstream_updated_at' => 'datetime',
     ];
 
     /** @return BelongsTo<App, $this> */

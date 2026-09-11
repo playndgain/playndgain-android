@@ -38,10 +38,10 @@ class TestOfferSeeder extends Seeder
         $network = Network::query()->where('driver', 'direct')->first();
 
         if ($network === null) {
-            // NetworkSeeder owns that row. Running this seeder alone against a
-            // database without it should say so rather than create a second
-            // half-built `direct` network.
-            $this->command->warn('No `direct` network — run NetworkSeeder first. Test offer skipped.');
+            // House is created from New network (or locally via NetworkSeeder).
+            // Running this seeder alone against a database without that row
+            // should say so rather than create a second half-built `direct`.
+            $this->command->warn('No `direct` network — add PLAYNDGAIN (house) from New network first. Test offer skipped.');
 
             return;
         }

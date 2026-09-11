@@ -5,6 +5,8 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
+$channel = env('LOG_CHANNEL', 'stack');
+
 return [
 
     /*
@@ -16,9 +18,13 @@ return [
     | messages to your logs. The value provided here should match one of
     | the channels present in the list of "channels" configured below.
     |
+    | Production sets LOG_CHANNEL=stderr so Dokploy still sees container
+    | logs. That name is remapped onto stderr_and_daily so Log Viewer can
+    | open a rotating file under storage/logs as well.
+    |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => $channel === 'stderr' ? 'stderr_and_daily' : $channel,
 
     /*
     |--------------------------------------------------------------------------
@@ -103,6 +109,12 @@ return [
             ],
             'formatter' => env('LOG_STDERR_FORMATTER'),
             'processors' => [PsrLogMessageProcessor::class],
+        ],
+
+        'stderr_and_daily' => [
+            'driver' => 'stack',
+            'channels' => ['stderr', 'daily'],
+            'ignore_exceptions' => false,
         ],
 
         'syslog' => [

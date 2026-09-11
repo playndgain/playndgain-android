@@ -1,0 +1,89 @@
+{
+  "status": 1,
+  "offers": [
+    {
+      "id": 902,
+      "offer_id": "5718dac83b7d9bf8588b4579",
+      "title": "Country Matrix Install",
+      "preview_url": "https://apps.example.test/matrix",
+      "description_lang": { "en": "<p>Install and reach level 3</p>", "ru": "" },
+      "logo": "https://cdn.example.test/902.png",
+      "stop_at": "",
+      "categories": ["Games"],
+      "full_categories": [{ "id": "c1", "title": "Mobile Games" }],
+      "payments": [
+        { "countries": ["US"], "cities": [], "devices": [], "os": ["android"], "goal": "1", "revenue": 3.4, "currency": "usd", "title": "", "type": "fixed", "country_exclude": false },
+        { "countries": ["DE"], "cities": [], "devices": [], "os": ["android"], "goal": "1", "revenue": 1.2, "currency": "usd", "title": "", "type": "fixed", "country_exclude": false },
+        { "countries": ["BR"], "cities": [], "devices": [], "os": ["android"], "goal": "1", "revenue": 0.6, "currency": "usd", "title": "", "type": "fixed", "country_exclude": false }
+      ],
+      "caps": [
+        { "goals": {}, "period": "day", "type": "conversions", "value": 400, "goal_type": "all", "country_type": "all", "country": [] }
+      ],
+      "required_approval": false,
+      "is_cpi": true,
+      "links": [{ "url": "https://track.acme.affise.com/click?pid=610&offer_id=902" }],
+      "link": "https://track.acme.affise.com/click?pid=610&offer_id=902",
+      "kpi": { "en": "No incent traffic" },
+      "targeting": [
+        {
+          "name": "default targeting",
+          "country": { "allow": [], "deny": [] },
+          "region": { "allow": [], "deny": [] },
+          "city": { "allow": [], "deny": [] },
+          "os": { "allow": [], "deny": [] },
+          "isp": { "allow": [], "deny": [] },
+          "ip": { "allow": [], "deny": [] },
+          "browser": { "allow": [], "deny": [] },
+          "device_type": []
+        }
+      ]
+    },
+    {
+      "id": 903,
+      "offer_id": "5718dac83b7d9bf8588b45aa",
+      "title": "Two Goals One Audience",
+      "description_lang": { "en": "Register then deposit" },
+      "logo": "https://cdn.example.test/903.png",
+      "stop_at": "",
+      "categories": ["Finance"],
+      "payments": [
+        { "countries": ["GB"], "cities": [], "devices": [], "os": [], "goal": "1", "revenue": 2.0, "currency": "usd", "title": "Registration", "type": "fixed", "country_exclude": false },
+        { "countries": ["GB"], "cities": [], "devices": [], "os": [], "goal": "2", "revenue": 8.0, "currency": "usd", "title": "First deposit", "type": "fixed", "country_exclude": false }
+      ],
+      "caps": [],
+      "required_approval": false,
+      "is_cpi": false,
+      "link": "https://track.acme.affise.com/click?pid=610&offer_id=903",
+      "targeting": []
+    },
+    {
+      "id": 904,
+      "offer_id": "5718dac83b7d9bf8588b45bb",
+      "title": "Revenue Share",
+      "description_lang": { "en": "" },
+      "stop_at": "",
+      "payments": [
+        { "countries": ["US"], "cities": [], "devices": [], "os": [], "goal": "1", "revenue": 30, "currency": "usd", "title": "", "type": "percent", "country_exclude": false }
+      ],
+      "required_approval": false,
+      "is_cpi": false,
+      "link": "https://track.acme.affise.com/click?pid=610&offer_id=904",
+      "targeting": []
+    },
+    {
+      "id": 905,
+      "offer_id": "5718dac83b7d9bf8588b45cc",
+      "title": "Everywhere But These",
+      "description_lang": { "en": "" },
+      "stop_at": "",
+      "payments": [
+        { "countries": ["CN", "IN"], "cities": [], "devices": [], "os": [], "goal": "1", "revenue": 1.0, "currency": "usd", "title": "", "type": "fixed", "country_exclude": true }
+      ],
+      "required_approval": false,
+      "is_cpi": false,
+      "link": "https://track.acme.affise.com/click?pid=610&offer_id=905",
+      "targeting": []
+    }
+  ],
+  "pagination": { "per_page": 500, "total_count": 8, "page": 1, "next_page": 2 }
+}
