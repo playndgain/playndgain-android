@@ -59,8 +59,23 @@ wait_for_service_idle() {
 
     # `docker stack deploy` copies compose `stop_grace_period` (3600s on
     # horizon). The old task then sits in Shutdown for an hour and this wait
-    # never ends. Override the in-flight update so it can actually leave.
-    log "unsticking ${service}: 60s stop grace"
+    # never ends. Changing grace on the in-flight update is not enough —
+    # Swarm keeps the draining task. Force-remove worker containers so the
+    # update can finish. Never do that to app — it is the live web task.
+    case "$service" in
+        *_horizon|*_scheduler) ;;
+        *)
+            recover_service "$service"
+            die "${service} still ${state:-unknown} after ${max} waits — not stacking a second update"
+            ;;
+    esac
+
+    log "unsticking ${service}: remove draining tasks, 60s stop grace"
+    ids="$(docker ps -aq --filter "name=${service}" 2>/dev/null || true)"
+    if [ -n "$ids" ]; then
+        # shellcheck disable=SC2086
+        docker rm -f $ids >/dev/null 2>&1 || true
+    fi
     docker service update \
         --stop-grace-period 60s \
         --update-order stop-first \
@@ -171,8 +186,8 @@ docker stack deploy -c "$RESOLVED" --prune --with-registry-auth "$STACK_NAME"
 # new image before workers move. Wait until stack deploy's own updates are
 # idle first — overlapping `service update` is what leaves rollback at 0/1.
 wait_for_service_idle "${STACK_NAME}_app"
-wait_for_service_idle "${STACK_NAME}_horizon"
-wait_for_service_idle "${STACK_NAME}_scheduler"
+wait_for_service_idle "${STACK_NAME}_horizon" 6
+wait_for_service_idle "${STACK_NAME}_scheduler" 6
 
 update_service app
 update_service horizon
