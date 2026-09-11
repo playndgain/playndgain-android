@@ -4,8 +4,11 @@
 .env.backup
 .env.production
 .env.dokploy
-# Local MCP credentials (API keys). Project `.mcp.json` uses ${DOKPLOY_API_KEY}.
+# Local MCP credentials (API keys). Never commit any mcp.json.
 .cursor/mcp.json
+.mcp.json
+**/.mcp.json
+**/mcp.json
 .phpactor.json
 .phpunit.result.cache
 /.fleet

@@ -98,8 +98,28 @@ wait_for_service_idle() {
         i=$((i + 1))
     done
 
-    recover_service "$service"
-    die "${service} still ${state:-unknown} after ${max} waits — not stacking a second update"
+    # Do NOT roll back a worker here. A rollback restores the previous spec,
+    # and when that spec is the broken one (a healthcheck that can never
+    # pass) every deploy re-installs the bug and the service stays at 0/1.
+    # Workers hold no state (jobs live in Redis), so recreate the service.
+    reset_worker_service "$service"
+}
+
+# Remove a worker service and let `docker stack deploy` recreate it from the
+# resolved file: no PreviousSpec, no in-flight update, no inherited hour of
+# stop grace. Only for horizon and scheduler — never the live web task.
+reset_worker_service() {
+    service="$1"
+    log "resetting ${service}: remove service, stack deploy recreates it"
+    docker service rm "$service" >/dev/null 2>&1 || true
+    ids="$(docker ps -aq --filter "name=${service}" 2>/dev/null || true)"
+    if [ -n "$ids" ]; then
+        # shellcheck disable=SC2086
+        docker rm -f $ids >/dev/null 2>&1 || true
+    fi
+    if [ -f "$RESOLVED" ]; then
+        docker stack deploy -c "$RESOLVED" --prune --with-registry-auth "$STACK_NAME" >/dev/null
+    fi
 }
 
 recover_service() {
@@ -108,8 +128,13 @@ recover_service() {
     # `--rollback` cannot be combined with --rollback-order; the forward update
     # already set stop-first. `|| true` so a service with no PreviousSpec still
     # gets scaled back to one task.
+    #
+    # `scale` MUST be detached. Without it the CLI waits for the service to
+    # converge, and a task that can never pass its healthcheck never converges:
+    # this line blocked a Dokploy deploy for ten hours and held the whole
+    # deployment queue (including the fix) behind it.
     docker service rollback --detach=true "$service" >/dev/null 2>&1 || true
-    docker service scale "${service}=1" >/dev/null 2>&1 || true
+    docker service scale --detach=true "${service}=1" >/dev/null 2>&1 || true
 }
 
 # Poll detached updates. Swarm's start-first rollback of a 1-replica
@@ -139,7 +164,10 @@ update_service() {
                 return 0
                 ;;
             paused|rollback_paused)
-                recover_service "$service"
+                case "$service" in
+                    *_horizon|*_scheduler) reset_worker_service "$service" ;;
+                    *) recover_service "$service" ;;
+                esac
                 die "${service} update ${state} (healthcheck or start failed)"
                 ;;
             rollback_completed)
@@ -156,7 +184,10 @@ update_service() {
         sleep 5
     done
 
-    recover_service "$service"
+    case "$service" in
+        *_horizon|*_scheduler) reset_worker_service "$service" ;;
+        *) recover_service "$service" ;;
+    esac
     die "${service} rolling update timed out (${UPDATE_WAIT_MAX} waits)"
 }
 
@@ -178,6 +209,24 @@ log "resolving compose for stack deploy → ${RESOLVED}"
 # Swarm rejects the top-level `name:` field Compose V2 emits.
 docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" config | grep -v '^name:' > "$RESOLVED"
 
+# A worker left mid-update or mid-rollback by an earlier run (the previous
+# deploy was killed, or Swarm sat at "0 out of 1 tasks" for hours) makes the
+# next stack deploy inherit that stuck state. Recreate it clean first.
+for role in horizon scheduler; do
+    service="${STACK_NAME}_${role}"
+    case "$(update_state "$service")" in
+        updating|rollback_started|paused|rollback_paused)
+            log "${service} stuck in $(update_state "$service") from an earlier run"
+            docker service rm "$service" >/dev/null 2>&1 || true
+            ids="$(docker ps -aq --filter "name=${service}" 2>/dev/null || true)"
+            if [ -n "$ids" ]; then
+                # shellcheck disable=SC2086
+                docker rm -f $ids >/dev/null 2>&1 || true
+            fi
+            ;;
+    esac
+done
+
 log "stack deploy ${STACK_NAME}"
 docker stack deploy -c "$RESOLVED" --prune --with-registry-auth "$STACK_NAME"
 
@@ -186,8 +235,8 @@ docker stack deploy -c "$RESOLVED" --prune --with-registry-auth "$STACK_NAME"
 # new image before workers move. Wait until stack deploy's own updates are
 # idle first — overlapping `service update` is what leaves rollback at 0/1.
 wait_for_service_idle "${STACK_NAME}_app"
-wait_for_service_idle "${STACK_NAME}_horizon" 6
-wait_for_service_idle "${STACK_NAME}_scheduler" 6
+wait_for_service_idle "${STACK_NAME}_horizon"
+wait_for_service_idle "${STACK_NAME}_scheduler"
 
 update_service app
 update_service horizon
