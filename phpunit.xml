@@ -66,5 +66,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Empty so a developer's LOG_VIEWER_API_TOKEN cannot open the API in the suite. -->
+        <env name="LOG_VIEWER_API_TOKEN" value=""/>
     </php>
 </phpunit>

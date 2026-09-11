@@ -89,7 +89,9 @@ class AdminAlertNotification extends Notification implements ShouldQueue
             'network.catalogue_collapse' => 'A network returned a near-empty catalogue. The sync was abandoned with offers untouched rather than emptying the wall.',
             'network.sync_failing' => 'A network catalogue sync has failed repeatedly. Its offers are going stale and will start disappearing from walls.',
             'geoip.missing' => 'The IP intelligence databases are not on disk. Targeting is fail-closed, so every wall is serving zero offers to every publisher until `geoip:update` can fetch them.',
-            default => "Alert raised: {$this->key}",
+            default => str_starts_with($this->key, 'identity.panel_match')
+                ? 'Two publisher accounts just shared an IP, device hash, or browser session. Open Linked accounts — the table is the source of truth.'
+                : "Alert raised: {$this->key}",
         };
     }
 }

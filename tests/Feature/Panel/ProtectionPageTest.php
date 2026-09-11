@@ -21,9 +21,10 @@ require_once __DIR__.'/../Fraud/FraudFixtures.php';
 /**
  * The Protection page is the one screen every §9 question answers from: which
  * providers are healthy, are the local databases fresh, what does an address
- * look like, and what would the rules do about it. The riskiest surface on it
- * is the provider form — it edits an encrypted API key and must never leak
- * that key back to the browser or into the audit trail.
+ * look like, and what would the rules do about it. The provider form holds an
+ * encrypted API key: it is filled into a password field so an operator can
+ * reveal it, and the audit trail records only that the key moved, never the
+ * value.
  */
 beforeEach(function () {
     // A Livewire component tested outside a request has no panel, and every
@@ -39,7 +40,7 @@ beforeEach(function () {
     $this->actingAs(User::factory()->create(['role' => UserRole::Admin]));
 });
 
-it('saves provider settings and never echoes the key back', function () {
+it('saves provider settings', function () {
     $provider = IpProvider::query()->create(['key' => 'proxycheck', 'name' => 'ProxyCheck.io']);
 
     Livewire::test(Protection::class)
@@ -64,13 +65,6 @@ it('strips surrounding whitespace from a pasted provider key', function () {
 });
 
 /**
- * The form field the operator sees is never given the real key: `mount()`
- * fills `api_key` with null and only the value the operator just typed can
- * ever appear in the page. A stored secret that round-tripped here would be
- * sitting in the Livewire snapshot embedded in the page HTML — readable by
- * anyone with dev tools open, not just the operator who set it.
- */
-/**
  * The status cards read `api_key` on every GET. A leftover payload from a
  * rotated APP_KEY used to throw DecryptException and 500 the page — the
  * operator could not even reach the form to paste a replacement.
@@ -91,7 +85,7 @@ it('renders when a stored key cannot be decrypted', function () {
     Livewire::test(Protection::class)->assertSee('no key');
 });
 
-it('never round-trips a stored key to the browser', function () {
+it('fills the stored key into a revealable password field', function () {
     IpProvider::query()->create([
         'key' => 'proxycheck',
         'name' => 'ProxyCheck.io',
@@ -99,9 +93,14 @@ it('never round-trips a stored key to the browser', function () {
         'api_key' => 'super-secret-value',
     ]);
 
-    $html = Livewire::test(Protection::class)->instance()->getSchema('form')->toHtml();
+    $component = Livewire::test(Protection::class);
 
-    expect($html)->not->toContain('super-secret-value');
+    expect($component->get('data.providers.0.api_key'))->toBe('super-secret-value');
+
+    $html = $component->instance()->getSchema('form')->toHtml();
+
+    expect($html)->toContain('fi-revealable')
+        ->and($html)->toContain('isPasswordRevealed');
 });
 
 /**

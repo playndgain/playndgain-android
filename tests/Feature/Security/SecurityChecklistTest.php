@@ -258,15 +258,27 @@ it('keeps the container nginx blocks in step with the deployed ones', function (
 
 it('rolls app start-first for Dokploy Stack deploys', function () {
     $compose = (string) file_get_contents(base_path('docker-compose.yml'));
+    $script = (string) file_get_contents(base_path('docker/dokploy-stack-deploy.sh'));
 
     expect($compose)->toContain('order: start-first')
         ->and($compose)->toContain('replicas: 1')
         ->and($compose)->toContain('failure_action: rollback')
+        ->and(substr_count($compose, 'order: stop-first'))->toBe(3)
+        ->and($compose)->toContain('disable: true')
+        ->and($compose)->toContain('/proc/1/cmdline')
+        ->and($compose)->not->toContain('horizon:status')
         ->and($compose)->toContain('playndgain-storage')
-        ->and(is_file(base_path('docker/dokploy-stack-deploy.sh')))->toBeTrue()
+        ->and($script)->toContain('--detach=true')
+        ->and($script)->toContain('--rollback-order stop-first')
+        ->and($script)->toContain('docker service rollback')
+        ->and($script)->toContain('com.docker.compose.project')
+        ->and($script)->toContain('not stacking a second update')
+        ->and($script)->not->toContain('--detach=false')
         ->and(is_file(base_path('docker/migrate-locked.php')))->toBeTrue()
         ->and((string) file_get_contents(base_path('Dockerfile')))
-        ->toContain('migrate-locked.php');
+        ->toContain('migrate-locked.php')
+        ->and((string) file_get_contents(base_path('Dockerfile')))
+        ->not->toContain('HEALTHCHECK');
 });
 
 it('keeps APP_DEBUG off in production', function () {

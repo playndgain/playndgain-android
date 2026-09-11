@@ -1,0 +1,39 @@
+---
+description: When asked to check errors or application logs, use the Log Viewer API
+alwaysApply: true
+---
+
+# Application errors and logs
+
+If the user asks to check errors, exceptions, failed requests, or application logs (local or production), use the Log Viewer HTTP API. Do not dump `storage/logs/laravel.log`. Do not add a logs MCP.
+
+## Auth
+
+- Bearer token: `LOG_VIEWER_API_TOKEN` in `.env` (Dokploy env in production).
+- Header: `Authorization: Bearer <token>`.
+- Never print the token, commit it, or put it in chat.
+- Token is GET-only. Do not DELETE files or clear cache through the API.
+
+## Endpoints
+
+Local base: `https://playndgain.test/log-viewer/api`
+Production base: `{APP_URL}/log-viewer/api`
+
+1. `GET /files` — list log files; take `identifier` from `laravel.log`.
+2. `GET /logs?file={identifier}&query={text}&per_page=20` — search or page entries.
+3. Newest first is the default. Omit info/debug noise with `exclude_levels[]=debug` and `exclude_levels[]=info` when looking for failures.
+
+```bash
+curl -sS -H "Authorization: Bearer $LOG_VIEWER_API_TOKEN" \
+  -H "Accept: application/json" \
+  "$BASE/files"
+
+curl -sS -H "Authorization: Bearer $LOG_VIEWER_API_TOKEN" \
+  -H "Accept: application/json" \
+  --get "$BASE/logs" \
+  --data-urlencode "file=$IDENTIFIER" \
+  --data-urlencode "query=$QUERY" \
+  --data-urlencode "per_page=20"
+```
+
+Load the token from `.env` in the shell. Do not echo it. Summarize the matching lines; do not paste a whole log file.

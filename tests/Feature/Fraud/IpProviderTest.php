@@ -112,13 +112,13 @@ it('stops being available once the daily cap is spent', function () {
  * `capSpent()` treats a null `daily_cap` as uncapped, so a seeded row with no
  * cap is a provider ordinary render traffic can escalate against forever —
  * the bug Fix 1 closes. Both rows must come out of the seeder with a real
- * ceiling, not just one of them.
+ * ceiling, including providers added after the original two.
  */
-it('seeds a non-null daily cap on both providers', function () {
+it('seeds a non-null daily cap on every provider', function () {
     (new IpProviderSeeder)->run();
 
-    expect(IpProvider::query()->pluck('daily_cap', 'key')->all())
-        ->toBe(['proxycheck' => 1000, 'ipqualityscore' => 200]);
+    expect(IpProvider::query()->orderBy('priority')->pluck('daily_cap', 'key')->all())
+        ->toBe(['proxycheck' => 1000, 'ipasis' => 1000, 'ipqualityscore' => 200]);
 });
 
 /**
@@ -131,8 +131,36 @@ it('seeds a non-null daily cap on both providers', function () {
 it('holds the scarcer provider answer for a week', function () {
     (new IpProviderSeeder)->run();
 
-    expect(IpProvider::query()->pluck('ttl_seconds', 'key')->all())
-        ->toBe(['proxycheck' => 86400, 'ipqualityscore' => 604800]);
+    expect(IpProvider::query()->orderBy('priority')->pluck('ttl_seconds', 'key')->all())
+        ->toBe(['proxycheck' => 86400, 'ipasis' => 86400, 'ipqualityscore' => 604800]);
+});
+
+it('seeds ipasis between proxycheck and ipqualityscore', function () {
+    (new IpProviderSeeder)->run();
+
+    expect(IpProvider::query()->orderBy('priority')->pluck('key')->all())
+        ->toBe(['proxycheck', 'ipasis', 'ipqualityscore']);
+});
+
+it('adds ipasis to an existing installation without changing existing providers', function () {
+    IpProvider::query()->where('key', 'ipasis')->delete();
+
+    $proxycheck = IpProvider::query()->create([
+        'key' => 'proxycheck',
+        'name' => 'ProxyCheck.io',
+        'priority' => 42,
+    ]);
+
+    $migration = require database_path('migrations/2026_09_10_000001_add_ipasis_ip_provider.php');
+    $migration->up();
+
+    expect(IpProvider::query()->where('key', 'ipasis')->sole())
+        ->name->toBe('IPASIS')
+        ->priority->toBe(15)
+        ->daily_cap->toBe(1000)
+        ->ttl_seconds->toBe(86400)
+        ->enabled->toBeFalse()
+        ->and($proxycheck->fresh()->priority)->toBe(42);
 });
 
 it('orders active providers by priority and excludes the unavailable', function () {

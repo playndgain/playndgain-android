@@ -170,9 +170,8 @@ RUN composer dump-autoload --no-dev --optimize --classmap-authoritative \
 
 EXPOSE 80
 
-# Answers for the site, the wall and the API on the same port; which server
-# block replies is decided by the Host header Traefik forwards.
-HEALTHCHECK --interval=15s --timeout=5s --start-period=90s --retries=5 \
-    CMD wget -qO- http://127.0.0.1/up >/dev/null 2>&1 || exit 1
+# Health checks live in docker-compose.yml per role. An image-level
+# `wget /up` probe would run on horizon and scheduler too, and neither
+# process listens on :80 — Swarm then rolls those services back forever.
 
 ENTRYPOINT ["playndgain-entrypoint"]

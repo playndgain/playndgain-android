@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IdentityKind;
 use App\Enums\LedgerEntryType;
 use App\Enums\PublisherStatus;
 use App\Enums\WithdrawalStatus;
@@ -93,6 +94,18 @@ class Publisher extends Model
     public function withdrawals(): HasMany
     {
         return $this->hasMany(Withdrawal::class);
+    }
+
+    /** @return HasMany<IdentitySession, $this> */
+    public function identitySessions(): HasMany
+    {
+        return $this->hasMany(IdentitySession::class)->where('kind', IdentityKind::Panel);
+    }
+
+    /** @return HasMany<AccountMatch, $this> */
+    public function accountMatches(): HasMany
+    {
+        return $this->hasMany(AccountMatch::class);
     }
 
     /** @return HasMany<PaymentMethod, $this> */

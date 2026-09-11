@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ProxyType;
+use App\Fraud\Providers\IpasisProvider;
 use App\Fraud\Providers\IpProviderRegistry;
 use App\Fraud\Providers\IpQualityScoreProvider;
 use App\Fraud\Providers\ProxyCheckProvider;
@@ -9,9 +10,11 @@ use Illuminate\Support\Facades\Http;
 
 function driverConfig(string $key, array $attributes = []): IpProvider
 {
-    return IpProvider::query()->create([
-        'key' => $key, 'name' => $key, 'enabled' => true, 'api_key' => 'test-key', ...$attributes,
-    ]);
+    return tap(IpProvider::query()->firstOrNew(['key' => $key]), function (IpProvider $provider) use ($key, $attributes): void {
+        $provider->fill([
+            'key' => $key, 'name' => $key, 'enabled' => true, 'api_key' => 'test-key', ...$attributes,
+        ])->save();
+    });
 }
 
 it('maps a proxycheck answer onto a verdict', function () {
@@ -46,6 +49,76 @@ it('maps an ipqualityscore answer onto a verdict', function () {
         ->and($verdict->proxyType)->toBe(ProxyType::Tor)
         ->and($verdict->riskScore)->toBe(93)
         ->and($verdict->source)->toBe('ipqualityscore');
+});
+
+it('maps an ipasis answer onto a verdict', function () {
+    Http::fake(['api.ipasis.com/*' => Http::response([
+        'country' => 'nl',
+        'asn' => ['asn' => 'AS211252', 'name' => 'Bot Hosting LLC'],
+        'company' => ['name' => 'Hosting Company'],
+        'privacy' => [
+            'vpn' => false,
+            'proxy' => true,
+            'tor' => true,
+            'relay' => false,
+            'hosting' => true,
+            'abuse' => true,
+        ],
+    ])]);
+
+    $verdict = app(IpasisProvider::class)->lookup('1.2.3.4', driverConfig('ipasis'));
+
+    expect($verdict->country)->toBe('NL')
+        ->and($verdict->asn)->toBe(211252)
+        ->and($verdict->organization)->toBe('Hosting Company')
+        ->and($verdict->isDatacenter)->toBeTrue()
+        ->and($verdict->isProxy)->toBeTrue()
+        ->and($verdict->proxyType)->toBe(ProxyType::Tor)
+        ->and($verdict->threat)->toBe('ABUSE')
+        ->and($verdict->riskScore)->toBeNull()
+        ->and($verdict->source)->toBe('ipasis');
+});
+
+it('sends the ipasis key as a query parameter and strips surrounding whitespace', function () {
+    Http::fake(['api.ipasis.com/*' => Http::response([
+        'country' => 'US',
+        'privacy' => [],
+    ])]);
+
+    app(IpasisProvider::class)->lookup('1.2.3.4', driverConfig('ipasis', [
+        'api_key' => "  ab/cd+ef  \n",
+    ]));
+
+    Http::assertSent(function ($request) {
+        parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+
+        return str_starts_with($request->url(), 'https://api.ipasis.com/v1/lookup?')
+            && ($query['key'] ?? null) === 'ab/cd+ef'
+            && ($query['ip'] ?? null) === '1.2.3.4';
+    });
+});
+
+it('treats an ipasis relay as a proxy without misclassifying it as a vpn', function () {
+    Http::fake(['api.ipasis.com/*' => Http::response([
+        'country' => 'US',
+        'privacy' => ['relay' => true],
+    ])]);
+
+    $verdict = app(IpasisProvider::class)->lookup('1.2.3.4', driverConfig('ipasis'));
+
+    expect($verdict->isProxy)->toBeTrue()
+        ->and($verdict->proxyType)->toBeNull();
+});
+
+it('records an ipasis authentication failure and opens its breaker', function () {
+    Http::fake(['api.ipasis.com/*' => Http::response([], 401)]);
+
+    $config = driverConfig('ipasis', ['circuit_failures' => 1]);
+    $verdict = app(IpasisProvider::class)->lookup('1.2.3.4', $config);
+
+    expect($verdict)->toBeNull()
+        ->and($config->fresh()->last_error)->toBe('HTTP 401')
+        ->and($config->fresh()->breakerOpen())->toBeTrue();
 });
 
 it('sends the ipqualityscore key as a query parameter and strips surrounding whitespace', function () {
@@ -94,6 +167,7 @@ it('resolves a driver by key', function () {
     $registry = app(IpProviderRegistry::class);
 
     expect($registry->resolve('proxycheck'))->toBeInstanceOf(ProxyCheckProvider::class)
+        ->and($registry->resolve('ipasis'))->toBeInstanceOf(IpasisProvider::class)
         ->and($registry->resolve('nope'))->toBeNull();
 });
 

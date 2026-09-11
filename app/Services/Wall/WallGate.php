@@ -10,6 +10,7 @@ use App\Fraud\FraudContext;
 use App\Fraud\IpScoreHistogram;
 use App\Fraud\MaxMindIpIntelligence;
 use App\Fraud\RuleRegistry;
+use App\Identity\IdentityLedger;
 use App\Models\App;
 use App\Models\BannedEndUser;
 use App\Models\Consent;
@@ -35,6 +36,7 @@ class WallGate
         private readonly IpIntelligence $ipIntelligence,
         private readonly DeviceDetector $devices,
         private readonly RuleRegistry $rules,
+        private readonly IdentityLedger $identity,
     ) {}
 
     /** Step 1. 404 when the public app ID does not resolve. */
@@ -167,6 +169,16 @@ class WallGate
      * unconditionally would ask a provider about that real IP without ever
      * having asked the user.
      */
+    /**
+     * Record a wall identity session after consent has already been resolved.
+     * Never refuses the request. Test mode and missing consent are skipped
+     * inside the ledger / by the caller respectively.
+     */
+    public function observeIdentity(Request $request, WallContext $context): void
+    {
+        $this->identity->recordWall($context, $request);
+    }
+
     public function escalate(WallContext $context): WallContext
     {
         $verdict = $this->ipIntelligence->inspect($context->ip, consented: true);

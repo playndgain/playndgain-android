@@ -26,6 +26,7 @@
         "leek/filament-right-click": "^1.5",
         "mallardduck/blade-lucide-icons": "^2.0",
         "marcelodelgado/filament-announcements": "^1.0",
+        "opcodesio/log-viewer": "^3.24",
         "rickdbcn/filament-email": "^2.3",
         "spatie/laravel-backup": "^10.3",
         "spatie/laravel-responsecache": "^8.4",

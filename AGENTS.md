@@ -144,6 +144,7 @@ Answer each honestly. Any "yes" means go back.
 - Browser-verify visual fixes before calling UI work done.
 - Do not claim work finished while lint, tests, CI, or verification failures remain; fix or report blockers first.
 - Prefer Mailgun for transactional app mail; do not switch the default to Hostinger Mail API unless asked.
+- When asked to check errors or application logs, use the Log Viewer API (`GET /log-viewer/api`) with `LOG_VIEWER_API_TOKEN`; do not dump `laravel.log` or add a logs MCP.
 
 ## Learned Workspace Facts
 
@@ -156,4 +157,5 @@ Answer each honestly. Any "yes" means go back.
 - Wall clicks go through the routed `/click/{offer}` path, not raw network URLs.
 - GitHub Actions CI gates on Pint, static analysis, tests, and Lighthouse.
 - Production compose runs a single `app` replica; do not enable multi-replica HA unless explicitly requested.
-- DB backups target Cloudflare R2 (Spatie nightly plus Dokploy MySQL dump, one bucket with separate prefixes); keep total R2 usage within the free-tier cap so storage never bills the linked card.
+- DB backups target Cloudflare R2 bucket `playndgain-backups` (Spatie at 02:00 under `spatie/`, Dokploy MySQL dump at 03:00 under `dokploy/`); keep total usage inside the free-tier cap (~8 GB usable) so storage never bills the linked card.
+- Application logs for agents: `GET /log-viewer/api/files` and `GET /log-viewer/api/logs` with `Authorization: Bearer {LOG_VIEWER_API_TOKEN}` (GET-only). Admin UI is `/log-viewer`. Local base is `https://playndgain.test`.

@@ -36,8 +36,7 @@ class LatestSignups extends TableWidget
                 ViewColumn::make('country')
                     ->label('Geo')
                     ->view('filament.tables.columns.country-flag')
-                    ->grow(false)
-                    ->alignCenter(),
+                    ->grow(false),
                 ViewColumn::make('status')->view('filament.tables.columns.status-pill'),
             ])
             ->recordClasses(fn (Publisher $record): array => match ($record->status) {

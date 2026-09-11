@@ -2,9 +2,11 @@
 
 namespace App\Filament\Admin\Pages;
 
+use App\Enums\IdentityKind;
 use App\Enums\PublisherStatus;
 use App\Filament\Admin\Resources\Publishers\PublisherResource;
 use App\Filament\Tables\Columns\UserColumn;
+use App\Models\AccountMatch;
 use App\Models\AuditLog;
 use App\Models\Publisher;
 use BackedEnum;
@@ -65,6 +67,9 @@ class SignupQueue extends Page implements HasActions, HasSchemas, HasTable
      */
     private ?array $bannedFingerprints = null;
 
+    /** @var array<int, true>|null */
+    private ?array $linkedUserIds = null;
+
     public function table(Table $table): Table
     {
         return $table
@@ -85,8 +90,7 @@ class SignupQueue extends Page implements HasActions, HasSchemas, HasTable
                 ViewColumn::make('country')
                     ->label('Geo')
                     ->view('filament.tables.columns.country-flag')
-                    ->grow(false)
-                    ->alignCenter(),
+                    ->grow(false),
                 TextColumn::make('user.last_login_ip')
                     ->label('IP')
                     ->fontFamily(FontFamily::Mono)
@@ -183,7 +187,35 @@ class SignupQueue extends Page implements HasActions, HasSchemas, HasTable
             $hits[] = 'IP';
         }
 
+        if (isset($this->linkedUserIds()[$publisher->user_id])) {
+            $hits[] = 'linked';
+        }
+
         return $hits;
+    }
+
+    /** @return array<int, true> */
+    private function linkedUserIds(): array
+    {
+        return $this->linkedUserIds ??= $this->loadLinkedUserIds();
+    }
+
+    /** @return array<int, true> */
+    private function loadLinkedUserIds(): array
+    {
+        $ids = [];
+
+        foreach (AccountMatch::query()->where('scope', IdentityKind::Panel)->get(['left_user_id', 'right_user_id']) as $match) {
+            if ($match->left_user_id !== null) {
+                $ids[$match->left_user_id] = true;
+            }
+
+            if ($match->right_user_id !== null) {
+                $ids[$match->right_user_id] = true;
+            }
+        }
+
+        return $ids;
     }
 
     /**

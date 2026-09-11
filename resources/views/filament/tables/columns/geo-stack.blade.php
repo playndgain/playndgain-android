@@ -32,8 +32,10 @@
             {{-- Plain <img>, not flag-icons' `.fi-xx` classes: those collide
                  with Filament's own `fi-` prefix, and `.fi-no` is its
                  notifications overlay. --}}
-            <img class="ad-flag"
+            <img class="pg-flag"
                  src="{{ asset('flags/'.strtolower($code).'.svg') }}"
+                 width="22"
+                 height="16"
                  alt="{{ $code }}"
                  loading="lazy">
         @endforeach

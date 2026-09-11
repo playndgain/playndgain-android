@@ -152,7 +152,6 @@ class AppResource extends Resource
                             ->numeric()
                             ->minValue(1)
                             ->helperText('Blank means uncapped.'),
-                        Toggle::make('anonymize_ip')->label('Anonymise IPs'),
                         Toggle::make('test_mode')
                             ->label('Test mode')
                             ->helperText('Pins a $0.01 test offer and lets the wall pick any geo.'),

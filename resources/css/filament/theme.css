@@ -2064,8 +2064,10 @@ select.fi-filter-field {
   color: #FFB020;
 }
 
-/* Health and provider cards: a hairline card, a dot that is gold when the
-   check passes and rose when it does not. Text says which; the dot only agrees. */
+/* Health and provider cards: a hairline card, a dot that is success green
+   when the check passes and rose when it does not. Text says which; the
+   dot only agrees. Healthy uses the 400 shade so it reads on ink the same
+   way the down rose already does. */
 .fi-check-card {
   padding: 1rem 1.1rem;
   border: 1px solid #262A40;
@@ -2091,7 +2093,7 @@ select.fi-filter-field {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 999px;
-  background-color: #FFB020;
+  background-color: #6EE7A8;
 }
 
 .fi-check-card.is-down .fi-check-card-dot {
@@ -2231,6 +2233,7 @@ select.fi-filter-field {
 }
 
 .ad-stack > * {
+  flex: none;
   margin-inline-start: -0.3rem;
   border-radius: 10px;
   box-shadow: 0 0 0 1.5px var(--gray-700);
@@ -2243,10 +2246,18 @@ select.fi-filter-field {
 /* Flags are <img> tags rather than flag-icons' CSS classes on purpose: that
    package names a class after every ISO code, and Filament prefixes its own
    classes `fi-` too — `.fi-no` is the notifications overlay, `.fi-ta` the
-   table wrapper. `npm run flags` copies the SVGs into public/flags. */
-.ad-stack .ad-flag {
+   table wrapper. `npm run flags` copies the SVGs into public/flags.
+   The class is `pg-flag`, not the ad-prefixed name EasyList generic-hides. */
+/* Tailwind preflight sets `img { max-width: 100%; height: auto }`. Inside a
+   shrink-wrapped flex cell (`grow(false)` on Geo) that percentage resolves
+   against an indefinite parent and the flag collapses to 0×0 — tooltip still
+   fires, picture does not. Filament's own image column uses `max-w-none`
+   for the same reason. */
+.ad-stack .pg-flag {
+  flex: none;
   width: 1.35rem;
   height: 1rem;
+  max-width: none;
   object-fit: cover;
 }
 
@@ -2477,7 +2488,7 @@ select.fi-filter-field {
    lets each column type dress itself — same contract as geo-stack above. ── */
 
 .ad-user,
-.ad-flag-cell,
+.pg-flag-cell,
 .ad-status-cell {
   padding: 0.85rem 0.75rem;
 }
@@ -2581,15 +2592,17 @@ select.fi-filter-field {
   white-space: nowrap;
 }
 
-.ad-flag-cell {
+.pg-flag-cell {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
-.ad-flag--solo {
+.pg-flag--solo {
+  flex: none;
   width: 1.55rem;
   height: 1.15rem;
+  max-width: none;
   border-radius: 10px;
   object-fit: cover;
   box-shadow: 0 0 0 1.5px #262A40;
@@ -2605,12 +2618,12 @@ select.fi-filter-field {
   white-space: nowrap;
 }
 
-.pg-country .ad-flag--solo,
-.pg-country .ad-flag-fallback {
+.pg-country .pg-flag--solo,
+.pg-country .pg-flag-fallback {
   flex: none;
 }
 
-.ad-flag-fallback {
+.pg-flag-fallback {
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -163,6 +163,7 @@ Alpine.data('wall', (list) => ({
             }
 
             body.innerHTML = await response.text();
+            attachDeviceSignals();
         } catch {
             dismiss(dialog);
             window.location.href = link.href;
@@ -284,8 +285,78 @@ function dismissLoader() {
     window.setTimeout(finish, 280);
 }
 
+function deviceSignals() {
+    try {
+        const canvas = document.createElement('canvas');
+        const gl = canvas.getContext('webgl');
+        const info = gl && gl.getExtension('WEBGL_debug_renderer_info');
+        const renderer = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL) || '') : '';
+
+        return {
+            c: navigator.hardwareConcurrency | 0,
+            m: navigator.deviceMemory || 0,
+            p: window.devicePixelRatio || 0,
+            r: renderer.slice(0, 80),
+            t: navigator.maxTouchPoints | 0,
+            w: navigator.webdriver ? 1 : 0,
+        };
+    } catch {
+        return null;
+    }
+}
+
+function encodeDeviceSignals(signals) {
+    const json = JSON.stringify(signals);
+    const bytes = new TextEncoder().encode(json);
+    let raw = '';
+
+    for (const byte of bytes) {
+        raw += String.fromCharCode(byte);
+    }
+
+    return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function attachDeviceSignals() {
+    if (document.body?.dataset.collectDs !== '1') {
+        return;
+    }
+
+    const signals = deviceSignals();
+
+    if (! signals) {
+        return;
+    }
+
+    const ds = encodeDeviceSignals(signals);
+
+    if (ds.length > 256) {
+        return;
+    }
+
+    document.querySelectorAll('[data-identity-link]').forEach((link) => {
+        const href = link.getAttribute('href');
+
+        if (! href) {
+            return;
+        }
+
+        try {
+            const url = new URL(href, window.location.origin);
+
+            if (! url.searchParams.has('ds')) {
+                url.searchParams.set('ds', ds);
+                link.setAttribute('href', url.pathname + url.search + url.hash);
+            }
+        } catch {
+            // A bad href stays as the server rendered it.
+        }
+    });
+}
+
 window.Alpine = Alpine;
 Alpine.start();
+attachDeviceSignals();
 
 const fonts = document.fonts?.ready ?? Promise.resolve();
 fonts.then(() => requestAnimationFrame(dismissLoader)).catch(dismissLoader);

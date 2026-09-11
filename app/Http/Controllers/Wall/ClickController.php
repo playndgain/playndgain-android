@@ -65,6 +65,8 @@ class ClickController extends Controller
             $context = $this->gate->escalate($context);
         }
 
+        $this->gate->observeIdentity($request, $context);
+
         if (! $offer->isLive()) {
             return $this->notice('offer_gone', $context, Response::HTTP_GONE);
         }

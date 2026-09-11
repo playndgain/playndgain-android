@@ -57,7 +57,6 @@ class ViewApp extends ViewRecord
                     ->state(fn (App $record): string => Str::mask((string) $record->secret_key, '*', 4)),
                 IconEntry::make('require_signed_wall')->label('Signed wall')->boolean(),
                 IconEntry::make('test_mode')->label('Test mode')->boolean(),
-                IconEntry::make('anonymize_ip')->label('Anonymise IPs')->boolean(),
             ]),
 
             Section::make('Currency & postback')->columns(4)->schema([

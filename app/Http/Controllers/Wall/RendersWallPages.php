@@ -23,6 +23,10 @@ trait RendersWallPages
             app()->setLocale($context->locale);
         }
 
+        if (! array_key_exists('collectDs', $data)) {
+            $data['collectDs'] = $context instanceof WallContext && ! in_array($view, ['consent', 'notice'], true);
+        }
+
         return response()
             ->view("wall.{$view}", $data, $status)
             ->header('Cache-Control', 'private, no-store');

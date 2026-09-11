@@ -8,9 +8,9 @@
 @endphp
 <span class="pg-country">
     @if ($hasFlag)
-        <img class="ad-flag ad-flag--solo" src="{{ asset('flags/'.strtolower($code).'.svg') }}" alt="" loading="lazy">
+        <img class="pg-flag pg-flag--solo" src="{{ asset('flags/'.strtolower($code).'.svg') }}" width="25" height="18" alt="" loading="lazy">
     @else
-        <span class="ad-flag-fallback" aria-hidden="true">{{ $code }}</span>
+        <span class="pg-flag-fallback" aria-hidden="true">{{ $code }}</span>
     @endif
     <span>{{ $label }}</span>
 </span>

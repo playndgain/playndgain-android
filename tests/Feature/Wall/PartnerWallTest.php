@@ -49,6 +49,8 @@ it('shows partner cards until the user opens one, then frames it', function () {
 
     $response->assertSee("https://p.test/w?s={$click->click_id}&amp;u=USER_1", false)
         ->assertSee('sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation-by-user-activation"', false)
+        ->assertSee('title="'.e(__('wall.partner.kicker')).'"', false)
+        ->assertDontSee('title="'.$first->name.'"', false)
         ->assertSee(__('wall.partner.back'))
         ->assertHeader('Cache-Control', 'no-store, private');
 });
@@ -86,6 +88,8 @@ it('frames a partner in our wall even when it is marked to open elsewhere', func
 
     partnerGet($app, $partner, extra: ['open' => '1'])->assertOk()
         ->assertSee('<iframe', false)
+        ->assertSee('title="'.e(__('wall.partner.kicker')).'"', false)
+        ->assertDontSee('title="'.$partner->name.'"', false)
         ->assertSee('https://p.test/w', false);
 });
 

@@ -1,6 +1,9 @@
 <?php
 
+use App\Enums\IdentityKind;
+use App\Enums\IdentitySignal;
 use App\Enums\PublisherStatus;
+use App\Models\AccountMatch;
 use App\Models\Publisher;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
@@ -36,6 +39,8 @@ it('renders an applicant with the queue chrome, not a danger badge', function ()
         ->toContain('Iberia Media')
         ->toContain('#'.$applicant->pub_id)
         ->toContain('flags/pt.svg')
+        ->toContain('pg-flag--solo')
+        ->toContain('width="25"')
         ->toContain('Portugal')
         ->toContain('Rewarded Android games in Portugal')
         ->toContain('ad-status--clear')
@@ -98,4 +103,28 @@ it('does not treat a missing IP as a match', function () {
         ->assertSuccessful()
         ->assertSee('ad-status--clear', escape: false)
         ->assertDontSee('ad-status--hit', escape: false);
+});
+
+it('flags a pending applicant who already shares a panel identity match', function () {
+    $existing = Publisher::factory()->create();
+    $applicant = Publisher::factory()->pending()->create();
+
+    AccountMatch::query()->create([
+        'match_key' => sha1('panel-signup-linked'),
+        'scope' => IdentityKind::Panel,
+        'signal' => IdentitySignal::Ip,
+        'left_user_id' => min($existing->user_id, $applicant->user_id),
+        'right_user_id' => max($existing->user_id, $applicant->user_id),
+        'seen_count' => 1,
+        'first_seen_at' => now(),
+        'last_seen_at' => now(),
+    ]);
+
+    $this->actingAs(queueAdmin());
+
+    $this->get('/admin/signup-queue')
+        ->assertSuccessful()
+        ->assertSee('ad-status--hit', escape: false)
+        ->assertSee('Linked')
+        ->assertSee('ad-row--pending', escape: false);
 });

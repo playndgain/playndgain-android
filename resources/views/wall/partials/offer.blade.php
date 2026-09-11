@@ -219,7 +219,8 @@
          Alpine does not walk a subtree that arrives after boot. --}}
     <div class="offer__cta">
         <a class="wall-button offer__go" target="_blank" rel="noopener"
-           href="{{ route('wall.click', $offer->id) }}?{{ $params }}">
+           href="{{ route('wall.click', $offer->id) }}?{{ $params }}"
+           data-identity-link>
             {{ __('wall.offer.start') }}
         </a>
 

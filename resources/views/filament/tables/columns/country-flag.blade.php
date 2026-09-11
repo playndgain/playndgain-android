@@ -15,21 +15,24 @@
 @endphp
 
 @if (! $valid)
-    <p class="fi-ta-placeholder ad-flag-cell">—</p>
+    <p class="fi-ta-placeholder pg-flag-cell">—</p>
 @elseif ($code === 'XX')
-    <div class="ad-flag-cell"
+    <div class="pg-flag-cell"
          x-tooltip="{ content: @js($name), theme: $store.theme }"
          aria-label="{{ $name }}">
-        <span class="ad-flag-fallback">{{ $code }}</span>
+        <span class="pg-flag-fallback">{{ $code }}</span>
     </div>
 @else
     {{-- Plain <img>, not flag-icons' `.fi-xx` classes: those collide
-         with Filament's own `fi-` prefix. Same rule as geo-stack. --}}
-    <div class="ad-flag-cell"
+         with Filament's own `fi-` prefix. Same rule as geo-stack.
+         `pg-flag` — EasyList generic-hides the ad-prefixed name. --}}
+    <div class="pg-flag-cell"
          x-tooltip="{ content: @js($name), theme: $store.theme }"
          aria-label="{{ $name }}">
-        <img class="ad-flag ad-flag--solo"
+        <img class="pg-flag pg-flag--solo"
              src="{{ asset('flags/'.strtolower($code).'.svg') }}"
+             width="25"
+             height="18"
              alt="{{ $name }}"
              loading="lazy">
     </div>

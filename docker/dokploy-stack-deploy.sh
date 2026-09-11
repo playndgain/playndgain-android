@@ -11,7 +11,7 @@
 # enable AutoDeploy.
 #
 # Horizon/scheduler use long stop_grace_period; force updates must override
-# it or --detach=false hangs for up to an hour on rollback/shutdown.
+# it or a drain hangs for up to an hour.
 #
 # Usage (Dokploy Advanced → Command):
 #   sh docker/dokploy-stack-deploy.sh <dokploy-compose-appName>
@@ -24,6 +24,8 @@ set -eu
 STACK_NAME="${1:?usage: dokploy-stack-deploy.sh <dokploy-compose-appName>}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 RESOLVED="${RESOLVED:-/tmp/playndgain-stack-${STACK_NAME}.yml}"
+# 72 * 5s = 6 minutes per service. App start_period is 120s plus migrate/caches.
+UPDATE_WAIT_MAX="${UPDATE_WAIT_MAX:-72}"
 
 log() { printf '[dokploy-stack-deploy] %s\n' "$*"; }
 die() { printf '[dokploy-stack-deploy] FATAL: %s\n' "$*" >&2; exit 1; }
@@ -32,17 +34,102 @@ command -v docker >/dev/null 2>&1 || die "docker not found on PATH"
 
 [ -f "$COMPOSE_FILE" ] || die "compose file not found: ${COMPOSE_FILE} (cwd=$(pwd))"
 
+update_state() {
+    docker service inspect "$1" --format '{{if .UpdateStatus}}{{.UpdateStatus.State}}{{end}}' 2>/dev/null || true
+}
+
+wait_for_service_idle() {
+    service="$1"
+    max="${2:-$UPDATE_WAIT_MAX}"
+    i=0
+
+    while [ "$i" -lt "$max" ]; do
+        state="$(update_state "$service")"
+        case "$state" in
+            updating|rollback_started)
+                log "waiting for ${service} (${state} ${i}/${max})"
+                sleep 5
+                ;;
+            *)
+                return 0
+                ;;
+        esac
+        i=$((i + 1))
+    done
+
+    recover_service "$service"
+    die "${service} still ${state:-unknown} after ${max} waits — not stacking a second update"
+}
+
+recover_service() {
+    service="$1"
+    log "recovering ${service}: rollback, then replicas=1"
+    # `--rollback` cannot be combined with --rollback-order; the forward update
+    # already set stop-first. `|| true` so a service with no PreviousSpec still
+    # gets scaled back to one task.
+    docker service rollback --detach=true "$service" >/dev/null 2>&1 || true
+    docker service scale "${service}=1" >/dev/null 2>&1 || true
+}
+
+# Poll detached updates. Swarm's start-first rollback of a 1-replica
+# service can print "rolling back update: 0 out of 1 tasks" forever;
+# waiting on the CLI for that state then never returns and Dokploy never
+# finishes.
+update_service() {
+    service="${STACK_NAME}_$1"
+    log "rolling update ${service}"
+
+    wait_for_service_idle "$service"
+
+    docker service update \
+        --force \
+        --stop-grace-period 60s \
+        --rollback-order stop-first \
+        --detach=true \
+        "$service"
+
+    sleep 2
+    i=0
+    while [ "$i" -lt "$UPDATE_WAIT_MAX" ]; do
+        state="$(update_state "$service")"
+        case "$state" in
+            completed|'')
+                log "${service} update ${state:-idle}"
+                return 0
+                ;;
+            paused|rollback_paused)
+                recover_service "$service"
+                die "${service} update ${state} (healthcheck or start failed)"
+                ;;
+            rollback_completed)
+                die "${service} rolled back — new task never became healthy"
+                ;;
+            updating|rollback_started)
+                log "${service} ${state} (${i}/${UPDATE_WAIT_MAX})"
+                ;;
+            *)
+                log "${service} update state=${state:-empty} (${i}/${UPDATE_WAIT_MAX})"
+                ;;
+        esac
+        i=$((i + 1))
+        sleep 5
+    done
+
+    recover_service "$service"
+    die "${service} rolling update timed out (${UPDATE_WAIT_MAX} waits)"
+}
+
 log "building image (project=${STACK_NAME})"
 docker compose -p "$STACK_NAME" -f "$COMPOSE_FILE" build
 
-# One-time cutover: force-remove leftover Compose containers/networks. Do NOT
-# use `compose down` without a short -t — horizon's stop_grace_period is 3600s
-# and would hang the deploy for an hour.
+# One-time cutover from plain Compose. Match Compose's project label only —
+# `name=${STACK_NAME}` also matches Swarm tasks, and force-removing those
+# races the rolling update into a rollback deadlock.
 log "force-removing previous Compose containers if present (one-time cutover)"
-ids="$(docker ps -aq --filter "name=${STACK_NAME}" 2>/dev/null || true)"
-if [ -n "$ids" ]; then
+compose_ids="$(docker ps -aq --filter "label=com.docker.compose.project=${STACK_NAME}" 2>/dev/null || true)"
+if [ -n "$compose_ids" ]; then
     # shellcheck disable=SC2086
-    docker rm -f $ids >/dev/null 2>&1 || true
+    docker rm -f $compose_ids >/dev/null 2>&1 || true
 fi
 docker network rm "${STACK_NAME}_default" >/dev/null 2>&1 || true
 
@@ -55,15 +142,11 @@ docker stack deploy -c "$RESOLVED" --prune --with-registry-auth "$STACK_NAME"
 
 # Same image tag (playndgain-app:latest) does not always trigger a rolling
 # update on its own. Force each service in sequence so app is healthy on the
-# new image before workers move.
-#
-# --detach=false waits for Swarm to finish the rolling update (start-first).
-update_service() {
-    service="${STACK_NAME}_$1"
-    log "rolling update ${service}"
-    # Cap stop grace for the update so Swarm does not wait hour-long drains.
-    docker service update --force --stop-grace-period 60s --detach=false "$service"
-}
+# new image before workers move. Wait until stack deploy's own updates are
+# idle first — overlapping `service update` is what leaves rollback at 0/1.
+wait_for_service_idle "${STACK_NAME}_app"
+wait_for_service_idle "${STACK_NAME}_horizon"
+wait_for_service_idle "${STACK_NAME}_scheduler"
 
 update_service app
 update_service horizon

@@ -49,6 +49,7 @@ it('lists the real geo and device targeting on the admin offers table', function
         ->assertSee('flags/pt.svg', escape: false)
         ->assertSee('flags/se.svg', escape: false)
         ->assertSee('flags/nz.svg', escape: false)
+        ->assertSee('width="22"', escape: false)
         // Three shown, the rest counted — the whole list is the tooltip's job,
         // and it names countries rather than repeating the codes.
         ->assertDontSee('flags/hr.svg', escape: false)
@@ -119,5 +120,9 @@ it('keeps flag styling out of Filament class namespace', function () {
     // across the entire viewport. The SVGs are used directly instead.
     expect(file_get_contents(resource_path('css/filament/theme.css')))
         ->not->toContain("@import 'flag-icons")
-        ->not->toContain('@import "flag-icons');
+        ->not->toContain('@import "flag-icons')
+        // EasyList generic-hides the ad-prefixed flag class. The class has
+        // to stay off that name or every ad blocker blanks the geo column.
+        ->not->toContain('.ad-flag')
+        ->not->toContain('ad-flag');
 });

@@ -170,6 +170,7 @@ return [
         'incoming_postbacks' => (int) env('PLAYNDGAIN_RETAIN_INCOMING_DAYS', 90),
         'outgoing_postbacks' => (int) env('PLAYNDGAIN_RETAIN_OUTGOING_DAYS', 180),
         'fraud_events' => (int) env('PLAYNDGAIN_RETAIN_FRAUD_DAYS', 180),
+        'identity_sessions' => (int) env('PLAYNDGAIN_RETAIN_IDENTITY_DAYS', 180),
 
         // A log, not a record: `networks` holds the current sync state and
         // nothing references a `network_syncs` row. Its whole job is answering
@@ -205,6 +206,19 @@ return [
         'privacy_per_ip' => (int) env('PLAYNDGAIN_LIMIT_PRIVACY', 10),
         'postback_per_ip' => (int) env('PLAYNDGAIN_LIMIT_POSTBACK', 600),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Log Viewer API
+    |--------------------------------------------------------------------------
+    |
+    | Shared secret for GET /log-viewer/api/*. Coding assistants send it as
+    | `Authorization: Bearer …`. An empty value leaves the API session-only.
+    | LOG_MCP_TOKEN is read as a fallback so an existing .env still works.
+    |
+    */
+
+    'log_viewer_api_token' => (string) env('LOG_VIEWER_API_TOKEN', env('LOG_MCP_TOKEN', '')),
 
     /*
     |--------------------------------------------------------------------------

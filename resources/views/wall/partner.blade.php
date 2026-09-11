@@ -65,7 +65,7 @@
                  frame that cannot top-navigate converts at zero. --}}
             <iframe class="wall-partner__frame"
                     src="{{ $src }}"
-                    title="{{ $partner->name }}"
+                    title="{{ __('wall.partner.kicker') }}"
                     sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation-by-user-activation"
                     allow="clipboard-write"
                     referrerpolicy="no-referrer"></iframe>

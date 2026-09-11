@@ -12,11 +12,14 @@
 
     $hasEmail = in_array('email', $hits, true);
     $hasIp = in_array('IP', $hits, true);
+    $hasLinked = in_array('linked', $hits, true);
 
-    $kind = $hasEmail || $hasIp ? 'hit' : 'clear';
+    $kind = $hasEmail || $hasIp || $hasLinked ? 'hit' : 'clear';
 
     $label = match (true) {
         $hasEmail && $hasIp => 'Email + IP',
+        $hasLinked && ($hasEmail || $hasIp) => 'Linked + '.($hasEmail ? 'Email' : 'IP'),
+        $hasLinked => 'Linked',
         $hasEmail => 'Email',
         $hasIp => 'IP',
         default => 'Clear',
@@ -24,6 +27,7 @@
 
     $icon = match (true) {
         $hasEmail && $hasIp => Heroicon::OutlinedFlag,
+        $hasLinked => Heroicon::OutlinedLink,
         $hasEmail => Heroicon::OutlinedEnvelope,
         $hasIp => Heroicon::OutlinedGlobeAlt,
         default => Heroicon::OutlinedCheck,

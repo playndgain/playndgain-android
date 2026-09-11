@@ -66,7 +66,9 @@ services:
         monitor: 30s
       rollback_config:
         parallelism: 1
-        order: start-first
+        # stop-first: start-first rollback of a 1-replica service deadlocks
+        # ("rolling back update: 0 out of 1 tasks") once two tasks already exist.
+        order: stop-first
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -78,12 +80,15 @@ services:
     # An hour of grace, which is docs/11 §3's `stopwaitsecs=3600`: in-flight
     # postbacks land instead of being killed mid-request on redeploy.
     stop_grace_period: 3600s
+    # PID 1 after `exec php artisan horizon` (docker/entrypoint.sh). Do not use
+    # the Redis status command (the old master makes the new task look healthy)
+    # and do not pgrep -f from CMD-SHELL (the probe's own argv matches).
     healthcheck:
-      test: ["CMD", "su-exec", "www-data", "php", "artisan", "horizon:status"]
-      interval: 60s
-      timeout: 10s
+      test: ["CMD", "grep", "-aq", "artisan horizon", "/proc/1/cmdline"]
+      interval: 15s
+      timeout: 5s
       start_period: 120s
-      retries: 3
+      retries: 5
     deploy:
       mode: replicated
       replicas: 1
@@ -94,6 +99,9 @@ services:
         order: start-first
         failure_action: rollback
         monitor: 30s
+      rollback_config:
+        parallelism: 1
+        order: stop-first
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -105,6 +113,10 @@ services:
     # Long enough for a nightly backup or a GeoIP pull to finish rather than be
     # cut in half, leaving a truncated archive that looks like a real one.
     stop_grace_period: 600s
+    # No HTTP server in this role. Without this, Swarm uses the image
+    # HEALTHCHECK (`wget /up`) and every scheduler task is killed as unhealthy.
+    healthcheck:
+      disable: true
     deploy:
       mode: replicated
       replicas: 1
@@ -114,6 +126,9 @@ services:
         order: start-first
         failure_action: rollback
         monitor: 30s
+      rollback_config:
+        parallelism: 1
+        order: stop-first
       restart_policy:
         condition: on-failure
         delay: 5s

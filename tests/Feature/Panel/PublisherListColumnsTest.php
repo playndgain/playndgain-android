@@ -32,6 +32,8 @@ it('renders publisher identity as a user cell, flag, and status mark', function 
         ->assertSee('Iberia Media')
         ->assertSee('AC')
         ->assertSee('flags/pt.svg', escape: false)
+        ->assertSee('pg-flag--solo', escape: false)
+        ->assertSee('width="25"', escape: false)
         ->assertSee('Portugal')
         ->assertSee('ad-status--pending', escape: false)
         ->assertSee('Pending');
@@ -53,7 +55,7 @@ it('names a missing country instead of inventing a flag', function () {
     $html = $this->get('/admin/publishers')->assertSuccessful()->getContent();
 
     expect($html)
-        ->toContain('ad-flag-cell')
+        ->toContain('pg-flag-cell')
         ->not->toContain('flags/.svg');
 });
 

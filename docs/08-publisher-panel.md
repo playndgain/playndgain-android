@@ -120,7 +120,7 @@ Cards or table: icon · name · app ID · platform · status badge · postback c
 
 **5. Appearance** — theme colours, radius, dark toggle, live preview. Contrast is validated as they pick, with a warning when their palette fails 4.5:1. Publishers pick unreadable colour pairs constantly; warning them is cheaper than the support thread.
 
-**6. Restrictions** — blocked countries, daily conversion cap, IP anonymization toggle, test mode toggle.
+**6. Restrictions** — blocked countries, daily conversion cap, test mode toggle.
 
 Which suppliers fill the wall is admin-only. The publisher sees offers and the iframe, never a network name.
 
@@ -189,7 +189,7 @@ Reversals appear as negative rows with a distinct treatment — not a subtle gre
 
 **Filters:** app · country · device · converted · date range.
 
-Default range: last 24 hours. IPs are shown in full unless the app has `anonymize_ip` enabled, in which case they are masked here too — the publisher's own privacy setting applies to their own view.
+Default range: last 24 hours. IPs are shown in full unless the app has `anonymize_ip` enabled, in which case they are masked here too.
 
 ---
 

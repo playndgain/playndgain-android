@@ -74,9 +74,9 @@ class Protection extends Page
     public ?array $testResults = null;
 
     /**
-     * `api_key` is deliberately left out of the fill — see the field's
-     * definition in `form()`. Everything else about the row is safe to
-     * hydrate straight from the model.
+     * The stored key is filled so the password field can reveal it. A blank
+     * on save still means "unchanged" — see `save()` — in case the operator
+     * clears the field without meaning to rotate it.
      */
     public function mount(): void
     {
@@ -86,7 +86,7 @@ class Protection extends Page
                 'name' => $p->name,
                 'enabled' => $p->enabled,
                 'priority' => $p->priority,
-                'api_key' => null,
+                'api_key' => $p->api_key,
                 'timeout_ms' => $p->timeout_ms,
                 'daily_cap' => $p->daily_cap,
                 'ttl_seconds' => $p->ttl_seconds,
@@ -155,8 +155,8 @@ class Protection extends Page
                                     $key = IpProvider::query()->find($get('id'))?->key;
 
                                     return $key === 'ipqualityscore'
-                                        ? 'Write-only. Paste the Proxy Detection private API key from the IPQualityScore dashboard (API Settings). Account passwords and email/phone keys are rejected. Leave blank to keep the stored key.'
-                                        : 'Write-only — never prefilled with the stored key, so it cannot round-trip to the browser. Leave blank to keep it; the status card below shows whether one is on file.';
+                                        ? 'Hidden until you reveal it. Paste the Proxy Detection private API key from the IPQualityScore dashboard (API Settings). Account passwords and email/phone keys are rejected. Leave blank to keep the stored key.'
+                                        : 'Hidden until you reveal it. Paste a replacement to rotate. Leave blank to keep the stored key.';
                                 })
                                 // Required only when there is neither a stored
                                 // key nor a new one typed in — an operator
@@ -203,8 +203,10 @@ class Protection extends Page
      * rather than trusted by position — the repeater keys its own items with
      * whatever `Repeater::hydrateItems()` assigned them, never the database
      * id, so the `Hidden` id field is the only reliable link back to a row. A
-     * blank `api_key` means "unchanged", never "clear it" (see the field's
-     * own helper text); every other field is a straight overwrite.
+     * blank `api_key` means "unchanged", never "clear it" — the field is
+     * prefilled with the stored key so it can be revealed, but a wipe of
+     * the input is still treated as "I did not mean to rotate it". Every
+     * other field is a straight overwrite.
      */
     public function save(): void
     {
@@ -228,13 +230,11 @@ class Protection extends Page
                 'fail_open' => (bool) ($row['fail_open'] ?? false),
             ];
 
-            // A blank secret means "unchanged", not "clear it" — the same rule
-            // EditNetwork's credentials merge follows, for the same reason:
-            // the field is never prefilled with the stored key, so a blank
-            // submission is the normal shape of "I did not touch this", not an
-            // instruction to wipe it. There is deliberately no way to clear a
-            // key from this form; disabling the provider is how you stop using
-            // one.
+            // A blank secret means "unchanged", not "clear it" — the same
+            // rule EditNetwork's credentials merge follows. The field is
+            // prefilled with the stored key so it can be revealed, but
+            // clearing it is still not an instruction to wipe it. Disabling
+            // the provider is how you stop using one.
             if (filled($row['api_key'] ?? null)) {
                 $attributes['api_key'] = trim((string) $row['api_key']);
             }

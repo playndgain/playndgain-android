@@ -29,7 +29,7 @@ One image. Three Swarm services, differing only by `CONTAINER_ROLE`:
 
 | Service | Role | Replicas | What it is on the VPS |
 |---|---|---|---|
-| `app` | nginx + PHP-FPM under supervisor | **2** (roll `start-first`) | The web server |
+| `app` | nginx + PHP-FPM under supervisor | **1** (roll `start-first`, rollback `stop-first`) | The web server |
 | `horizon` | `artisan horizon` | 1 (updates after `app`) | `deploy/supervisor/playndgain-horizon.conf` |
 | `scheduler` | `artisan schedule:work` | 1 (updates after `horizon`) | The crontab line in §4 of docs/11 |
 
@@ -85,7 +85,7 @@ Replace `playndgain-u0obl7` if your General-tab appName differs. That becomes
 1. Builds `playndgain-app:latest` with Compose
 2. Resolves the compose file for Swarm
 3. `docker stack deploy --prune`
-4. Force-rolls **app → horizon → scheduler** in that order (`start-first`)
+4. Force-rolls **app → horizon → scheduler** in that order (`start-first`; rollback is `stop-first` so a 1-replica failure cannot hang at 0/1)
 
 #### AutoDeploy
 

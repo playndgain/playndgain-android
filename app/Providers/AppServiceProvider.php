@@ -7,6 +7,7 @@ use App\Fraud\LocalIpIntelligence;
 use App\Fraud\NullIpIntelligence;
 use App\Fraud\RuleRegistry;
 use App\Mail\Transport\HostingerTransport;
+use App\Models\AccountMatch;
 use App\Models\App as PublisherApp;
 use App\Models\AuditLog;
 use App\Models\BannedEndUser;
@@ -16,6 +17,7 @@ use App\Models\Conversion;
 use App\Models\DailyStat;
 use App\Models\FraudEvent;
 use App\Models\FraudRule;
+use App\Models\IdentitySession;
 use App\Models\IncomingPostback;
 use App\Models\LedgerEntry;
 use App\Models\Network;
@@ -77,9 +79,11 @@ class AppServiceProvider extends ServiceProvider
      * @var list<class-string<Model>>
      */
     private const ADMIN_OWNED = [
+        AccountMatch::class,
         AuditLog::class,
         Consent::class,
         FraudEvent::class,
+        IdentitySession::class,
         FraudRule::class,
         IncomingPostback::class,
         Network::class,
@@ -192,6 +196,9 @@ class AppServiceProvider extends ServiceProvider
         // The announcements resource checks this gate on top of the panel.
         // A string, not a closure, so config:cache can serialise the config.
         Gate::define('manage-announcements', fn (User $user): bool => $user->isAdmin());
+        // opcodesio/log-viewer. The page uses Filament Authenticate first;
+        // this gate keeps a signed-in publisher out of the UI.
+        Gate::define('viewLogViewer', fn (?User $user): bool => (bool) $user?->isAdmin());
 
         foreach (self::PUBLISHER_OWNED as $model) {
             Gate::policy($model, PublisherOwnedPolicy::class);

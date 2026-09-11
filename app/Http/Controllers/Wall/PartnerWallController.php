@@ -69,8 +69,12 @@ class PartnerWallController extends Controller
         }
 
         if ($this->gate->isBanned($app, $context->endUserId)) {
+            $this->gate->observeIdentity($request, $context);
+
             return $this->notice('banned', $context);
         }
+
+        $this->gate->observeIdentity($request, $context);
 
         $partners = PartnerWall::catalogue($app);
 

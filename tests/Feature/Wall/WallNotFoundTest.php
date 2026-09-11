@@ -16,7 +16,9 @@ it('renders the wall notice for an unknown app id', function () {
         ->get('/wall?appid=99999&userid=USER_1')
         ->assertNotFound()
         ->assertSee(__('wall.notice.invalid.title'), false)
-        ->assertDontSee('Not Found', false);
+        ->assertDontSee('Not Found', false)
+        ->assertSee('favicon.svg', false)
+        ->assertSee('favicon.ico', false);
 
     expect((string) $response->headers->get('Cache-Control'))->toContain('no-store');
 });

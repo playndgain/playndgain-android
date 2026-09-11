@@ -6,8 +6,10 @@ use App\Enums\PublisherStatus;
 use App\Filament\Admin\Resources\Publishers\Pages\EditPublisher;
 use App\Filament\Admin\Resources\Publishers\Pages\ListPublishers;
 use App\Filament\Admin\Resources\Publishers\Pages\ViewPublisher;
+use App\Filament\Admin\Resources\Publishers\RelationManagers\AccountMatchesRelationManager;
 use App\Filament\Admin\Resources\Publishers\RelationManagers\AppsRelationManager;
 use App\Filament\Admin\Resources\Publishers\RelationManagers\ConversionsRelationManager;
+use App\Filament\Admin\Resources\Publishers\RelationManagers\IdentitySessionsRelationManager;
 use App\Filament\Admin\Resources\Publishers\RelationManagers\LedgerEntriesRelationManager;
 use App\Filament\Admin\Resources\Publishers\RelationManagers\WithdrawalsRelationManager;
 use App\Filament\Tables\Columns\UserColumn;
@@ -107,7 +109,6 @@ class PublisherResource extends Resource
                     ->label('Geo')
                     ->view('filament.tables.columns.country-flag')
                     ->grow(false)
-                    ->alignCenter()
                     ->sortable(),
                 ViewColumn::make('status')
                     ->view('filament.tables.columns.status-pill')
@@ -247,6 +248,8 @@ class PublisherResource extends Resource
             ConversionsRelationManager::class,
             LedgerEntriesRelationManager::class,
             WithdrawalsRelationManager::class,
+            IdentitySessionsRelationManager::class,
+            AccountMatchesRelationManager::class,
         ];
     }
 

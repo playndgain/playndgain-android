@@ -213,9 +213,6 @@ class AppResource extends PublisherScopedResource
                     ->numeric()
                     ->minValue(1)
                     ->helperText('Blank means uncapped.'),
-                Toggle::make('anonymize_ip')
-                    ->label('Anonymise IPs')
-                    ->helperText('Zeroes the last octet before storage. Applies to your own click log too.'),
                 Toggle::make('test_mode')
                     ->label('Test mode')
                     ->helperText('Adds `&country=XX` to your wall URL so you can preview any geo, and pins a $0.01 test offer that runs the real conversion pipeline. Turn it off before you ship — while it is on, anyone with your wall URL can pick their own country.'),

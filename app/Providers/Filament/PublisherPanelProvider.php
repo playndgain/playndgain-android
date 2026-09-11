@@ -60,7 +60,7 @@ class PublisherPanelProvider extends PanelProvider
             ->brandLogo(fn () => view('components.brand-mark', ['size' => 34, 'label' => 'Publisher', 'labelTone' => 'muted']))
             ->brandLogoHeight('2.125rem')
             ->sidebarWidth('18.5rem')
-            ->favicon(asset('favicon.ico'))
+            ->renderHook(PanelsRenderHook::HEAD_START, fn () => view('partials.favicons'))
             ->login(Login::class)
             // Directly after the logo, reading as part of the lockup: the
             // panel name belongs to the brand, not to the account controls

@@ -60,8 +60,12 @@ class OfferDetailController extends Controller
         }
 
         if ($this->gate->isBanned($app, $context->endUserId)) {
+            $this->gate->observeIdentity($request, $context);
+
             return $this->notice('banned', $context, Response::HTTP_FORBIDDEN);
         }
+
+        $this->gate->observeIdentity($request, $context);
 
         // Targeting is re-checked here and nowhere else on this route's path:
         // the wall filters its list in SQL, but this URL carries an offer id

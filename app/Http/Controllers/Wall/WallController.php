@@ -75,12 +75,16 @@ class WallController extends Controller
         }
 
         if ($this->gate->isBanned($app, $context->endUserId)) {
+            $this->gate->observeIdentity($request, $context);
+
             return $this->notice('banned', $context);
         }
 
         if ($consentGranted) {
             $context = $this->gate->escalate($context);
         }
+
+        $this->gate->observeIdentity($request, $context);
 
         // Last, not first: a user with no consent decision belongs on the
         // consent screen, and a protection block written ahead of it would put

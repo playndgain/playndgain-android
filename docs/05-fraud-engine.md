@@ -167,7 +167,7 @@ is discarded rather than allowed to replace the last good file. Whatever is
 absent resolves to `IpVerdict::unknown()`, so the wall keeps serving — the admin
 Health page is where their presence and age are visible.
 
-`MaxMindIpIntelligence` reads the whole PX11 record in one `lookup(ALL)` call — proxy type, usage type and threat class travel with the lookup now, not only the yes/no `isProxy` flag the field used to be collapsed to. `FRAUD_SCORE` is deliberately never read: the LITE tier doesn't carry it and answers with a sentence asking you to upgrade the data file, not a number, and the third-party providers below are what fill that field instead.
+`MaxMindIpIntelligence` reads the whole PX11 record in one `lookup(ALL)` call — proxy type, usage type and threat class travel with the lookup now, not only the yes/no `isProxy` flag the field used to be collapsed to. `FRAUD_SCORE` is deliberately never read: the LITE tier doesn't carry it and answers with a sentence asking you to upgrade the data file, not a number. ProxyCheck and IPQualityScore can fill that field; IPASIS's IP-only endpoint returns classifications without a score.
 
 ### The chain
 
@@ -199,7 +199,7 @@ A verdict built while a provider should have run but didn't — timed out, break
 | Circuit breaker | `circuit_failures` / `circuit_cooldown_minutes` | 5 / 10min | Opens on N consecutive failures; skipped entirely while open — no socket, no wait |
 | Daily cap | `daily_cap` | null (uncapped) | Skipped once spent; counted in Redis (`ip_provider:{key}:{date}`), never in a column |
 
-Each row also carries `priority` (ascending — first conclusive answer wins), `api_key` (`encrypted` cast, never rendered back into the form as plaintext), and `fail_open`. Rows are seeded — `ip_providers` ships `proxycheck` (ProxyCheck.io, priority 10) and `ipqualityscore` (IPQualityScore, priority 20), both disabled and unconfigured — and there is no way to create a row from the admin panel: a row whose key has no adapter class behind it does nothing, silently, which is worse than not having it.
+Each row also carries `priority` (ascending — first conclusive answer wins), `api_key` (`encrypted` cast, never rendered back into the form as plaintext), and `fail_open`. Rows are seeded disabled and unconfigured: `proxycheck` (ProxyCheck.io, priority 10), `ipasis` (IPASIS, priority 15), then `ipqualityscore` (IPQualityScore, priority 20). IPASIS provides a second classification before the scarcer scored IPQualityScore lookup. There is no way to create a row from the admin panel: a row whose key has no adapter class behind it does nothing, silently, which is worse than not having it.
 
 ### Escalation never precedes consent
 
@@ -239,6 +239,8 @@ Bans are scoped to the publisher who owns the traffic. One publisher's ban does 
 **Fraud Rules** — table of every rule with an inline toggle, an action select, and a JSON config editor. Each row shows *triggered in the last 24h / 7d* so the operator can see which rules are actually earning their keep.
 
 **Fraud Events** — filterable log: rule, publisher, app, end user, action taken, and the full context JSON. Filters for publisher, rule key, date range, action.
+
+**Linked accounts** — pairs of publisher logins or wall userids that shared an IP, a device-signal hash, or a panel session. Wall rows never block, flag, or write a fraud event; the table is the alert. Panel rows also email ops once per new pair. Session history (hashed UA only) lives on the publisher view.
 
 **Review Queue** — conversions sitting at `pending` because a `flag` rule fired. Each row shows the conversion, the rules that fired, the click, the IP verdict, and the user's history with that app. Two buttons: **Approve** (writes the ledger entry, fires the postback) and **Reject** (records the reason, no money moves). Both write to `audit_logs`.
 

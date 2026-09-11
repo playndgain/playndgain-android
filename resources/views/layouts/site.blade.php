@@ -31,12 +31,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{{ \App\Support\Identity::url() }}/img/og.png">
 
-{{-- Files, not a data URI: the panels and any request that never reaches this
-     layout fall back to /favicon.ico. Regenerate all three with
-     `php scripts/make-favicons.php`. --}}
-<link rel="icon" href="/favicon.ico" sizes="32x32">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+@include('partials.favicons')
 
 {{-- Self-hosted, one origin, one face: Sora's Latin file is the only font on
      the critical path; latin-ext arrives by unicode-range when a page needs

@@ -14,6 +14,7 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -64,7 +65,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogo(fn () => view('components.brand-mark', ['size' => 34, 'label' => 'Admin', 'labelTone' => 'accent']))
             ->brandLogoHeight('2.125rem')
             ->sidebarWidth('18.5rem')
-            ->favicon(asset('favicon.ico'))
+            ->renderHook(PanelsRenderHook::HEAD_START, fn () => view('partials.favicons'))
             ->login()
             // Inside the panel sheet, not the auth card. Email is locked here
             // the same way as the publisher profile — another admin changes
@@ -112,6 +113,13 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Risk'),
                 NavigationGroup::make('Logs'),
                 NavigationGroup::make('System'),
+            ])
+            ->navigationItems([
+                NavigationItem::make('Application logs')
+                    ->url('/log-viewer', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-document-text')
+                    ->group('Logs')
+                    ->sort(90),
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')

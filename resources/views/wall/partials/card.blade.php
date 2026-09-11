@@ -56,6 +56,7 @@
 @else
 <a class="{{ $cardClass }}"
    href="{{ route('wall.offer', $offer['id']) }}?{{ $params }}"
+   data-identity-link
    @click="open">
 @endif
 

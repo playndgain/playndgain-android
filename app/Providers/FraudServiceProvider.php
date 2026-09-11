@@ -7,6 +7,7 @@ use App\Fraud\Contracts\IpIntelligence;
 use App\Fraud\Contracts\Rule;
 use App\Fraud\MaxMindIpIntelligence;
 use App\Fraud\Providers\Contracts\IpProviderDriver;
+use App\Fraud\Providers\IpasisProvider;
 use App\Fraud\Providers\IpProviderRegistry;
 use App\Fraud\Providers\IpQualityScoreProvider;
 use App\Fraud\Providers\ProxyCheckProvider;
@@ -80,6 +81,7 @@ class FraudServiceProvider extends ServiceProvider
     /** @var list<class-string<IpProviderDriver>> */
     private const PROVIDERS = [
         ProxyCheckProvider::class,
+        IpasisProvider::class,
         IpQualityScoreProvider::class,
     ];
 

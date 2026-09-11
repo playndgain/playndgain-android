@@ -11,7 +11,8 @@
 {{-- The wall lives inside someone else's page and has nothing to index. --}}
 <meta name="robots" content="noindex, nofollow">
 <meta name="color-scheme" content="{{ ($ctx?->isDark() ?? true) ? 'dark' : 'light' }}">
-<title>@yield('title', __('wall.title'))</title>
+<title>@yield('title', \App\Support\Identity::name())</title>
+@include('partials.favicons')
 
 {{-- Per-app theming, docs/03 §5: custom properties on :root, no per-app CSS
      file and no per-app build. Values are whitelisted in WallContext before
@@ -20,7 +21,7 @@
 
 @vite('resources/js/wall.js')
 </head>
-<body class="wall @if (! ($ctx?->isDark() ?? true)) wall--light @endif">
+<body class="wall @if (! ($ctx?->isDark() ?? true)) wall--light @endif"@if ($collectDs ?? false) data-collect-ds="1"@endif>
 
 {{-- One copy of every glyph the cards reference with <use>. A hundred cards
      carrying device icons is a hundred forty-byte references rather than a

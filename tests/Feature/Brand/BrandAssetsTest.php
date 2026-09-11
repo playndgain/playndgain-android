@@ -40,15 +40,21 @@ it('writes a real icon container rather than a renamed png', function () {
         ->and($count)->toBeGreaterThanOrEqual(2);
 });
 
-it('links the favicon set from the marketing layout', function () {
-    $this->get('/')
+it('links the favicon set from every html surface', function (string $path) {
+    $this->get($path)
         ->assertSuccessful()
         ->assertSee('favicon.ico', escape: false)
         ->assertSee('favicon.svg', escape: false)
         ->assertSee('apple-touch-icon.png', escape: false)
         // The data URI it replaced would still "contain a favicon".
         ->assertDontSee('data:image/svg+xml', escape: false);
-});
+})->with([
+    '/',
+    '/docs',
+    '/admin/login',
+    '/dashboard/login',
+    '/dashboard/register',
+]);
 
 it('gives both panels a favicon and a mark that still says which panel it is', function () {
     Config::set('playndgain.require_admin_2fa', false);
@@ -59,7 +65,7 @@ it('gives both panels a favicon and a mark that still says which panel it is', f
 
     $this->get('/admin')
         ->assertSuccessful()
-        ->assertSee('favicon.ico', escape: false)
+        ->assertSee('favicon.svg', escape: false)
         // brandLogo replaces brandName, so the suffix has to survive inside it.
         ->assertSee('Admin', escape: false);
 
@@ -67,7 +73,7 @@ it('gives both panels a favicon and a mark that still says which panel it is', f
 
     $this->get('/dashboard')
         ->assertSuccessful()
-        ->assertSee('favicon.ico', escape: false)
+        ->assertSee('favicon.svg', escape: false)
         ->assertSee('Publisher', escape: false);
 });
 

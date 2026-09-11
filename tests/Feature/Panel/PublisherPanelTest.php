@@ -296,6 +296,28 @@ it('reports a connection failure instead of throwing', function () {
         ->and($result['body'])->toContain('dns failure');
 });
 
+it('does not expose an anonymise-ips toggle on either app form', function () {
+    $publisher = Publisher::factory()->create();
+    $app = App::factory()->create(['publisher_id' => $publisher->id]);
+
+    $this->actingAs($publisher->user);
+
+    Livewire::test(EditApp::class, ['record' => $app->getRouteKey()])
+        ->assertFormFieldDoesNotExist('anonymize_ip')
+        ->assertFormFieldExists('test_mode');
+
+    Config::set('playndgain.require_admin_2fa', false);
+
+    $this->actingAs(User::factory()->admin()->create([
+        'two_factor_secret' => 'JBSWY3DPEHPK3PXP',
+        'two_factor_recovery_codes' => ['aaaa-bbbb'],
+    ]));
+
+    Livewire::test(AdminEditApp::class, ['record' => $app->getRouteKey()])
+        ->assertFormFieldDoesNotExist('anonymize_ip')
+        ->assertFormFieldExists('test_mode');
+});
+
 it('warns when a wall palette fails the contrast minimum', function () {
     expect(Contrast::verdict('#F5F7FA', '#0B0D10'))->toContain('passes WCAG AA')
         ->and(Contrast::verdict('#999999', '#AAAAAA'))->toContain('below the 4.5:1 minimum')

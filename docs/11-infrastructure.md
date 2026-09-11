@@ -212,6 +212,7 @@ long_query_time              = 1
 | `incoming_postbacks` | High | 90 days |
 | `outgoing_postbacks` | Medium | 180 days |
 | `fraud_events` | Medium | 180 days |
+| `identity_sessions` | Medium | 180 days |
 | `network_syncs` | Low | 90 days |
 | `conversions` | Low | **Forever** |
 | `ledger_entries` | Low | **Forever** |
@@ -246,6 +247,7 @@ A restore drill that has never been run is how you discover the dump excluded a 
 | **Ledger drift** | Any | **Page** |
 | Network sync failing | 3 consecutive | Email |
 | Catalogue collapse guard fired | Any | Email |
+| Two publisher accounts share IP / device / session | New pair | Email |
 | Disk usage | > 80% | Email |
 | MySQL slow queries | > 100/h | Email |
 | Failed jobs | > 50/h | Email |
