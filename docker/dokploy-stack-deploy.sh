@@ -57,6 +57,32 @@ wait_for_service_idle() {
         i=$((i + 1))
     done
 
+    # `docker stack deploy` copies compose `stop_grace_period` (3600s on
+    # horizon). The old task then sits in Shutdown for an hour and this wait
+    # never ends. Override the in-flight update so it can actually leave.
+    log "unsticking ${service}: 60s stop grace"
+    docker service update \
+        --stop-grace-period 60s \
+        --update-order stop-first \
+        --rollback-order stop-first \
+        --detach=true \
+        "$service" >/dev/null 2>&1 || true
+
+    i=0
+    while [ "$i" -lt 36 ]; do
+        state="$(update_state "$service")"
+        case "$state" in
+            updating|rollback_started)
+                log "waiting for ${service} after unstick (${state} ${i}/36)"
+                sleep 5
+                ;;
+            *)
+                return 0
+                ;;
+        esac
+        i=$((i + 1))
+    done
+
     recover_service "$service"
     die "${service} still ${state:-unknown} after ${max} waits — not stacking a second update"
 }
