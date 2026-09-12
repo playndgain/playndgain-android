@@ -214,9 +214,10 @@ PHP-FPM do the same). The file sits on `playndgain-storage`, so Log Viewer on
 
 **`storage/app` is a named volume shared by all three containers.** The
 scheduler fetches the GeoIP databases weekly and the wall reads them; the
-nightly backup writes there until `BACKUP_DISK` points off-site. Set it before
-there is anything worth restoring — the local disk survives a bad migration and
-nothing else.
+nightly backup writes there until `BACKUP_DISK` points off-site. That disk
+needs `league/flysystem-aws-s3-v3` (Laravel does not ship the S3 adapter).
+Set `BACKUP_DISK` before there is anything worth restoring — the local disk
+survives a bad migration and nothing else.
 
 **PHP-FPM's `clear_env = no` is load-bearing.** php-fpm clears the worker
 environment by default, which would drop every variable Dokploy injects and

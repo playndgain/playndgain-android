@@ -23,6 +23,7 @@
         "laravel/horizon": "^5.48",
         "laravel/tinker": "^3.0",
         "league/commonmark": "2.*",
+        "league/flysystem-aws-s3-v3": "^3.35",
         "leek/filament-header-filters": "^2.0",
         "leek/filament-right-click": "^1.5",
         "mallardduck/blade-lucide-icons": "^2.0",
