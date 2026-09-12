@@ -281,6 +281,8 @@ it('rolls app start-first for Dokploy Stack deploys', function () {
         ->and((string) file_get_contents(base_path('Dockerfile')))
         ->toContain('migrate-locked.php')
         ->and((string) file_get_contents(base_path('Dockerfile')))
+        ->toContain('mariadb-connector-c')
+        ->and((string) file_get_contents(base_path('Dockerfile')))
         ->not->toContain('HEALTHCHECK');
 });
 

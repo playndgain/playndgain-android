@@ -106,9 +106,11 @@ FROM base AS runtime
 
 # `mariadb-client` is what spatie/laravel-backup shells out to: without
 # mysqldump on PATH the nightly backup fails every night and the only place it
-# says so is backup:monitor (docs/11 §6). `mysql-client` is the same binary
-# under Alpine's naming. The dump config must pass skip-ssl — MySQL 9's
-# generated cert fails MariaDB's TLS check (error 2026).
+# says so is backup:monitor (docs/11 §6). Alpine's client is MariaDB, so
+# `mariadb-connector-c` is required too — it ships
+# caching_sha2_password.so, which MySQL 9 uses and the slim client package
+# does not install. Dump config must also pass skip-ssl (MySQL 9's
+# generated cert fails MariaDB's TLS check, error 2026).
 # `gettext` is envsubst, which renders the server_name into the three nginx
 # blocks at start; `su-exec` is how the entrypoint drops from root — which nginx
 # needs to bind :80 — to www-data for every artisan command, so nothing it
@@ -117,6 +119,7 @@ RUN apk add --no-cache \
         nginx \
         supervisor \
         mariadb-client \
+        mariadb-connector-c \
         gettext \
         su-exec \
     && mkdir -p /run/nginx /var/log/supervisor
