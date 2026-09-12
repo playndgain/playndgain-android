@@ -120,6 +120,11 @@ class AdminPanelProvider extends PanelProvider
                     ->icon('heroicon-o-document-text')
                     ->group('Logs')
                     ->sort(90),
+                NavigationItem::make('Horizon')
+                    ->url('/horizon', shouldOpenInNewTab: true)
+                    ->icon('heroicon-o-queue-list')
+                    ->group('System')
+                    ->sort(4),
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')

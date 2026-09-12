@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\SetAdminPanel;
+use Filament\Http\Middleware\Authenticate;
 use Illuminate\Support\Str;
 
 return [
@@ -83,7 +85,7 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => ['web', SetAdminPanel::class, Authenticate::class],
 
     /*
     |--------------------------------------------------------------------------

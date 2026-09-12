@@ -56,7 +56,8 @@ Logs
 System
   ├── Settings
   ├── Admin Users
-  └── Health
+  ├── Health
+  └── Horizon (external `/horizon`, admin session)
 ```
 
 ---
@@ -290,6 +291,12 @@ An admin cannot change their own email from Profile or from this table. Another 
 One page answering "is anything broken right now": queue depths per queue · failed jobs (24h) · networks in error · postback failure rate · Redis connectivity · MySQL connectivity · disk usage · last successful backup · GeoIP database ages.
 
 Green or red. No prose.
+
+### Horizon
+
+Queue dashboard at `/horizon`. Same admin session as this panel; guests go to
+login. Use it for supervisors, failed jobs, and wait times. The Health page
+still answers "is anything broken right now."
 
 ---
 

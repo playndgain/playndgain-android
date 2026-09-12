@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Bind the admin panel before Filament's Authenticate runs on /log-viewer.
+ * Bind the admin panel before Filament's Authenticate runs on /log-viewer
+ * and /horizon.
  * Without a current panel, getLoginUrl() and canAccessPanel() have nothing
  * to hang off, and the Gate sees a guest even when /admin is signed in.
  */

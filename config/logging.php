@@ -18,9 +18,9 @@ return [
     | messages to your logs. The value provided here should match one of
     | the channels present in the list of "channels" configured below.
     |
-    | Production sets LOG_CHANNEL=stderr so Dokploy still sees container
-    | logs. That name is remapped onto stderr_and_daily so Log Viewer can
-    | open a rotating file under storage/logs as well.
+    | Production may set LOG_CHANNEL=stderr (remapped onto stderr_and_daily)
+    | or LOG_CHANNEL=stack. File logs go under storage/app/logs so they sit
+    | on the playndgain-storage volume that all three roles share.
     |
     */
 
@@ -60,20 +60,34 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'single')),
+            'channels' => (static function (): array {
+                $channels = array_values(array_filter(array_map(
+                    trim(...),
+                    explode(',', (string) env('LOG_STACK', 'single')),
+                )));
+
+                // Dokploy's log view is stderr. A production stack that is
+                // only `single` would go silent there after someone copies
+                // .env.example into the panel.
+                if (env('APP_ENV') === 'production' && ! in_array('stderr', $channels, true)) {
+                    array_unshift($channels, 'stderr');
+                }
+
+                return $channels === [] ? ['single'] : $channels;
+            })(),
             'ignore_exceptions' => false,
         ],
 
         'single' => [
             'driver' => 'single',
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('app/logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],
 
         'daily' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('app/logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
@@ -136,7 +150,7 @@ return [
         ],
 
         'emergency' => [
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('app/logs/laravel.log'),
         ],
 
     ],

@@ -62,6 +62,7 @@ esac
 mkdir -p \
     storage/app/public \
     storage/app/private \
+    storage/app/logs \
     storage/framework/cache/data \
     storage/framework/sessions \
     storage/framework/views \

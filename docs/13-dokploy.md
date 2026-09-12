@@ -207,11 +207,10 @@ asymmetry is expressed in the server blocks and asserted by
 to the wall domain would sit outside both and would break every integration at
 once.
 
-**Logs go to stderr and a daily file.** `LOG_CHANNEL=stderr` still feeds
-Dokploy's container log (nginx and PHP-FPM do the same). Laravel remaps that
-channel onto `stderr_and_daily` so Log Viewer can open `storage/logs/laravel-YYYY-MM-DD.log`.
-Those files rotate after `LOG_DAILY_DAYS` (14) and sit in the container
-writable layer, not on `playndgain-storage`, so a redeploy clears them.
+**Logs go to stderr and `storage/app/logs/laravel.log`.** A production stack
+keeps `stderr` so Dokploy's container log still has every line (nginx and
+PHP-FPM do the same). The file sits on `playndgain-storage`, so Log Viewer on
+`app` also sees Horizon and scheduler lines and a redeploy does not wipe it.
 
 **`storage/app` is a named volume shared by all three containers.** The
 scheduler fetches the GeoIP databases weekly and the wall reads them; the
@@ -246,11 +245,10 @@ in-flight postbacks land instead of being cut off mid-request on redeploy. The
 scheduler has ten minutes, enough for a nightly backup or a GeoIP pull to finish
 rather than leave a truncated archive that looks like a real one.
 
-The Horizon dashboard at `/horizon` is closed in production — the package's
-default gate admits nobody outside `local`, and this repository has never
-published a `HorizonServiceProvider` to widen it. `horizon:status` above is the
-supported way to read it. Opening the dashboard is a deliberate change, not a
-configuration oversight.
+The Horizon dashboard at `/horizon` is for admins who are already signed into
+`/admin` (same Filament session as Log Viewer). A guest is sent to the admin
+login; a publisher gets 403. `horizon:status` above still works from the
+container when you only need the process state.
 
 ---
 

@@ -177,6 +177,9 @@ return [
     'include_files' => [
         '*.log',
         '**/*.log',
+        // Shared volume. Production writes here so Log Viewer on `app`
+        // also sees lines from horizon and the scheduler.
+        storage_path('app/logs/*.log'),
     ],
 
     /*

@@ -88,3 +88,8 @@ it('refuses the log viewer api with a wrong bearer token', function () {
 it('fans the production stderr channel into a daily file for log viewer', function () {
     expect(config('logging.channels.stderr_and_daily.channels'))->toBe(['stderr', 'daily']);
 });
+
+it('writes the file log onto the shared storage volume', function () {
+    expect(config('logging.channels.single.path'))->toBe(storage_path('app/logs/laravel.log'))
+        ->and(config('logging.channels.daily.path'))->toBe(storage_path('app/logs/laravel.log'));
+});

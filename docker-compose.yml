@@ -27,9 +27,9 @@ x-playndgain: &playndgain
       required: false
 
   # Nightly backups, the GeoIP databases (several hundred megabytes, refreshed
-  # weekly) and anything written to the `local` disk. Shared by all three roles:
-  # the scheduler fetches the GeoIP files and the wall reads them. All roles
-  # must see the same volume.
+  # weekly), laravel.log, and anything written to the `local` disk. Shared by
+  # all three roles: the scheduler fetches the GeoIP files and the wall reads
+  # them; Log Viewer on `app` reads the same log file Horizon writes.
   volumes:
     - playndgain-storage:/var/www/html/storage/app
 
