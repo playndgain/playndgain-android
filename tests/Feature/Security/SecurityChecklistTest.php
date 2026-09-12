@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use League\Flysystem\AwsS3V3\PortableVisibilityConverter;
 use Livewire\Livewire;
+use Spatie\Backup\Tasks\Backup\DbDumperFactory;
 
 require_once __DIR__.'/../Wall/WallFixtures.php';
 
@@ -281,6 +282,14 @@ it('rolls app start-first for Dokploy Stack deploys', function () {
         ->toContain('migrate-locked.php')
         ->and((string) file_get_contents(base_path('Dockerfile')))
         ->not->toContain('HEALTHCHECK');
+});
+
+it('skips tls on mysqldump so the alpine client can reach docker mysql', function () {
+    $dumper = DbDumperFactory::createFromConnection('mysql');
+
+    expect(config('database.connections.mysql.dump.skip_ssl'))->toBeTrue()
+        ->and(config('database.connections.mysql.dump.ssl_flag'))->toBe('skip-ssl')
+        ->and($dumper->getContentsOfCredentialsFile())->toContain('skip-ssl');
 });
 
 it('ships the S3 flysystem adapter so BACKUP_DISK=s3 can resolve', function () {

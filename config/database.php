@@ -62,6 +62,16 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            // Alpine ships mariadb-client. MySQL 9 presents a self-signed
+            // server cert on the Docker network; the MariaDB client then
+            // dies with TLS error 2026. Official mysql-client wants
+            // ssl-mode=DISABLED; MariaDB wants skip-ssl. Same trust model
+            // as PDO here (no MYSQL_ATTR_SSL_CA).
+            'dump' => [
+                'skip_ssl' => true,
+                'ssl_flag' => 'skip-ssl',
+                'useSingleTransaction' => true,
+            ],
         ],
 
         'mariadb' => [

@@ -216,8 +216,11 @@ PHP-FPM do the same). The file sits on `playndgain-storage`, so Log Viewer on
 scheduler fetches the GeoIP databases weekly and the wall reads them; the
 nightly backup writes there until `BACKUP_DISK` points off-site. That disk
 needs `league/flysystem-aws-s3-v3` (Laravel does not ship the S3 adapter).
-Set `BACKUP_DISK` before there is anything worth restoring — the local disk
-survives a bad migration and nothing else.
+The dump uses Alpine's MariaDB client against MySQL 9, so
+`database.connections.mysql.dump` skips TLS (`skip-ssl`) — the server cert
+on the Docker network is self-signed. Set `BACKUP_DISK` before there is
+anything worth restoring — the local disk survives a bad migration and
+nothing else.
 
 **PHP-FPM's `clear_env = no` is load-bearing.** php-fpm clears the worker
 environment by default, which would drop every variable Dokploy injects and
