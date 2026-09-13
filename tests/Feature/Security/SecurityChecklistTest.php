@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use League\Flysystem\AwsS3V3\PortableVisibilityConverter;
 use Livewire\Livewire;
 use Spatie\Backup\Tasks\Backup\DbDumperFactory;
@@ -292,6 +293,37 @@ it('skips tls on mysqldump so the alpine client can reach docker mysql', functio
     expect(config('database.connections.mysql.dump.skip_ssl'))->toBeTrue()
         ->and(config('database.connections.mysql.dump.ssl_flag'))->toBe('skip-ssl')
         ->and($dumper->getContentsOfCredentialsFile())->toContain('skip-ssl');
+});
+
+it('creates local-disk directories the scheduler can enter', function () {
+    $path = 'filament-email-log/_perm-check/note.txt';
+
+    Storage::disk('local')->put($path, 'ok');
+
+    $dir = storage_path('app/private/filament-email-log/_perm-check');
+
+    expect(is_dir($dir))->toBeTrue()
+        ->and(fileperms($dir) & 0777)->toBe(0750);
+
+    Storage::disk('local')->deleteDirectory('filament-email-log/_perm-check');
+});
+
+it('lets the nightly backup walk storage even when one email-log dir is unreadable', function () {
+    // Filament-email writes a 0700 directory per message under
+    // storage/app/private/filament-email-log. One of those that www-data
+    // cannot enter used to abort backup:run entirely. The log itself is
+    // already in MySQL (html_body / text_body); the on-disk copy is a
+    // 90-day .eml cache, same class of regenerable blob as GeoIP.
+    $exclude = config('backup.backup.source.files.exclude');
+
+    expect(config('backup.backup.source.files.ignore_unreadable_directories'))->toBeTrue()
+        ->and($exclude)->toContain(storage_path('app/private/filament-email-log'))
+        ->and(config('filesystems.disks.local.permissions.dir.private'))->toBe(0750);
+
+    $entrypoint = (string) file_get_contents(base_path('docker/entrypoint.sh'));
+
+    expect($entrypoint)->toContain('chown -R www-data:www-data storage bootstrap/cache')
+        ->and($entrypoint)->toContain('chmod -R ug+rwX storage/app/private');
 });
 
 it('ships the S3 flysystem adapter so BACKUP_DISK=s3 can resolve', function () {

@@ -52,6 +52,10 @@ return [
                     // weekly by `geoip:update`. Restoring them from a backup is
                     // slower than fetching them again.
                     storage_path('app/geoip'),
+                    // Per-message .eml cache. html_body / text_body already
+                    // live in MySQL; a 0700 directory here that www-data
+                    // cannot enter used to abort the whole nightly run.
+                    storage_path('app/private/filament-email-log'),
                 ],
 
                 /*
@@ -61,8 +65,12 @@ return [
 
                 /*
                  * Determines if it should avoid unreadable folders.
+                 *
+                 * One 0700 email-log dir that the scheduler cannot enter
+                 * must not take down .env + the rest of storage. Spatie
+                 * throws from RecursiveDirectoryIterator otherwise.
                  */
-                'ignore_unreadable_directories' => false,
+                'ignore_unreadable_directories' => true,
 
                 /*
                  * This path is used to make directories in resulting zip-file relative

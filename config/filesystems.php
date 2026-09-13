@@ -36,6 +36,21 @@ return [
             'serve' => true,
             'throw' => false,
             'report' => false,
+            // Flysystem's default private dir mode is 0700. That is
+            // enough when every writer is the same uid, and it is
+            // Permission denied for backup:run the moment one folder
+            // is owned by someone else (or was chmod'd as a file).
+            // 0750 keeps the files group-private and traversable.
+            'permissions' => [
+                'file' => [
+                    'public' => 0644,
+                    'private' => 0640,
+                ],
+                'dir' => [
+                    'public' => 0755,
+                    'private' => 0750,
+                ],
+            ],
         ],
 
         'public' => [

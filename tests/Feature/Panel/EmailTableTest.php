@@ -1,6 +1,7 @@
 <?php
 
 use App\Filament\Admin\Resources\Emails\Pages\ListEmails;
+use App\Filament\Admin\Resources\Emails\Pages\ViewEmail;
 use App\Models\User;
 use Illuminate\Support\Facades\Config;
 use Livewire\Livewire;
@@ -148,4 +149,24 @@ it('filters sent mail by date preset', function () {
     Livewire::test(ListEmails::class)
         ->filterTable('sent', ['preset' => '30d'])
         ->assertCanSeeTableRecords([$todayEmail, $oldEmail]);
+});
+
+it('isolates sent-mail html from livewire so a preview cannot break the page', function () {
+    actingAsEmailAdmin();
+
+    $email = Email::query()->create([
+        'from' => 'billing@playndgain.com',
+        'to' => 'alice@company.test',
+        'subject' => 'Invoice #1042',
+        'html_body' => '<!DOCTYPE html><html><body><p>Pay this invoice</p><style>@media (max-width: 600px) { p { color: red; } }</style><script>alert(1)</script></body></html>',
+        'text_body' => 'Pay this invoice',
+        'created_at' => now(),
+    ]);
+
+    Livewire::test(ViewEmail::class, ['record' => $email->getKey()])
+        ->assertSuccessful()
+        ->assertSee('Pay this invoice', false)
+        ->assertSee('wire:ignore', false)
+        ->assertSee('sandbox=', false)
+        ->assertSee('srcdoc=', false);
 });

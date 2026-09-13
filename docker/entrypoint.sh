@@ -70,6 +70,12 @@ mkdir -p \
     bootstrap/cache
 
 chown -R www-data:www-data storage bootstrap/cache
+# Capital X: execute only on directories (and files that already have
+# +x). A 0600 directory under the volume is invisible to RecursiveDirectoryIterator
+# even after chown, and that abort used to fail backup:run every night.
+# Scoped to private/ — GeoIP under storage/app/geoip is hundreds of
+# megabytes and is not written by the local disk.
+chmod -R ug+rwX storage/app/private storage/app/public storage/app/logs bootstrap/cache
 
 # ---------------------------------------------------------------------------
 # Wait for the database
