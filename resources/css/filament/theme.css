@@ -2484,6 +2484,30 @@ select.fi-filter-field {
   }
 }
 
+/*
+ * Record-action dropdowns (ActionGroup kebab, row menus) open from tbody cells
+ * below `.fi-ta-header-ctn`, which leek/filament-header-filters pins at
+ * z-index 30 so toolbar and header-filter panels paint correctly. When the
+ * menu opens upward on the first row, items such as "Disable" and "View
+ * offers" sit under the search bar unless the active row and its panel rise
+ * above that header stack.
+ */
+.fi-ta-cell:has(.fi-ta-actions) {
+  overflow: visible;
+}
+
+.fi-ta-row:has(.fi-ta-actions [aria-expanded="true"]),
+.fi-ta-record:has(.fi-ta-actions [aria-expanded="true"]) {
+  position: relative;
+  z-index: 40;
+}
+
+.fi-ta-actions .fi-dropdown-panel,
+.fi-ta-actions [x-ref="panel"] {
+  z-index: 50 !important;
+  isolation: isolate;
+}
+
 /* ── Publisher identity cells ───────────────────────────────────────────────
    User / geo / status are custom columns. Filament zeroes cell padding and
    lets each column type dress itself — same contract as geo-stack above. ── */
