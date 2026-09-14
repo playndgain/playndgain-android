@@ -125,6 +125,26 @@ it('records why it refused every offer it dropped', function () {
         ->and($skips[SwaarmDriver::SKIP_UNBOUNDED_BASE])->toBe(['1004']);
 });
 
+it('imports offers when swaarm sends empty disallow scaffolding', function () {
+    Http::fake([
+        'feed.acme.swaarm-clients.com/*' => Http::response(
+            json_decode((string) file_get_contents(base_path('tests/Fixtures/Networks/swaarm-ads-winklelab-shape.json')), true)
+        ),
+    ]);
+
+    $driver = ($this->driver)();
+    $offers = collect(iterator_to_array($driver->fetchOffers(), false))
+        ->keyBy(fn (OfferDTO $offer): string => (string) $offer->externalId);
+    $skips = collect($driver->skippedOffers())->map(fn (array $bucket): array => $bucket['samples']);
+
+    expect($offers->pluck('externalId')->map(fn (string|int $id): string => (string) $id)->all())->toBe(['1645', '1473'])
+        ->and($offers->firstWhere('externalId', '1645')->countries)->toBe(['US'])
+        ->and($offers->firstWhere('externalId', '1645')->devices)->toBe(['ios'])
+        ->and($offers->firstWhere('externalId', '1473')->devices)->toBe(['desktop'])
+        ->and($offers->firstWhere('externalId', '1473')->payout)->toBe(2.4)
+        ->and($skips['targeting dimension the wall cannot filter on'])->toBe(['9001']);
+});
+
 it('numbers a multi-variant offer the same way on a second sync', function () {
     ($this->catalogue)();
 

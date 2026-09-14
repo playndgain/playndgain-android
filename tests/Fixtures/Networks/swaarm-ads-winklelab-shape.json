@@ -1,0 +1,100 @@
+{
+  "ads": [
+    {
+      "id": "1645",
+      "name": "Dabble US iOS CPR - Rewarded",
+      "click_url": "https://winklelab.trckswrm.com/click?offer_id=1645&pub_id=193",
+      "payout": 0.56,
+      "payout_currency": "USD",
+      "leadflow": "CPI",
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "deviceBrand": null,
+          "maxOsVersion": null,
+          "minOsVersion": null,
+          "os": "IOS"
+        },
+        "allowedGeoTargeting": {
+          "cities": [],
+          "countries": ["US"],
+          "regions": []
+        },
+        "disallowedDeviceTargeting": {
+          "deviceBrand": null,
+          "maxOsVersion": null,
+          "minOsVersion": null,
+          "os": null
+        },
+        "disallowedGeoTargeting": {
+          "cities": [],
+          "countries": null,
+          "regions": []
+        }
+      },
+      "eventTypes": []
+    },
+    {
+      "id": "1473",
+      "name": "Retail Style - Shein Web CPE - Rewarded",
+      "click_url": "https://winklelab.trckswrm.com/click?offer_id=1473&pub_id=193",
+      "payout": 0,
+      "payout_currency": "USD",
+      "leadflow": "CPA",
+      "targeting": {
+        "allowedDeviceTargeting": {
+          "deviceBrand": null,
+          "maxOsVersion": null,
+          "minOsVersion": "10.0.0",
+          "os": "WINDOWS"
+        },
+        "allowedGeoTargeting": {
+          "cities": [],
+          "countries": ["US"],
+          "regions": []
+        },
+        "disallowedDeviceTargeting": {
+          "deviceBrand": null,
+          "maxOsVersion": null,
+          "minOsVersion": null,
+          "os": null
+        },
+        "disallowedGeoTargeting": {
+          "cities": [],
+          "countries": null,
+          "regions": []
+        }
+      },
+      "eventTypes": [
+        {
+          "classification": "MONETIZATION",
+          "name": "revevent",
+          "payout": { "currency": "USD", "value": 2.4 }
+        }
+      ]
+    },
+    {
+      "id": "9001",
+      "name": "Denied Country List",
+      "click_url": "https://winklelab.trckswrm.com/click?offer_id=9001&pub_id=193",
+      "payout": 1.0,
+      "payout_currency": "USD",
+      "leadflow": "CPI",
+      "targeting": {
+        "allowedDeviceTargeting": { "os": "ANDROID" },
+        "allowedGeoTargeting": { "countries": ["US"] },
+        "disallowedDeviceTargeting": {
+          "deviceBrand": null,
+          "maxOsVersion": null,
+          "minOsVersion": null,
+          "os": null
+        },
+        "disallowedGeoTargeting": {
+          "cities": [],
+          "countries": ["CN"],
+          "regions": []
+        }
+      },
+      "eventTypes": []
+    }
+  ]
+}

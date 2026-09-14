@@ -83,6 +83,7 @@ class SwaarmDriver extends AbstractDriver
         'chromeos' => 'desktop',
         'macos' => 'desktop',
         'mac os' => 'desktop',
+        'windows' => 'desktop',
     ];
 
     /** Two hundred ISO-2 codes is "worldwide", not a targeting list. */
@@ -424,8 +425,34 @@ class SwaarmDriver extends AbstractDriver
             }
         }
 
-        return blank($targeting['disallowedGeoTargeting'] ?? null)
-            && blank($targeting['disallowedDeviceTargeting'] ?? null);
+        return $this->disallowBlockIsEmpty(
+            $targeting['disallowedGeoTargeting'] ?? null,
+            ['cities', 'countries', 'regions', 'zipCodes'],
+        ) && $this->disallowBlockIsEmpty(
+            $targeting['disallowedDeviceTargeting'] ?? null,
+            ['deviceBrand', 'maxOsVersion', 'minOsVersion', 'os'],
+        );
+    }
+
+    /**
+     * Swaarm always ships disallow blocks as objects with null/empty fields.
+     * Treat those as "no deny rules" rather than as a populated deny-list.
+     *
+     * @param  list<string>  $keys
+     */
+    private function disallowBlockIsEmpty(mixed $block, array $keys): bool
+    {
+        if (! is_array($block)) {
+            return true;
+        }
+
+        foreach ($keys as $key) {
+            if (filled($block[$key] ?? null)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
