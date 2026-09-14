@@ -9,6 +9,7 @@ use App\Filament\Tables\Columns\UserColumn;
 use App\Models\AccountMatch;
 use App\Models\AuditLog;
 use App\Models\Publisher;
+use App\Services\Publisher\PublisherNotifier;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -155,6 +156,13 @@ class SignupQueue extends Page implements HasActions, HasSchemas, HasTable
             'status' => $to->value,
             'reason' => $reason,
         ]);
+
+        app(PublisherNotifier::class)->publisherStatusChanged(
+            $publisher->fresh(),
+            PublisherStatus::from($before),
+            $to,
+            $reason,
+        );
     }
 
     /**

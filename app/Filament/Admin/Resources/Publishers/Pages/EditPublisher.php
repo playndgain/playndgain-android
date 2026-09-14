@@ -2,10 +2,12 @@
 
 namespace App\Filament\Admin\Resources\Publishers\Pages;
 
+use App\Enums\PublisherStatus;
 use App\Filament\Admin\Resources\Publishers\PublisherResource;
 use App\Models\AuditLog;
 use App\Models\Publisher;
 use App\Models\User;
+use App\Services\Publisher\PublisherNotifier;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\TextInput;
@@ -18,6 +20,8 @@ use SensitiveParameter;
 class EditPublisher extends EditRecord
 {
     protected static string $resource = PublisherResource::class;
+
+    private ?PublisherStatus $statusBeforeSave = null;
 
     /**
      * Password and `email_verified_at` live on the user row. Saving this form
@@ -88,6 +92,11 @@ class EditPublisher extends EditRecord
         ];
     }
 
+    protected function beforeSave(): void
+    {
+        $this->statusBeforeSave = $this->getRecord()->status;
+    }
+
     /** Terms changes are money changes. They are logged like every other one. */
     protected function afterSave(): void
     {
@@ -95,6 +104,14 @@ class EditPublisher extends EditRecord
         $publisher = $this->getRecord();
 
         AuditLog::record('publisher.updated', $publisher, null, $publisher->getChanges());
+
+        if ($this->statusBeforeSave instanceof PublisherStatus && $this->statusBeforeSave !== $publisher->status) {
+            app(PublisherNotifier::class)->publisherStatusChanged(
+                $publisher,
+                $this->statusBeforeSave,
+                $publisher->status,
+            );
+        }
     }
 
     private function recordUser(): ?User

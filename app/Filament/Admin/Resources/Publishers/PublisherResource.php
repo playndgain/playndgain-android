@@ -17,6 +17,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Models\AuditLog;
 use App\Models\LedgerEntry;
 use App\Models\Publisher;
+use App\Services\Publisher\PublisherNotifier;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -334,6 +335,13 @@ class PublisherResource extends Resource
                     'status' => $to->value,
                     'reason' => $data['reason'] ?? null,
                 ]);
+
+                app(PublisherNotifier::class)->publisherStatusChanged(
+                    $record->fresh(),
+                    PublisherStatus::from($before),
+                    $to,
+                    $data['reason'] ?? null,
+                );
             });
     }
 }

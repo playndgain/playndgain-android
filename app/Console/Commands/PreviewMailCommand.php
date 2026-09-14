@@ -2,11 +2,17 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\AppStatus;
+use App\Enums\PublisherStatus;
 use App\Http\Controllers\ContactController;
 use App\Mail\ContactMessage;
 use App\Mail\CreditNoteMail;
 use App\Mail\MonthlyPayoutErrorsMail;
 use App\Mail\MonthlyPayoutSkippedMail;
+use App\Mail\PublisherAccountStatusMail;
+use App\Mail\PublisherAppStatusMail;
+use App\Models\App;
+use App\Models\Publisher;
 use App\Models\User;
 use App\Notifications\AdminAlertNotification;
 use App\Services\Invoices\CreditNote;
@@ -65,6 +71,33 @@ class PreviewMailCommand extends Command
         )));
 
         $this->send('Credit note', fn () => Mail::to($to)->sendNow(new CreditNoteMail($this->sampleNote())));
+
+        $publisher = new Publisher(['pub_id' => 10042, 'company_name' => 'Preview Rewards']);
+        $app = new App(['app_id' => 10001, 'name' => 'Preview Wall']);
+
+        $this->send('Publisher approved', fn () => Mail::to($to)->sendNow(
+            new PublisherAccountStatusMail($publisher, PublisherStatus::Approved),
+        ));
+
+        $this->send('Publisher rejected', fn () => Mail::to($to)->sendNow(
+            new PublisherAccountStatusMail($publisher, PublisherStatus::Banned, 'Traffic source could not be verified.'),
+        ));
+
+        $this->send('Publisher suspended', fn () => Mail::to($to)->sendNow(
+            new PublisherAccountStatusMail($publisher, PublisherStatus::Suspended, 'Chargeback rate above the platform limit.'),
+        ));
+
+        $this->send('App approved', fn () => Mail::to($to)->sendNow(
+            new PublisherAppStatusMail($app, AppStatus::Active),
+        ));
+
+        $this->send('App rejected', fn () => Mail::to($to)->sendNow(
+            new PublisherAppStatusMail($app, AppStatus::Rejected, 'Postback URL did not respond during review.'),
+        ));
+
+        $this->send('App paused', fn () => Mail::to($to)->sendNow(
+            new PublisherAppStatusMail($app, AppStatus::Paused),
+        ));
 
         $this->send('Monthly payout skipped', fn () => Mail::to($to)->sendNow(new MonthlyPayoutSkippedMail(
             pubId: '10042',

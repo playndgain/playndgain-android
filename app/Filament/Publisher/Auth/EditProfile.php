@@ -113,7 +113,7 @@ class EditProfile extends BaseEditProfile
             ->options(Publisher::NOTIFICATION_TYPES)
             // Said here rather than only in a changelog: a checkbox that
             // silently does nothing is worse than an absent one.
-            ->helperText('A credit note is emailed when a payout is marked paid. The monthly run emails you if it cannot request a payout. Postback, account, and monthly summary senders are not live yet.')
+            ->helperText('A credit note is emailed when a payout is marked paid. The monthly run emails you if it cannot request a payout. Postback and monthly summary senders are not live yet.')
             ->visible(fn (): bool => CurrentPublisher::get() !== null);
     }
 

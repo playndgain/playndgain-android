@@ -23,6 +23,7 @@ use App\Filament\Tables\Columns\UserColumn;
 use App\Models\App;
 use App\Models\AuditLog;
 use App\Services\Money\MacroResolver;
+use App\Services\Publisher\PublisherNotifier;
 use App\Services\Wall\WallContext;
 use App\Services\Wall\WallGate;
 use App\Support\Contrast;
@@ -317,6 +318,13 @@ class AppResource extends Resource
                     'status' => $to->value,
                     'reason' => $data['reason'] ?? null,
                 ]);
+
+                app(PublisherNotifier::class)->appStatusChanged(
+                    $record->fresh(),
+                    AppStatus::from($before),
+                    $to,
+                    $data['reason'] ?? null,
+                );
             });
     }
 }

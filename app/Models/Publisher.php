@@ -37,6 +37,7 @@ class Publisher extends Model
         'postback_failures' => 'Postback delivery failures',
         'withdrawal_status' => 'Withdrawal status changes',
         'account_status' => 'Account status changes',
+        'app_status' => 'App review decisions',
         'monthly_summary' => 'Monthly earnings summary',
     ];
 
