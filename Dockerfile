@@ -122,7 +122,15 @@ RUN apk add --no-cache \
         mariadb-connector-c \
         gettext \
         su-exec \
-    && mkdir -p /run/nginx /var/log/supervisor
+    && mkdir -p \
+        /run/nginx \
+        /var/log/supervisor \
+        /var/lib/nginx/tmp/client_body \
+        /var/lib/nginx/tmp/proxy \
+        /var/lib/nginx/tmp/fastcgi \
+        /var/lib/nginx/tmp/uwsgi \
+        /var/lib/nginx/tmp/scgi \
+    && chown -R www-data:www-data /var/lib/nginx /run/nginx
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 

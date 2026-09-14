@@ -259,6 +259,37 @@ it('keeps the container nginx blocks in step with the deployed ones', function (
         ->and($container('docker/nginx/nginx.conf'))->toContain('real_ip_recursive on;');
 });
 
+it('lets the nginx worker write spilled request bodies', function () {
+    // Alpine's nginx package owns /var/lib/nginx/tmp as user `nginx`. This
+    // image runs workers as www-data. A Livewire POST that exceeds
+    // client_body_buffer_size — the sent-mail view action ships the full HTML
+    // in the form — spills to disk. If that directory is not writable the
+    // worker returns 500 without ever reaching PHP.
+    $dockerfile = (string) file_get_contents(base_path('Dockerfile'));
+    $entrypoint = (string) file_get_contents(base_path('docker/entrypoint.sh'));
+    $nginx = (string) file_get_contents(base_path('docker/nginx/nginx.conf'));
+
+    expect($nginx)->toContain('user  www-data;')
+        ->and($nginx)->toContain('client_body_temp_path /var/lib/nginx/tmp/client_body;')
+        ->and($dockerfile)->toContain('/var/lib/nginx/tmp')
+        ->and($dockerfile)->toContain('chown -R www-data:www-data /var/lib/nginx')
+        ->and($entrypoint)->toContain('/var/lib/nginx/tmp')
+        ->and($entrypoint)->toContain('chown -R www-data:www-data /var/lib/nginx');
+});
+
+it('sends CORS on webfonts so a srcdoc email preview can load Sora', function () {
+    // Sent-mail HTML is rendered in a sandboxed srcdoc iframe (origin null).
+    // @font-face against the site origin is a cross-origin fetch and the
+    // browser drops the file unless Access-Control-Allow-Origin is present.
+    foreach ([
+        'deploy/nginx/playndgain.com.conf',
+        'docker/nginx/templates/10-site.conf.template',
+    ] as $path) {
+        expect((string) file_get_contents(base_path($path)))
+            ->toContain('Access-Control-Allow-Origin "*"');
+    }
+});
+
 it('rolls app start-first for Dokploy Stack deploys', function () {
     $compose = (string) file_get_contents(base_path('docker-compose.yml'));
     $script = (string) file_get_contents(base_path('docker/dokploy-stack-deploy.sh'));

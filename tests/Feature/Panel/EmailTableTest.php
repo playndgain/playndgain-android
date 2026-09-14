@@ -3,6 +3,7 @@
 use App\Filament\Admin\Resources\Emails\Pages\ListEmails;
 use App\Filament\Admin\Resources\Emails\Pages\ViewEmail;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Support\Facades\Config;
 use Livewire\Livewire;
 use RickDBCN\FilamentEmail\Models\Email;
@@ -169,4 +170,22 @@ it('isolates sent-mail html from livewire so a preview cannot break the page', f
         ->assertSee('wire:ignore', false)
         ->assertSee('sandbox=', false)
         ->assertSee('srcdoc=', false);
+});
+
+it('opens the sent-mail table view action with the isolated html preview', function () {
+    actingAsEmailAdmin();
+
+    $email = Email::query()->create([
+        'from' => 'billing@playndgain.com',
+        'to' => 'alice@company.test',
+        'subject' => 'Invoice #1042',
+        'html_body' => '<!DOCTYPE html><html><body><p>Pay this invoice</p></body></html>',
+        'text_body' => 'Pay this invoice',
+        'created_at' => now(),
+    ]);
+
+    Livewire::test(ListEmails::class)
+        ->mountAction(TestAction::make('view_email_action')->table($email))
+        ->assertSuccessful()
+        ->assertActionMounted(TestAction::make('view_email_action')->table($email));
 });

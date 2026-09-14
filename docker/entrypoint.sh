@@ -239,6 +239,19 @@ case "$ROLE" in
         done
 
         log "domains: site=${APP_DOMAIN} wall=${WALL_DOMAIN} api=${API_DOMAIN}"
+
+        # Alpine's nginx package owns this tree as user `nginx`; workers run
+        # as www-data. A Livewire POST larger than the in-memory body buffer
+        # spills here, and a 0700 nginx-owned dir is a 500 on sent-mail view.
+        mkdir -p \
+            /run/nginx \
+            /var/lib/nginx/tmp/client_body \
+            /var/lib/nginx/tmp/proxy \
+            /var/lib/nginx/tmp/fastcgi \
+            /var/lib/nginx/tmp/uwsgi \
+            /var/lib/nginx/tmp/scgi
+        chown -R www-data:www-data /var/lib/nginx /run/nginx
+
         nginx -t
 
         wait_for_database
