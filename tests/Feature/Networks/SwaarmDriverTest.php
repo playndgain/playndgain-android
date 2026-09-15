@@ -140,6 +140,7 @@ it('imports offers when swaarm sends empty disallow scaffolding', function () {
     expect($offers->pluck('externalId')->map(fn (string|int $id): string => (string) $id)->all())->toBe(['1645', '1473'])
         ->and($offers->firstWhere('externalId', '1645')->countries)->toBe(['US'])
         ->and($offers->firstWhere('externalId', '1645')->devices)->toBe(['ios'])
+        ->and($offers->firstWhere('externalId', '1645')->iconUrl)->toBe('https://creatives.winklelab.swaarm-clients.com/objects/249/dabble-logo.png')
         ->and($offers->firstWhere('externalId', '1473')->devices)->toBe(['desktop'])
         ->and($offers->firstWhere('externalId', '1473')->payout)->toBe(2.4)
         ->and($skips['targeting dimension the wall cannot filter on'])->toBe(['9001']);

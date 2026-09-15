@@ -173,8 +173,8 @@ it('shows the publisher their share of the payout', function () {
     // 70% of $3.50 — and never the $3.50 itself.
     $this->get('/dashboard/offers')
         ->assertSuccessful()
-        ->assertSee('$2.4500')
-        ->assertDontSee('$3.5000');
+        ->assertSee('$2.45')
+        ->assertDontSee('$3.50');
 });
 
 /**

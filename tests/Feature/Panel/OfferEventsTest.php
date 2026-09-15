@@ -81,8 +81,8 @@ it('lists each event and the network payout for an admin', function () {
     expect($html)
         ->toContain('Reach village 5')
         ->toContain('Reach village 15')
-        ->toContain('+$2.2500')
-        ->toContain('+$1.7500')
+        ->toContain('+$2.25')
+        ->toContain('+$1.75')
         ->toContain('+1,575 Coins')
         ->toContain('+1,225 Coins')
         ->toContain('A two-week village builder.')
@@ -117,14 +117,14 @@ it('lists each event at the publisher share and hides the network payout', funct
     expect($html)
         ->toContain('Reach village 5')
         ->toContain('Reach village 15')
-        ->toContain('+$1.5750')
-        ->toContain('+$1.2250')
+        ->toContain('+$1.575')
+        ->toContain('+$1.225')
         ->toContain('+1,575 Coins')
         ->toContain('+1,225 Coins')
         ->toContain('Amounts shown are what you earn')
         ->toContain('User reward uses this app currency')
-        ->not->toContain('+$2.2500')
-        ->not->toContain('+$1.7500');
+        ->not->toContain('+$2.25')
+        ->not->toContain('+$1.75');
 });
 
 it('still prices events from the selected app when the session has no publisher', function () {
@@ -145,8 +145,8 @@ it('still prices events from the selected app when the session has no publisher'
     $html = view('filament.offers.events', ViewOfferEventsAction::viewData($offer, publisherFacing: true, app: $app))->render();
 
     expect($html)
-        ->toContain('+$1.5750')
-        ->toContain('+$1.2250')
+        ->toContain('+$1.575')
+        ->toContain('+$1.225')
         ->toContain('+1,575 Coins')
         ->not->toContain('+—')
         ->not->toContain('your payout');
@@ -166,7 +166,7 @@ it('does not invent a user reward when the publisher has no app in scope', funct
     $html = view('filament.offers.events', ViewOfferEventsAction::viewData($offer, publisherFacing: true))->render();
 
     expect($html)
-        ->toContain('+$1.5750')
+        ->toContain('+$1.575')
         ->not->toContain('Coins')
         ->not->toContain('User reward uses this app currency');
 });
@@ -197,7 +197,7 @@ it('still opens for a single-step offer', function () {
 
     expect($html)
         ->toContain('Complete the offer')
-        ->toContain('+$0.8000')
+        ->toContain('+$0.80')
         ->toContain('+560 Coins')
         ->toContain('This offer pays once')
         ->toContain('Finish the survey');

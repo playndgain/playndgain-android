@@ -493,10 +493,7 @@ class SwaarmDriver extends AbstractDriver
             payout: (float) $variant['payout'],
             description: $this->plain($row['description'] ?? null) ?? $this->plain($row['app_description'] ?? null),
             instructions: $this->plain($row['restrictions'] ?? null),
-            iconUrl: $this->nullableString(data_get($row, 'icons.256'))
-                ?? $this->nullableString(data_get($row, 'icons.128'))
-                ?? $this->nullableString(data_get($row, 'icons.96'))
-                ?? $this->nullableString(data_get($row, 'icons.72')),
+            iconUrl: $this->iconUrl($row),
             previewUrl: $this->nullableString($row['preview_url'] ?? null),
             countries: $variant['countries'],
             devices: $variant['devices'],
@@ -507,6 +504,21 @@ class SwaarmDriver extends AbstractDriver
             goals: $goals,
             dailyCap: is_numeric($row['daily_leads'] ?? null) ? (int) $row['daily_leads'] : null,
         );
+    }
+
+    /**
+     * Winklelab-shaped feeds ship art on `creatives_url` with an empty `icons`
+     * array. Sized `icons.*` URLs win when present.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function iconUrl(array $row): ?string
+    {
+        return $this->nullableString(data_get($row, 'icons.256'))
+            ?? $this->nullableString(data_get($row, 'icons.128'))
+            ?? $this->nullableString(data_get($row, 'icons.96'))
+            ?? $this->nullableString(data_get($row, 'icons.72'))
+            ?? $this->nullableString($row['creatives_url'] ?? null);
     }
 
     /**

@@ -101,8 +101,8 @@ it('never shows the network payout in the offer picker', function () {
 
     // 70% of $3.50, and never the $3.50 itself.
     expect($html)->toContain($offer->name)
-        ->and($html)->toContain('$2.4500')
-        ->and($html)->not->toContain('3.5000');
+        ->and($html)->toContain('$2.45')
+        ->and($html)->not->toContain('3.50');
 });
 
 it('hides existing network blocks and does not name the supplier', function () {

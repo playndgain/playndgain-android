@@ -7,6 +7,7 @@ use App\Filament\Publisher\Support\PublisherPayout;
 use App\Models\App;
 use App\Models\Offer;
 use App\Models\Setting;
+use App\Services\Money\Money;
 use App\Support\OfferEvents;
 use App\Support\UserReward;
 use Closure;
@@ -103,7 +104,7 @@ final class ViewOfferEventsAction
                     'name' => $event['name'],
                     'payout' => $publisherFacing
                         ? PublisherPayout::label($event['payout'], $publisher)
-                        : '$'.number_format($event['payout'], 4),
+                        : Money::display($event['payout']),
                     'points' => $points,
                 ];
             },

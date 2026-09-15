@@ -41,13 +41,13 @@ final class PublisherPayout
     /**
      * The same figure as a label.
      *
-     * Em dash, not $0.0000: with no publisher behind the session a zero reads
+     * Em dash, not $0.00: with no publisher behind the session a zero reads
      * as "this offer pays nothing" rather than "this is not your panel".
      */
     public static function label(string|float|int $gross, ?Publisher $publisher = null): string
     {
         $net = self::net($gross, $publisher);
 
-        return $net === null ? '—' : '$'.number_format((float) $net, 4);
+        return $net === null ? '—' : Money::display($net);
     }
 }
