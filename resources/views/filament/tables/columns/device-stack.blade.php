@@ -13,18 +13,18 @@
 @if ($devices->isEmpty())
     <p class="fi-ta-placeholder">all</p>
 @else
-    <div class="ad-stack"
+    <div class="pg-stack"
          x-tooltip="{ content: @js($devices->implode(', ')), theme: $store.theme }"
          aria-label="{{ $devices->implode(', ') }}">
         @foreach ($devices as $device)
             @if (in_array($device, $marks, true))
-                <span class="ad-device">
+                <span class="pg-device">
                     <img src="{{ asset('img/devices/'.$device.'.svg') }}"
                          alt="{{ $device }}"
                          loading="lazy">
                 </span>
             @else
-                <span class="ad-more">{{ $device }}</span>
+                <span class="pg-more">{{ $device }}</span>
             @endif
         @endforeach
     </div>

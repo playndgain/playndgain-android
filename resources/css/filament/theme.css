@@ -2215,7 +2215,7 @@ select.fi-filter-field {
    Overlapped rather than listed: four flags in a row of a dense table cost more
    width than the column has, and the exact list is one hover away in the title
    attribute. The ring is what keeps two adjacent flags from reading as one. */
-.ad-stack {
+.pg-stack {
   display: flex;
   align-items: center;
   /* Filament puts `p-0` on the cell itself and lets each column type pad its
@@ -2229,18 +2229,18 @@ select.fi-filter-field {
 /* Geo and devices are the only two picture columns in the table and they sit
    next to each other, so the standard 12px each side leaves the last flag and
    the first device reading as one run of images. */
-.fi-ta-cell-devices .ad-stack {
+.fi-ta-cell-devices .pg-stack {
   padding-inline-start: 2rem;
 }
 
-.ad-stack > * {
+.pg-stack > * {
   flex: none;
   margin-inline-start: -0.3rem;
   border-radius: 10px;
   box-shadow: 0 0 0 1.5px var(--gray-700);
 }
 
-.ad-stack > *:first-child {
+.pg-stack > *:first-child {
   margin-inline-start: 0;
 }
 
@@ -2248,13 +2248,14 @@ select.fi-filter-field {
    package names a class after every ISO code, and Filament prefixes its own
    classes `fi-` too — `.fi-no` is the notifications overlay, `.fi-ta` the
    table wrapper. `npm run flags` copies the SVGs into public/flags.
-   The class is `pg-flag`, not the ad-prefixed name EasyList generic-hides. */
+   Classes stay off the EasyList generic-hide names (the old flag and stack
+   wrappers). Those rules blank both picture columns on a live host. */
 /* Tailwind preflight sets `img { max-width: 100%; height: auto }`. Inside a
    shrink-wrapped flex cell (`grow(false)` on Geo) that percentage resolves
    against an indefinite parent and the flag collapses to 0×0 — tooltip still
    fires, picture does not. Filament's own image column uses `max-w-none`
    for the same reason. */
-.ad-stack .pg-flag {
+.pg-stack .pg-flag {
   flex: none;
   width: 1.35rem;
   height: 1rem;
@@ -2262,8 +2263,8 @@ select.fi-filter-field {
   object-fit: cover;
 }
 
-.ad-stack .ad-device,
-.ad-stack .ad-more {
+.pg-stack .pg-device,
+.pg-stack .pg-more {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2279,7 +2280,7 @@ select.fi-filter-field {
 
 /* Brand colour is baked into the files in public/img/devices, so an <img>
    carries it and no CSS has to know which mark is which. */
-.ad-stack .ad-device img {
+.pg-stack .pg-device img {
   width: 0.8rem;
   height: 0.8rem;
 }

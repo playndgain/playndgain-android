@@ -25,7 +25,7 @@
 @else
     {{-- Three flags, then a count. The full list is the tooltip's job: a cell
          wide enough for thirty countries is a cell nobody can scan. --}}
-    <div class="ad-stack"
+    <div class="pg-stack"
          x-tooltip="{ content: @js($tooltip), theme: $store.theme }"
          aria-label="{{ $tooltip }}">
         @foreach ($shown as $code)
@@ -41,7 +41,7 @@
         @endforeach
 
         @if ($rest > 0)
-            <span class="ad-more">+{{ $rest }}</span>
+            <span class="pg-more">+{{ $rest }}</span>
         @endif
     </div>
 @endif

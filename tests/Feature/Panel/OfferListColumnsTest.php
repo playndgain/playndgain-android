@@ -121,8 +121,11 @@ it('keeps flag styling out of Filament class namespace', function () {
     expect(file_get_contents(resource_path('css/filament/theme.css')))
         ->not->toContain("@import 'flag-icons")
         ->not->toContain('@import "flag-icons')
-        // EasyList generic-hides the ad-prefixed flag class. The class has
-        // to stay off that name or every ad blocker blanks the geo column.
+        // EasyList generic-hides `.ad-flag` and `.ad-stack`. Those names
+        // blank the geo and device columns on any live host an ad blocker
+        // treats as a website — localhost / `.test` usually skip the list.
         ->not->toContain('.ad-flag')
-        ->not->toContain('ad-flag');
+        ->not->toContain('ad-flag')
+        ->not->toContain('.ad-stack')
+        ->not->toContain('ad-stack');
 });
