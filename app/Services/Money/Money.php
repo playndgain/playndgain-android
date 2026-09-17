@@ -56,6 +56,12 @@ final class Money
         return ($negative ? '-$' : '$').number_format((int) $whole).'.'.$fraction;
     }
 
+    /** Cents only — payout cards and statements. Micropayouts still use display(). */
+    public static function dollars(string|float|int $amount): string
+    {
+        return self::display(self::format($amount, 2));
+    }
+
     public static function negate(string|float|int $amount, int $scale = self::SCALE): string
     {
         return bcsub('0', self::decimal($amount), $scale);

@@ -4,7 +4,6 @@ namespace App\Filament\Publisher\Pages;
 
 use App\Enums\PaymentMethodType;
 use App\Enums\PayoutStatementStatus;
-use App\Enums\WithdrawalStatus;
 use App\Filament\Publisher\Auth\Register;
 use App\Filament\Publisher\Support\CurrentPublisher;
 use App\Filament\Publisher\Support\PaymentMethodFields;
@@ -20,19 +19,15 @@ use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\ViewEntry;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
-use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -49,10 +44,11 @@ use Illuminate\Support\Facades\Gate;
  * Payments — docs/08 §10.
  *
  * One page for everything money: the five cards, each payout destination
- * edited in place, the billing address a credit note prints, and the monthly
- * statements with a detail modal per row. Crypto, PayPal and bank transfer
- * are offered; Wise survives in the enum for the history of payouts already
- * made. There is no "request" button — payouts open themselves on the 1st.
+ * edited in place, the billing address a credit note prints, and the months
+ * that had chargebacks. More info is the invoice page — offers compacted,
+ * not every conversion line. Crypto, PayPal and bank transfer are offered;
+ * Wise survives in the enum for the history of payouts already made. There
+ * is no "request" button — payouts open themselves on the 1st.
  *
  * @property-read bool $canWrite Livewire computed via getCanWriteProperty().
  */
@@ -609,6 +605,7 @@ class Payments extends Page implements HasActions, HasSchemas, HasTable
         return $table
             ->query(fn (): Builder => PayoutStatement::query()
                 ->where('publisher_id', CurrentPublisher::id())
+                ->where('chargebacks', '<', 0)
                 ->with('withdrawal'))
             ->columns([
                 TextColumn::make('period')
@@ -617,15 +614,15 @@ class Payments extends Page implements HasActions, HasSchemas, HasTable
                     ->sortable(),
                 TextColumn::make('due_date')->label('Due date')->date('M j, Y'),
                 TextColumn::make('gross')
-                    ->label('Payment amount')
+                    ->label('Earned')
                     ->fontFamily(FontFamily::Mono)
                     ->formatStateUsing(fn (string $state): string => self::dollars($state))
                     ->alignEnd(),
                 TextColumn::make('chargebacks')
-                    ->label('Chargeback')
+                    ->label('Chargebacks')
                     ->fontFamily(FontFamily::Mono)
                     ->formatStateUsing(fn (string $state): string => self::dollars($state))
-                    ->color(fn (string $state): string => bccomp($state, '0', Money::SCALE) < 0 ? 'loss' : 'gray')
+                    ->color('loss')
                     ->alignEnd(),
                 TextColumn::make('net')
                     ->label('Actual payment')
@@ -649,166 +646,22 @@ class Payments extends Page implements HasActions, HasSchemas, HasTable
                 SelectFilter::make('status')->options(PayoutStatementStatus::class),
             ])
             ->recordActions([
-                $this->viewStatementAction(),
+                Action::make('view')
+                    ->label('More info')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->color('gray')
+                    ->url(fn (PayoutStatement $record): string => StatementInvoice::getUrl(['record' => $record])),
             ])
             ->defaultSort('period', 'desc')
             ->paginated([12, 24])
-            ->emptyStateHeading('No statements yet')
-            ->emptyStateDescription('Your first statement is generated on the 1st of next month.');
-    }
-
-    /**
-     * Gemiad-shaped: three tiles, the breakdown, and — once a payout exists —
-     * where it went and its reference. A pending month has no destination yet.
-     */
-    private function viewStatementAction(): Action
-    {
-        return Action::make('view')
-            ->label('View')
-            ->icon(Heroicon::OutlinedEye)
-            ->color('gray')
-            ->modalHeading('Payment details')
-            ->modalWidth(Width::TwoExtraLarge)
-            ->modalSubmitAction(false)
-            ->modalCancelActionLabel('Close')
-            ->schema([
-                Section::make()->columns(3)->schema([
-                    ViewEntry::make('status')->label('Status')->view('filament.infolists.entries.status-pill'),
-                    TextEntry::make('period')
-                        ->label('Period')
-                        ->formatStateUsing(fn (PayoutStatement $record): string => $record->periodLabel()),
-                    TextEntry::make('due_date')->label('Due date')->date('M j, Y'),
-                ]),
-
-                Section::make('Payment breakdown')->columns(2)->schema([
-                    TextEntry::make('gross')
-                        ->label('Earnings')
-                        ->fontFamily(FontFamily::Mono)
-                        ->formatStateUsing(fn (string $state): string => self::dollars($state)),
-                    TextEntry::make('chargebacks')
-                        ->label('Chargebacks')
-                        ->fontFamily(FontFamily::Mono)
-                        ->color(fn (string $state): ?string => bccomp($state, '0', Money::SCALE) < 0 ? 'loss' : null)
-                        ->formatStateUsing(fn (string $state): string => self::dollars($state)),
-                    TextEntry::make('adjustments')
-                        ->label('Adjustments')
-                        ->fontFamily(FontFamily::Mono)
-                        ->formatStateUsing(fn (string $state): string => self::dollars($state))
-                        ->visible(fn (PayoutStatement $record): bool => bccomp($record->adjustments, '0', Money::SCALE) !== 0),
-                    TextEntry::make('carried_in')
-                        ->label('Carried from earlier periods')
-                        ->fontFamily(FontFamily::Mono)
-                        ->state(fn (PayoutStatement $record): ?string => $record->carriedIn())
-                        ->formatStateUsing(fn (string $state): string => self::dollars($state))
-                        ->visible(fn (PayoutStatement $record): bool => $record->carriedIn() !== null),
-                    TextEntry::make('net')
-                        ->label('Net payment')
-                        ->fontFamily(FontFamily::Mono)
-                        ->size(TextSize::Large)
-                        ->weight(FontWeight::Bold)
-                        ->color(fn (string $state): ?string => match (bccomp($state, '0', Money::SCALE)) {
-                            1 => 'gain',
-                            -1 => 'loss',
-                            default => null,
-                        })
-                        ->formatStateUsing(fn (string $state): string => self::dollars($state))
-                        ->columnSpanFull(),
-                    TextEntry::make('note')
-                        ->label('Note')
-                        ->columnSpanFull()
-                        ->visible(fn (PayoutStatement $record): bool => filled($record->note)),
-                ]),
-
-                Section::make('Payment method')->columns(2)
-                    ->visible(fn (PayoutStatement $record): bool => $record->withdrawal !== null)
-                    ->schema([
-                        TextEntry::make('withdrawal.method')
-                            ->label('Method')
-                            ->badge()
-                            ->formatStateUsing(fn (PaymentMethodType $state): string => PaymentMethodFields::label($state)),
-                        TextEntry::make('withdrawal.status')
-                            ->label('Payout status')
-                            ->badge()
-                            ->formatStateUsing(fn (WithdrawalStatus $state): string => ucfirst($state->value)),
-
-                        TextEntry::make('crypto_asset')
-                            ->label('Currency')
-                            ->state(fn (PayoutStatement $record): ?string => $record->withdrawal?->destination()['asset'] ?? null)
-                            ->visible(fn (PayoutStatement $record): bool => $record->withdrawal?->method === PaymentMethodType::Crypto),
-                        TextEntry::make('crypto_network')
-                            ->label('Network')
-                            ->state(fn (PayoutStatement $record): ?string => PaymentMethodFields::CRYPTO_NETWORKS[$record->withdrawal?->destination()['network'] ?? ''] ?? ($record->withdrawal?->destination()['network'] ?? null))
-                            ->visible(fn (PayoutStatement $record): bool => $record->withdrawal?->method === PaymentMethodType::Crypto),
-                        TextEntry::make('crypto_address')
-                            ->label('Wallet address')
-                            ->fontFamily(FontFamily::Mono)
-                            ->state(fn (PayoutStatement $record): ?string => $record->withdrawal?->destination()['address'] ?? null)
-                            ->copyable()
-                            ->columnSpanFull()
-                            ->visible(fn (PayoutStatement $record): bool => $record->withdrawal?->method === PaymentMethodType::Crypto),
-
-                        TextEntry::make('email_destination')
-                            ->label(fn (PayoutStatement $record): string => $record->withdrawal?->method === PaymentMethodType::Wise ? 'Wise email' : 'PayPal email')
-                            ->state(fn (PayoutStatement $record): ?string => $record->withdrawal?->destination()['email'] ?? null)
-                            ->copyable()
-                            ->columnSpanFull()
-                            ->visible(fn (PayoutStatement $record): bool => in_array($record->withdrawal?->method, [PaymentMethodType::Paypal, PaymentMethodType::Wise], true)),
-
-                        TextEntry::make('bank_account_name')
-                            ->label('Account holder')
-                            ->state(fn (PayoutStatement $record): ?string => $record->withdrawal?->destination()['account_name'] ?? null)
-                            ->visible(fn (PayoutStatement $record): bool => $record->withdrawal?->method === PaymentMethodType::Bank),
-                        TextEntry::make('bank_iban')
-                            ->label('IBAN / account number')
-                            ->fontFamily(FontFamily::Mono)
-                            ->state(fn (PayoutStatement $record): ?string => $record->withdrawal?->destination()['iban'] ?? null)
-                            ->copyable()
-                            ->visible(fn (PayoutStatement $record): bool => $record->withdrawal?->method === PaymentMethodType::Bank),
-                        TextEntry::make('bank_swift')
-                            ->label('SWIFT / BIC')
-                            ->state(fn (PayoutStatement $record): ?string => $record->withdrawal?->destination()['swift'] ?? null)
-                            ->placeholder('—')
-                            ->visible(fn (PayoutStatement $record): bool => $record->withdrawal?->method === PaymentMethodType::Bank),
-
-                        TextEntry::make('withdrawal.tx_reference')
-                            ->label('Transaction ID')
-                            ->fontFamily(FontFamily::Mono)
-                            ->copyable()
-                            ->placeholder('—')
-                            ->columnSpanFull(),
-                        TextEntry::make('withdrawal.paid_at')
-                            ->label('Paid on')
-                            ->dateTime('M j, Y H:i')
-                            ->placeholder('—'),
-                        TextEntry::make('settled_with')
-                            ->label('Settled together with')
-                            ->state(fn (PayoutStatement $record): ?string => $this->settledWith($record))
-                            ->visible(fn (PayoutStatement $record): bool => $this->settledWith($record) !== null),
-                    ]),
-            ]);
-    }
-
-    /** "Jul, 2026 and Jun, 2026" — the other months the same payout covered. */
-    private function settledWith(PayoutStatement $record): ?string
-    {
-        if ($record->withdrawal_id === null) {
-            return null;
-        }
-
-        $others = PayoutStatement::query()
-            ->where('withdrawal_id', $record->withdrawal_id)
-            ->whereKeyNot($record->id)
-            ->orderByDesc('period')
-            ->get()
-            ->map(fn (PayoutStatement $statement): string => $statement->periodLabel());
-
-        return $others->isEmpty() ? null : $others->implode(', ');
+            ->emptyStateHeading('No chargebacks yet')
+            ->emptyStateDescription('Months without reversals do not appear here.');
     }
 
     /** One formatter for every figure on the page — design.md §3. */
     public static function dollars(string $amount): string
     {
-        return Money::display($amount);
+        return Money::dollars($amount);
     }
 
     private function methodOf(PaymentMethodType $type): ?PaymentMethod

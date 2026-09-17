@@ -3701,3 +3701,119 @@ a.fi-fdw-breakdown__item:focus-visible {
     transition: none;
   }
 }
+
+/* Chargeback invoice — Payment history "More info". Surfaces and rose are
+   the panel tokens already on this file; kickers match table headers. */
+.ad-invoice {
+  background-color: #11131F;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px #262A40;
+  overflow: hidden;
+}
+
+.ad-invoice__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid #262A40;
+}
+
+@media (min-width: 768px) {
+  .ad-invoice__summary {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.ad-invoice__kicker {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8B90A8;
+}
+
+.ad-invoice__value {
+  margin: 0.35rem 0 0;
+  color: #F4F5FA;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+}
+
+.ad-invoice__value--num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.ad-invoice__value--loss {
+  color: #E5484D;
+}
+
+.ad-invoice__empty {
+  margin: 0;
+  padding: 1.25rem;
+  color: #A6ABBE;
+  font-size: 14px;
+}
+
+.ad-invoice__scroll {
+  overflow-x: auto;
+}
+
+.ad-invoice__table {
+  width: 100%;
+  min-width: 36rem;
+  border-collapse: collapse;
+}
+
+.ad-invoice__table th,
+.ad-invoice__table td {
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #262A40;
+  text-align: left;
+  vertical-align: top;
+}
+
+.ad-invoice__table th {
+  background-color: #1A1D2E;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8B90A8;
+}
+
+.ad-invoice__table td {
+  color: #F4F5FA;
+  font-size: 13.5px;
+}
+
+.ad-invoice__table tbody tr:hover td {
+  background-color: #1A1D2E;
+}
+
+.ad-invoice__app {
+  white-space: nowrap;
+  color: #A6ABBE;
+}
+
+.ad-invoice__offer {
+  max-width: 28rem;
+  overflow-wrap: anywhere;
+}
+
+.ad-invoice__num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ad-invoice__table tfoot td {
+  background-color: #1A1D2E;
+  font-weight: 600;
+  border-bottom: 0;
+}

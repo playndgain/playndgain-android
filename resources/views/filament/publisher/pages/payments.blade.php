@@ -129,7 +129,7 @@
         <p>Changing or switching a method does not move a payout that is already requested. It keeps the destination it was requested with.</p>
     </div>
 
-    <x-filament::section heading="Payment history" description="One statement per month, for every method you have been paid with.">
+    <x-filament::section heading="Payment history" description="Months that had chargebacks. Earned, reversed, and what remains to be paid. More info opens the invoice.">
         {{ $this->table }}
     </x-filament::section>
 </x-filament-panels::page>

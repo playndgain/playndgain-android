@@ -1,25 +1,30 @@
 <?php
 
+use App\Enums\LedgerEntryType;
 use App\Enums\PaymentMethodType;
 use App\Enums\PayoutStatementStatus;
 use App\Enums\PublisherStatus;
 use App\Enums\WithdrawalStatus;
 use App\Filament\Publisher\Pages\Payments;
+use App\Filament\Publisher\Pages\StatementInvoice;
 use App\Filament\Publisher\Widgets\PaymentsSummary;
+use App\Models\App;
+use App\Models\Conversion;
+use App\Models\LedgerEntry;
 use App\Models\PaymentMethod;
 use App\Models\PayoutStatement;
 use App\Models\Publisher;
 use App\Models\Withdrawal;
+use App\Services\Money\Money;
 use Filament\Facades\Filament;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Encryption\Encrypter;
 use Illuminate\Support\Facades\DB;
-use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
 /**
- * The Payments page — docs/08 §10: five cards, one card per destination type
- * edited in place with one Active, and the monthly statements with a modal.
+ * The Payments page — docs/08 §10: five cards, destinations, and the months
+ * that had chargebacks. More info is the invoice page.
  */
 beforeEach(function () {
     Filament::setCurrentPanel('publisher');
@@ -66,17 +71,6 @@ function paidStatement(Publisher $publisher, string $period = '2026-07-01'): Pay
     ]);
 }
 
-/**
- * Action modals render as a Livewire partial, so the modal's markup is in the
- * response effects rather than in the component's main HTML.
- */
-function modalHtml(Testable $component): string
-{
-    return collect($component->effects['partials'] ?? [])
-        ->map(fn (mixed $partial): string => is_array($partial) ? (string) ($partial['html'] ?? implode('', $partial)) : (string) $partial)
-        ->implode('');
-}
-
 function pendingStatement(Publisher $publisher, string $period = '2026-08-01'): PayoutStatement
 {
     return PayoutStatement::create([
@@ -120,48 +114,105 @@ it('shows the five cards', function () {
         ->assertSee('$0.00');
 });
 
-it('lists statements newest first', function () {
+it('lists only months that had chargebacks, newest first', function () {
     $paid = paidStatement($this->publisher);
-    $pending = pendingStatement($this->publisher);
+    $clean = pendingStatement($this->publisher);
+    $charged = pendingStatement($this->publisher, '2026-06-01');
+    $charged->update(['chargebacks' => '-10.000000', 'net' => '110.520000']);
 
     Livewire::test(Payments::class)
-        ->assertCanSeeTableRecords([$pending, $paid], inOrder: true)
-        ->assertSee('Aug, 2026')
+        ->assertCanSeeTableRecords([$paid, $charged], inOrder: true)
+        ->assertCanNotSeeTableRecords([$clean])
         ->assertSee('Jul, 2026')
+        ->assertSee('Jun, 2026')
+        ->assertDontSee('Aug, 2026')
+        ->assertSee('-$57.49')
+        ->assertSee('$387.46')
         ->assertSee('$444.95')
-        ->assertSee('$387.46');
+        ->assertSee('Due date')
+        ->assertSee('Earned')
+        ->assertSee('Aug 31, 2026');
 });
 
-it('shows the destination and transaction id for a paid statement only', function () {
-    $paid = paidStatement($this->publisher);
-    $pending = pendingStatement($this->publisher);
+it('opens a chargeback invoice that compactes offers', function () {
+    $app = App::factory()->create([
+        'publisher_id' => $this->publisher->id,
+        'name' => 'Quiz App',
+    ]);
+    $first = Conversion::factory()->create([
+        'publisher_id' => $this->publisher->id,
+        'app_id' => $app->id,
+        'payout' => '12.500000',
+        'offer_name' => 'Install the game',
+    ]);
+    $second = Conversion::factory()->create([
+        'publisher_id' => $this->publisher->id,
+        'app_id' => $app->id,
+        'payout' => '8.000000',
+        'offer_name' => 'Install the game',
+    ]);
+    $other = Conversion::factory()->create([
+        'publisher_id' => $this->publisher->id,
+        'app_id' => $app->id,
+        'payout' => '5.000000',
+        'offer_name' => 'Watch a video',
+    ]);
 
-    $paidModal = modalHtml(Livewire::test(Payments::class)
-        ->mountTableAction('view', $paid)
-        ->assertActionMounted());
+    foreach ([$first, $second, $other] as $conversion) {
+        LedgerEntry::create([
+            'publisher_id' => $this->publisher->id,
+            'type' => LedgerEntryType::Chargeback,
+            'amount' => Money::negate($conversion->payout),
+            'balance_after' => '0.000000',
+            'reference_type' => $conversion->getMorphClass(),
+            'reference_id' => $conversion->id,
+            'description' => 'Reversal of conversion '.$conversion->trans_id,
+            'created_at' => '2026-08-20 15:30:00',
+        ]);
+    }
 
-    expect($paidModal)
-        ->toContain('Payment breakdown')
-        ->toContain('$444.95')
-        ->toContain('-$57.49')
-        ->toContain('$387.46')
-        ->toContain('Wallet address')
-        ->toContain('LfrMRzgH51arp7Jd6HEedJnVqeZkbEQLDH')
-        ->toContain('Litecoin')
-        ->toContain('Transaction ID')
-        ->toContain('09530a4a9937a3f35d088f07dd60d9c1')
-        ->toContain('ad-status--paid');
+    $statement = pendingStatement($this->publisher);
+    $statement->update(['chargebacks' => '-25.500000', 'net' => '95.020000']);
 
-    $pendingModal = modalHtml(Livewire::test(Payments::class)
-        ->mountTableAction('view', $pending)
-        ->assertActionMounted());
+    Livewire::test(Payments::class)
+        ->assertSee('More info');
 
-    expect($pendingModal)
-        ->toContain('Payment breakdown')
-        ->toContain('$120.52')
-        ->toContain('ad-status--pending')
-        ->not->toContain('Wallet address')
-        ->not->toContain('Transaction ID');
+    Livewire::test(StatementInvoice::class, ['record' => $statement->id])
+        ->assertSee('Aug, 2026 chargebacks')
+        ->assertSee('#'.$app->app_id.' Quiz App')
+        ->assertSee('Install the game')
+        ->assertSee('Watch a video')
+        ->assertSee('-$20.50')
+        ->assertSee('-$5.00')
+        ->assertSee('-$25.50')
+        ->assertSee('Earned')
+        ->assertSee('Total')
+        ->assertDontSee('Earnings and chargebacks');
+});
+
+it('does not open another publisher\'s chargeback invoice', function () {
+    $stranger = Publisher::factory()->create(['status' => PublisherStatus::Approved]);
+    $theirs = pendingStatement($stranger);
+    $theirs->update(['chargebacks' => '-10.000000', 'net' => '110.520000']);
+
+    $this->get(StatementInvoice::getUrl(['record' => $theirs]))
+        ->assertNotFound();
+});
+
+it('does not invent extra cents on the pending payment card', function () {
+    LedgerEntry::create([
+        'publisher_id' => $this->publisher->id,
+        'type' => LedgerEntryType::Earning,
+        'amount' => '137.260950',
+        'balance_after' => '137.260950',
+        'available_at' => now()->subMinute(),
+        'created_at' => now()->subDay(),
+    ]);
+    $this->publisher->update(['balance' => '137.260950']);
+
+    Livewire::test(PaymentsSummary::class)
+        ->assertSee('$137.26')
+        ->assertDontSee('$137.26095');
 });
 
 it('saves a crypto destination with its chain and makes the first one active', function () {
@@ -325,8 +376,10 @@ it('keeps a suspended publisher read-only', function () {
 
 it('never shows another publisher\'s statements', function () {
     $stranger = Publisher::factory()->create(['status' => PublisherStatus::Approved]);
-    pendingStatement($stranger);
+    $theirs = pendingStatement($stranger);
+    $theirs->update(['chargebacks' => '-4.000000', 'net' => '116.520000']);
     $mine = pendingStatement($this->publisher, '2026-06-01');
+    $mine->update(['chargebacks' => '-8.000000', 'net' => '112.520000']);
 
     Livewire::test(Payments::class)
         ->assertCanSeeTableRecords([$mine])

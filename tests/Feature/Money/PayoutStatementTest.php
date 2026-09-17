@@ -395,7 +395,68 @@ it('displays money with cents and only the decimals that carry a digit', functio
         ->and(Money::display('0'))->toBe('$0.00')
         ->and(Money::display('-57.490000'))->toBe('-$57.49')
         ->and(Money::display('0.003700'))->toBe('$0.0037')
-        ->and(Money::display('1234.500000'))->toBe('$1,234.50');
+        ->and(Money::display('1234.500000'))->toBe('$1,234.50')
+        ->and(Money::dollars('137.260950'))->toBe('$137.26')
+        ->and(Money::dollars('-57.490000'))->toBe('-$57.49');
+});
+
+it('absorbs late chargebacks on a requested withdrawal and leaves a paid one frozen', function () {
+    $publisher = statementFixture([
+        ['type' => LedgerEntryType::Earning, 'amount' => '80.000000', 'at' => '2026-08-10 12:00:00'],
+    ]);
+
+    $this->artisan('withdrawals:request-monthly')->assertSuccessful();
+
+    $statement = statementFor($publisher, '2026-08-01');
+    $withdrawal = Withdrawal::query()->where('publisher_id', $publisher->id)->sole();
+
+    expect($statement->chargebacks)->toBe('0.000000')
+        ->and($statement->gross)->toBe('80.000000')
+        ->and($statement->net)->toBe('80.000000');
+
+    LedgerEntry::create([
+        'publisher_id' => $publisher->id,
+        'type' => LedgerEntryType::Chargeback,
+        'amount' => '-15.000000',
+        'balance_after' => '65.000000',
+        'available_at' => null,
+        'created_at' => now()->toDateTimeString(),
+    ]);
+    $publisher->update(['balance' => '65.000000']);
+
+    app(WithdrawalService::class)->applyChargeback($publisher, '-15.000000');
+    app(PayoutStatementService::class)->syncOpenChargebacks($withdrawal->fresh());
+
+    $open = statementFor($publisher, '2026-08-01');
+
+    expect($open->chargebacks)->toBe('-15.000000')
+        ->and($open->net)->toBe('65.000000')
+        ->and($open->gross)->toBe('80.000000')
+        ->and($open->adjustments)->toBe('0.000000')
+        ->and($withdrawal->fresh()->amount)->toBe('65.000000');
+
+    $admin = User::factory()->admin()->create();
+    $service = app(WithdrawalService::class);
+    $service->approve($withdrawal->fresh(), $admin);
+    $service->markPaid($withdrawal->fresh(), 'TX-CB', $admin);
+
+    LedgerEntry::create([
+        'publisher_id' => $publisher->id,
+        'type' => LedgerEntryType::Chargeback,
+        'amount' => '-5.000000',
+        'balance_after' => '60.000000',
+        'available_at' => null,
+        'created_at' => now()->toDateTimeString(),
+    ]);
+
+    app(PayoutStatementService::class)->syncOpenChargebacks($withdrawal->fresh());
+
+    $paid = statementFor($publisher, '2026-08-01');
+
+    expect($paid->status)->toBe(PayoutStatementStatus::Paid)
+        ->and($paid->chargebacks)->toBe('-15.000000')
+        ->and($paid->net)->toBe('65.000000')
+        ->and($paid->gross)->toBe('80.000000');
 });
 
 it('skips a publisher whose saved destination cannot be read, and carries on', function () {

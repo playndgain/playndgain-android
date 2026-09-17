@@ -184,6 +184,8 @@ class WithdrawalService
 
         $withdrawal->update(['amount' => $after]);
 
+        $this->statements()->syncOpenChargebacks($withdrawal->fresh());
+
         AuditLog::record('withdrawal.reduced_by_chargeback', $withdrawal, ['amount' => $before], ['amount' => $after], $actor);
 
         if (bccomp($after, $this->minimumPayout($publisher), Money::SCALE) >= 0) {

@@ -17,9 +17,11 @@ use Illuminate\Database\UniqueConstraintViolationException;
  * Monthly statements — docs/06 §9.
  *
  * A statement is the ledger activity of one calendar month, frozen the moment
- * it is generated. It says what the month earned; the withdrawal it links to
- * says what was paid. The two differ on purpose when earlier months were too
- * small to pay on their own — the modal shows that difference as "carried".
+ * it is generated — except chargebacks on a pending statement whose
+ * withdrawal is still unpaid. Those keep moving with the open request so
+ * the document matches what will actually be paid. Earnings and adjustments
+ * stay frozen. The two differ on purpose when earlier months were too
+ * small to pay on their own — the invoice shows that difference as "carried".
  */
 final class PayoutStatementService
 {
@@ -131,7 +133,7 @@ final class PayoutStatementService
             ? self::settledThrough($withdrawal)
             : CarbonImmutable::instance($through)->startOfMonth();
 
-        return PayoutStatement::query()
+        $linked = PayoutStatement::query()
             ->withoutGlobalScopes()
             ->where('publisher_id', $withdrawal->publisher_id)
             ->whereNull('withdrawal_id')
@@ -143,6 +145,10 @@ final class PayoutStatementService
                 'note' => null,
                 'updated_at' => now(),
             ]);
+
+        $this->syncOpenChargebacks($withdrawal);
+
+        return $linked;
     }
 
     public function markPaid(Withdrawal $withdrawal): void
@@ -163,16 +169,63 @@ final class PayoutStatementService
      */
     public function unlink(Withdrawal $withdrawal, string $reason): void
     {
-        PayoutStatement::query()
+        $statements = PayoutStatement::query()
             ->withoutGlobalScopes()
             ->where('withdrawal_id', $withdrawal->id)
-            ->update([
+            ->get();
+
+        foreach ($statements as $statement) {
+            $inPeriod = $this->chargebacksInPeriod($statement->publisher_id, $statement->period);
+
+            $statement->update([
                 'withdrawal_id' => null,
                 'status' => PayoutStatementStatus::Pending,
                 'paid_at' => null,
+                'chargebacks' => $inPeriod,
+                'net' => bcadd(
+                    bcadd(Money::format($statement->gross), $inPeriod, Money::SCALE),
+                    Money::format($statement->adjustments),
+                    Money::SCALE,
+                ),
                 'note' => "Withdrawal #{$withdrawal->id} rejected: {$reason}",
                 'updated_at' => now(),
             ]);
+        }
+    }
+
+    /**
+     * Pending statements keep absorbing chargebacks that reduced the still-
+     * unpaid request — same window as the invoice (period start → now).
+     * Paid statements stay frozen.
+     */
+    public function syncOpenChargebacks(Withdrawal $withdrawal): void
+    {
+        if ($withdrawal->status !== WithdrawalStatus::Requested) {
+            return;
+        }
+
+        $statement = PayoutStatement::query()
+            ->withoutGlobalScopes()
+            ->where('withdrawal_id', $withdrawal->id)
+            ->where('status', PayoutStatementStatus::Pending)
+            ->orderByDesc('period')
+            ->first();
+
+        if ($statement === null) {
+            return;
+        }
+
+        $from = CarbonImmutable::instance($statement->period)->startOfMonth();
+        $chargebacks = $this->chargebacksBetween($withdrawal->publisher_id, $from, now());
+
+        $statement->update([
+            'chargebacks' => $chargebacks,
+            'net' => bcadd(
+                bcadd(Money::format($statement->gross), $chargebacks, Money::SCALE),
+                Money::format($statement->adjustments),
+                Money::SCALE,
+            ),
+        ]);
     }
 
     /**
@@ -225,7 +278,7 @@ final class PayoutStatementService
             Money::format($rows[LedgerEntryType::Referral->value] ?? '0'),
             Money::SCALE,
         );
-        $chargebacks = Money::format($rows[LedgerEntryType::Chargeback->value] ?? '0');
+        $chargebacks = $this->chargebacksInPeriod($publisherId, $period);
         $adjustments = Money::format($rows[LedgerEntryType::Adjustment->value] ?? '0');
 
         return [
@@ -272,5 +325,53 @@ final class PayoutStatementService
         }
 
         return [PayoutStatementStatus::Pending, null];
+    }
+
+    private function chargebacksInPeriod(int $publisherId, DateTimeInterface $period): string
+    {
+        $period = CarbonImmutable::instance($period)->startOfMonth();
+
+        $total = LedgerEntry::query()
+            ->withoutGlobalScopes()
+            ->where('publisher_id', $publisherId)
+            ->where('type', LedgerEntryType::Chargeback)
+            ->where('created_at', '>=', $period)
+            ->where('created_at', '<', $period->addMonth())
+            ->whereNotExists(function ($query) use ($period): void {
+                $query->selectRaw('1')
+                    ->from('withdrawals')
+                    ->join('payout_statements', function ($join) use ($period): void {
+                        $join->on('payout_statements.withdrawal_id', '=', 'withdrawals.id')
+                            ->where('payout_statements.period', '<', $period->toDateString());
+                    })
+                    ->whereColumn('withdrawals.publisher_id', 'ledger_entries.publisher_id')
+                    ->whereColumn('withdrawals.requested_at', '<=', 'ledger_entries.created_at')
+                    ->where(function ($open): void {
+                        $open->whereNull('withdrawals.paid_at')
+                            ->orWhereColumn('withdrawals.paid_at', '>=', 'ledger_entries.created_at');
+                    })
+                    ->where(function ($open): void {
+                        $open->where('withdrawals.status', '!=', WithdrawalStatus::Rejected->value)
+                            ->orWhereColumn('withdrawals.processed_at', '>=', 'ledger_entries.created_at');
+                    });
+            })
+            ->selectRaw('CAST(COALESCE(SUM(amount), 0) AS CHAR) as total')
+            ->value('total');
+
+        return Money::format((string) ($total ?? '0'));
+    }
+
+    private function chargebacksBetween(int $publisherId, DateTimeInterface $from, DateTimeInterface $to): string
+    {
+        $total = LedgerEntry::query()
+            ->withoutGlobalScopes()
+            ->where('publisher_id', $publisherId)
+            ->where('type', LedgerEntryType::Chargeback)
+            ->where('created_at', '>=', $from)
+            ->where('created_at', '<=', $to)
+            ->selectRaw('CAST(COALESCE(SUM(amount), 0) AS CHAR) as total')
+            ->value('total');
+
+        return Money::format((string) ($total ?? '0'));
     }
 }

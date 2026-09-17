@@ -59,18 +59,18 @@ class PaymentsSummary extends StatsOverviewWidget
         $hasChargebacks = bccomp($month['chargebacks'], '0', Money::SCALE) !== 0;
 
         return [
-            Stat::make('This month', Money::display($month['gross']))
+            Stat::make('This month', Money::dollars($month['gross']))
                 ->description($hasChargebacks
-                    ? 'After '.Money::display(ltrim($month['chargebacks'], '-')).' in chargebacks: '.Money::display($month['net'])
+                    ? 'After '.Money::dollars(ltrim($month['chargebacks'], '-')).' in chargebacks: '.Money::dollars($month['net'])
                     : 'Current month earnings')
                 ->descriptionColor($hasChargebacks ? 'loss' : null),
 
-            Stat::make('Pending payment', Money::display($pending))
+            Stat::make('Pending payment', Money::dollars($pending))
                 ->description($openCount === 1
                     ? '1 statement awaiting payment'
                     : "{$openCount} statements awaiting payment"),
 
-            Stat::make('Total paid', Money::display($paid))
+            Stat::make('Total paid', Money::dollars($paid))
                 ->description('All-time payouts'),
 
             Stat::make('Minimum payout', '$'.$minimum)
