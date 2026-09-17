@@ -146,6 +146,88 @@ it('imports offers when swaarm sends empty disallow scaffolding', function () {
         ->and($skips['targeting dimension the wall cannot filter on'])->toBe(['9001']);
 });
 
+it('falls back to the store listing when swaarm sends no creative', function () {
+    Http::fake([
+        'feed.acme.swaarm-clients.com/*' => Http::response(['ads' => [
+            swaarmStoreIconAd([
+                'id' => '1666',
+                'name' => 'Rockwallet iOS',
+                'app_id' => '6746219863',
+                'preview_url' => 'https://apps.apple.com/us/app/rockwallet/id6746219863',
+                'os' => 'IOS',
+            ]),
+            swaarmStoreIconAd([
+                'id' => '1667',
+                'name' => 'Rockwallet Android',
+                'app_id' => 'com.rockwallet.v2app',
+                'preview_url' => 'https://play.google.com/store/apps/details?id=com.rockwallet.v2app',
+                'os' => 'ANDROID',
+            ]),
+            swaarmStoreIconAd([
+                'id' => '1645',
+                'name' => 'Has creative',
+                'app_id' => '6746219863',
+                'creatives_url' => 'https://creatives.winklelab.swaarm-clients.com/objects/249/logo.png',
+                'os' => 'IOS',
+            ]),
+            swaarmStoreIconAd([
+                'id' => '1603',
+                'name' => 'Pack only',
+                'creatives_url' => null,
+                'creative_packs' => [[
+                    'creatives' => [[
+                        'url' => 'https://creatives.winklelab.swaarm-clients.com/objects/249/pack.png',
+                    ]],
+                ]],
+                'os' => 'ANDROID',
+            ]),
+        ]]),
+        'itunes.apple.com/*' => function ($request) {
+            $query = [];
+            parse_str((string) parse_url((string) $request->url(), PHP_URL_QUERY), $query);
+
+            $id = $query['id'] ?? null;
+            $bundle = $query['bundleId'] ?? null;
+            $art = match (true) {
+                $id === '6746219863' => 'https://is1-ssl.mzstatic.com/image/thumb/ios.jpg',
+                $bundle === 'com.rockwallet.v2app' => 'https://is1-ssl.mzstatic.com/image/thumb/android.jpg',
+                default => null,
+            };
+
+            return Http::response(['results' => $art === null ? [] : [['artworkUrl512' => $art]]]);
+        },
+    ]);
+
+    $offers = collect(iterator_to_array(($this->driver)()->fetchOffers(), false))
+        ->keyBy(fn (OfferDTO $offer): string => (string) $offer->externalId);
+
+    expect($offers['1666']->iconUrl)->toBe('https://is1-ssl.mzstatic.com/image/thumb/ios.jpg')
+        ->and($offers['1667']->iconUrl)->toBe('https://is1-ssl.mzstatic.com/image/thumb/android.jpg')
+        ->and($offers['1645']->iconUrl)->toBe('https://creatives.winklelab.swaarm-clients.com/objects/249/logo.png')
+        ->and($offers['1603']->iconUrl)->toBe('https://creatives.winklelab.swaarm-clients.com/objects/249/pack.png');
+});
+
+it('reads the play store listing when itunes does not know the package', function () {
+    Http::fake([
+        'feed.acme.swaarm-clients.com/*' => Http::response(['ads' => [
+            swaarmStoreIconAd([
+                'id' => '1667',
+                'app_id' => 'com.only.on.play',
+                'preview_url' => 'https://play.google.com/store/apps/details?id=com.only.on.play',
+                'os' => 'ANDROID',
+            ]),
+        ]]),
+        'itunes.apple.com/*' => Http::response(['results' => []]),
+        'play.google.com/*' => Http::response(
+            '<html><meta property="og:image" content="https://play-lh.googleusercontent.com/icon.png"></html>'
+        ),
+    ]);
+
+    $offer = collect(iterator_to_array(($this->driver)()->fetchOffers(), false))->first();
+
+    expect($offer?->iconUrl)->toBe('https://play-lh.googleusercontent.com/icon.png');
+});
+
 it('numbers a multi-variant offer the same way on a second sync', function () {
     ($this->catalogue)();
 
@@ -313,3 +395,42 @@ it('fails closed when the account has no secret saved yet', function () {
     expect((new SwaarmDriver($network))->verifyPostback(($this->postback)(['secret' => null])))->toBeFalse()
         ->and((new SwaarmDriver($network))->verifyPostback(($this->postback)(['secret' => ''])))->toBeFalse();
 });
+
+/**
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function swaarmStoreIconAd(array $overrides): array
+{
+    $os = $overrides['os'] ?? 'IOS';
+    unset($overrides['os']);
+
+    return [
+        'id' => '1666',
+        'name' => 'Store icon offer',
+        'icons' => [],
+        'creatives_url' => null,
+        'creative_packs' => [],
+        'click_url' => 'https://winklelab.trckswrm.com/click?offer_id=1666&pub_id=193',
+        'payout' => 40,
+        'payout_currency' => 'USD',
+        'leadflow' => 'CPA',
+        'targeting' => [
+            'allowedDeviceTargeting' => ['os' => $os],
+            'allowedGeoTargeting' => ['countries' => ['US']],
+            'disallowedDeviceTargeting' => [
+                'deviceBrand' => null,
+                'maxOsVersion' => null,
+                'minOsVersion' => null,
+                'os' => null,
+            ],
+            'disallowedGeoTargeting' => [
+                'cities' => [],
+                'countries' => null,
+                'regions' => [],
+            ],
+        ],
+        'eventTypes' => [],
+        ...$overrides,
+    ];
+}

@@ -12,6 +12,7 @@ use App\Networks\DTO\ConnectionResult;
 use App\Networks\DTO\OfferDTO;
 use App\Networks\DTO\PostbackDTO;
 use App\Networks\Support\PostbackSecret;
+use App\Networks\Support\StoreIcon;
 use App\Networks\Support\TenantUrl;
 use App\Services\Money\Redactor;
 use App\Support\Plain;
@@ -66,6 +67,8 @@ class SwaarmDriver extends AbstractDriver
 
     /** The slot Swaarm echoes back as `#{click.publisher.clickId}`. */
     private const SUBID_PARAM = 'pub_click_id';
+
+    private ?StoreIcon $storeIcons = null;
 
     /**
      * `UK` is not ISO-3166-1 alpha-2. Left as-is it targets a country nothing
@@ -508,7 +511,8 @@ class SwaarmDriver extends AbstractDriver
 
     /**
      * Winklelab-shaped feeds ship art on `creatives_url` with an empty `icons`
-     * array. Sized `icons.*` URLs win when present.
+     * array. Sized `icons.*` URLs win when present. A creative pack is next.
+     * Store listings are last: CPA rows often have an `app_id` and no art.
      *
      * @param  array<string, mixed>  $row
      */
@@ -518,7 +522,41 @@ class SwaarmDriver extends AbstractDriver
             ?? $this->nullableString(data_get($row, 'icons.128'))
             ?? $this->nullableString(data_get($row, 'icons.96'))
             ?? $this->nullableString(data_get($row, 'icons.72'))
-            ?? $this->nullableString($row['creatives_url'] ?? null);
+            ?? $this->nullableString($row['creatives_url'] ?? null)
+            ?? $this->creativePackUrl($row)
+            ?? $this->storeIcons()->resolve($row['app_id'] ?? null, $row['preview_url'] ?? null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function creativePackUrl(array $row): ?string
+    {
+        foreach ($row['creative_packs'] ?? [] as $pack) {
+            if (! is_array($pack)) {
+                continue;
+            }
+
+            foreach ($pack['creatives'] ?? [] as $creative) {
+                if (! is_array($creative)) {
+                    continue;
+                }
+
+                $url = $this->nullableString($creative['url'] ?? null)
+                    ?? $this->nullableString($creative['thumbnailUrl'] ?? null);
+
+                if ($url !== null) {
+                    return $url;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function storeIcons(): StoreIcon
+    {
+        return $this->storeIcons ??= new StoreIcon;
     }
 
     /**
