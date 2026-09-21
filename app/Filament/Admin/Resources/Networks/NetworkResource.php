@@ -763,7 +763,8 @@ class NetworkResource extends Resource
             $input = TextInput::make("credentials.{$key}")
                 ->label($field['label'])
                 ->required($required && ($field['required'] ?? false))
-                ->placeholder($field['placeholder'] ?? null);
+                ->placeholder($field['placeholder'] ?? null)
+                ->helperText($field['helper'] ?? null);
 
             if ($rule !== null) {
                 $message = $field['rule_message'] ?? 'This value is not allowed.';

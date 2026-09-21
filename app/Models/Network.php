@@ -6,6 +6,7 @@ use App\Enums\NetworkIntegration;
 use App\Enums\NetworkStatus;
 use App\Enums\SyncStatus;
 use App\Networks\Connector;
+use App\Networks\Contracts\NetworkDriver;
 use App\Networks\NetworkDriverManager;
 use App\Networks\OfferCacheFlusher;
 use Database\Factories\NetworkFactory;
@@ -60,6 +61,9 @@ class Network extends Model
      * An unregistered driver leaves the scope empty, which is the strict
      * direction — a typo'd key then behaves like a single-account connector
      * rather than silently allowing duplicates.
+     *
+     * Platform postback secrets are minted here too when the driver declares
+     * the field and nobody typed one.
      */
     protected static function booted(): void
     {
@@ -72,6 +76,13 @@ class Network extends Model
                 $network->account_scope = self::connectorFor((string) $network->driver)?->supportsMultipleAccounts
                     ? (string) $network->postback_key
                     : '';
+            }
+
+            $credentials = is_array($network->credentials) ? $network->credentials : [];
+            $generated = self::withGeneratedPostbackSecret((string) $network->driver, $credentials);
+
+            if ($generated !== $credentials) {
+                $network->credentials = $generated;
             }
         });
 
@@ -103,13 +114,48 @@ class Network extends Model
 
     public static function connectorFor(string $driver): ?Connector
     {
+        $class = self::driverClass($driver);
+
+        return $class === null ? null : $class::connector();
+    }
+
+    /**
+     * A platform invents the secret we put on the postback URL. Mint it here
+     * so admin create, tinker and a seeder all get one without the form
+     * forcing an admin to type 32 random characters.
+     *
+     * @param  array<string, mixed>  $credentials
+     * @return array<string, mixed>
+     */
+    public static function withGeneratedPostbackSecret(string $driver, array $credentials): array
+    {
+        $class = self::driverClass($driver);
+
+        if ($class === null
+            || ! $class::connector()->supportsMultipleAccounts
+            || ! array_key_exists('postback_secret', $class::credentialSchema())) {
+            return $credentials;
+        }
+
+        if (filled($credentials['postback_secret'] ?? null)) {
+            return $credentials;
+        }
+
+        $credentials['postback_secret'] = Str::random(32);
+
+        return $credentials;
+    }
+
+    /** @return class-string<NetworkDriver>|null */
+    private static function driverClass(string $driver): ?string
+    {
         $manager = app(NetworkDriverManager::class);
 
         if ($driver === '' || ! $manager->has($driver)) {
             return null;
         }
 
-        return $manager->all()[$driver]::connector();
+        return $manager->all()[$driver];
     }
 
     /**

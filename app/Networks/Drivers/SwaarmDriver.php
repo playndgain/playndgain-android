@@ -118,7 +118,7 @@ class SwaarmDriver extends AbstractDriver
     }
 
     /**
-     * @return array<string, array{label: string, required?: bool, secret?: bool, rule?: callable}>
+     * @return array<string, array{label: string, required?: bool, secret?: bool, helper?: string, rule?: callable}>
      */
     public static function credentialSchema(): array
     {
@@ -135,7 +135,12 @@ class SwaarmDriver extends AbstractDriver
                 'placeholder' => 'https://feed.tenant.swaarm-clients.com/feed/v1.2/ads',
             ],
             'api_key' => ['label' => 'Feed API key', 'required' => true, 'secret' => true],
-            'postback_secret' => ['label' => 'Postback secret', 'required' => true, 'secret' => true],
+            'postback_secret' => [
+                'label' => 'Postback secret',
+                'required' => false,
+                'secret' => true,
+                'helper' => 'Leave blank to generate one. It is copied into the postback URL you hand this tenant.',
+            ],
         ];
     }
 

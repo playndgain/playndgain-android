@@ -141,6 +141,104 @@ it('lets a platform connector take a second account', function () {
         ->and($keys->unique())->toHaveCount(2);
 });
 
+it('lets a second swaarm tenant be created and generates its postback secret', function () {
+    Livewire::test(CreateNetwork::class)
+        ->fillForm([
+            'driver' => 'swaarm',
+            'name' => 'Acme Swaarm',
+            'integration' => NetworkIntegration::Api->value,
+            'credentials' => [
+                'feed_url' => 'https://feed.acme.swaarm-clients.com/feed/v1.2/ads',
+                'api_key' => 'acme-key',
+            ],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    Livewire::test(CreateNetwork::class)
+        ->fillForm([
+            'driver' => 'swaarm',
+            'name' => 'Globex Swaarm',
+            'integration' => NetworkIntegration::Api->value,
+            'credentials' => [
+                'feed_url' => 'https://feed.globex.swaarm-clients.com/feed/v1.2/ads',
+                'api_key' => 'globex-key',
+            ],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $rows = Network::query()->where('driver', 'swaarm')->orderBy('id')->get();
+
+    expect($rows)->toHaveCount(2)
+        ->and($rows->pluck('postback_key')->unique())->toHaveCount(2)
+        ->and($rows[0]->credentials['postback_secret'])->toHaveLength(32)
+        ->and($rows[1]->credentials['postback_secret'])->toHaveLength(32)
+        ->and($rows[0]->credentials['postback_secret'])->not->toBe($rows[1]->credentials['postback_secret'])
+        ->and($rows[0]->credentials['api_key'])->toBe('acme-key')
+        ->and($rows[1]->credentials['api_key'])->toBe('globex-key');
+});
+
+it('lets an affise tenant be created and generates its postback secret', function () {
+    Livewire::test(CreateNetwork::class)
+        ->fillForm([
+            'driver' => 'affise',
+            'name' => 'Acme Affise',
+            'integration' => NetworkIntegration::Api->value,
+            'credentials' => [
+                'api_base_url' => 'https://api-acme.affise.com',
+                'api_key' => 'affise-key',
+            ],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $network = Network::query()->where('driver', 'affise')->sole();
+
+    expect($network->credentials['postback_secret'])->toHaveLength(32)
+        ->and($network->credentials['api_key'])->toBe('affise-key');
+});
+
+it('mints a swaarm postback secret on the model when none is given', function () {
+    $network = Network::factory()->platform('swaarm')->create([
+        'credentials' => [
+            'feed_url' => 'https://feed.acme.swaarm-clients.com/feed/v1.2/ads',
+            'api_key' => 'acme-key',
+        ],
+    ]);
+
+    expect($network->credentials['postback_secret'])->toHaveLength(32)
+        ->and($network->credentials['api_key'])->toBe('acme-key');
+});
+
+it('does not invent a postback secret for a single-account driver', function () {
+    $network = Network::factory()->create([
+        'driver' => 'admantium',
+        'credentials' => ['appid' => '1'],
+    ]);
+
+    expect($network->credentials)->toBe(['appid' => '1']);
+});
+
+it('keeps a postback secret the admin typed', function () {
+    Livewire::test(CreateNetwork::class)
+        ->fillForm([
+            'driver' => 'swaarm',
+            'name' => 'Acme Swaarm',
+            'integration' => NetworkIntegration::Api->value,
+            'credentials' => [
+                'feed_url' => 'https://feed.acme.swaarm-clients.com/feed/v1.2/ads',
+                'api_key' => 'acme-key',
+                'postback_secret' => 'typed-by-hand',
+            ],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Network::query()->where('driver', 'swaarm')->sole()->credentials['postback_secret'])
+        ->toBe('typed-by-hand');
+});
+
 it('keeps an existing direct network saveable even with the advanced toggle off', function () {
     // The driver select is disabled on edit but still dehydrated, so Filament
     // validates the stored value against the option list on every save. A

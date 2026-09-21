@@ -41,7 +41,7 @@ interface NetworkDriver
      * only admin-typed values this application ever dials — and is a plain
      * predicate so the schema stays data rather than Filament.
      *
-     * @return array<string, array{label: string, required?: bool, secret?: bool, rule?: callable(?string): bool, rule_message?: string, placeholder?: string}>
+     * @return array<string, array{label: string, required?: bool, secret?: bool, helper?: string, rule?: callable(?string): bool, rule_message?: string, placeholder?: string}>
      */
     public static function credentialSchema(): array;
 

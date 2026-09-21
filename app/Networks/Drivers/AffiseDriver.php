@@ -104,7 +104,7 @@ class AffiseDriver extends AbstractDriver
     }
 
     /**
-     * @return array<string, array{label: string, required?: bool, secret?: bool}>
+     * @return array<string, array{label: string, required?: bool, secret?: bool, helper?: string, rule?: callable}>
      */
     public static function credentialSchema(): array
     {
@@ -118,7 +118,12 @@ class AffiseDriver extends AbstractDriver
                 'placeholder' => 'https://api-tenant.affise.com',
             ],
             'api_key' => ['label' => 'API key', 'required' => true, 'secret' => true],
-            'postback_secret' => ['label' => 'Postback secret', 'required' => true, 'secret' => true],
+            'postback_secret' => [
+                'label' => 'Postback secret',
+                'required' => false,
+                'secret' => true,
+                'helper' => 'Leave blank to generate one. It is copied into the postback URL you hand this tenant.',
+            ],
         ];
     }
 
