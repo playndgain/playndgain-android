@@ -108,3 +108,19 @@ it('flushes the wall cache when a network is disabled', function () {
         ->and(Cache::tags("network:{$network->id}")->get('offers'))->toBeNull()
         ->and(Cache::get('wall:active-networks'))->toBeNull();
 });
+
+it('saves unskipped offer ids and queues a catalogue sync', function () {
+    $network = Network::factory()->create(['driver' => 'fake']);
+
+    Livewire::test(EditNetwork::class, ['record' => $network->getRouteKey()])
+        ->fillForm(['unskipped_external_ids' => ['2', '1008']])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($network->fresh()->unskipped_external_ids)->toBe(['2', '1008']);
+
+    Queue::assertPushed(
+        SyncNetworkOffersJob::class,
+        fn (SyncNetworkOffersJob $job): bool => $job->network->is($network),
+    );
+});

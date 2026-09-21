@@ -40,6 +40,7 @@ class Network extends Model
         'wall_new_tab' => 'bool',
         'hosts_wall' => 'bool',
         'integration' => NetworkIntegration::class,
+        'unskipped_external_ids' => 'array',
     ];
 
     /**
@@ -256,5 +257,39 @@ class Network extends Model
     public function isActive(): bool
     {
         return $this->status === NetworkStatus::Active;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function unskippedExternalIds(): array
+    {
+        return collect($this->unskipped_external_ids ?? [])
+            ->map(fn (mixed $id): string => trim((string) $id))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function forceImports(string $externalId): bool
+    {
+        return in_array($externalId, $this->unskippedExternalIds(), true);
+    }
+
+    /**
+     * @param  list<string>  $ids
+     */
+    public function unskipExternalIds(array $ids): void
+    {
+        $this->update([
+            'unskipped_external_ids' => collect($this->unskippedExternalIds())
+                ->merge($ids)
+                ->map(fn (mixed $id): string => trim((string) $id))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all(),
+        ]);
     }
 }

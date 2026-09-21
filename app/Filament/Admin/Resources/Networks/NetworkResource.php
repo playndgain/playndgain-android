@@ -28,6 +28,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -236,6 +237,17 @@ class NetworkResource extends Resource
                             ->default(true)
                             ->helperText('On by default. Turn off and fill the list above to restrict which IPs can fire. Signature is then the only check while this is on.'),
                     ]),
+                    Section::make('Catalogue')
+                        ->description('Offers the driver would skip, imported anyway.')
+                        ->visible(fn (Get $get, ?Network $record): bool => NetworkIntegration::fromForm($get('integration'))->usesCatalogue()
+                            && ($record?->driverSyncsCatalogue() ?? true))
+                        ->schema([
+                            TagsInput::make('unskipped_external_ids')
+                                ->label('Unskipped offer IDs')
+                                ->helperText('Upstream external IDs to import even when targeting is a city, region or similar the wall cannot filter. A $0 payout still cannot be imported. The next sync applies the list.')
+                                ->placeholder('2')
+                                ->columnSpanFull(),
+                        ]),
                     Section::make('Embedded wall')
                         ->description('How we reach the wall this partner hosts.')
                         ->columns(1)

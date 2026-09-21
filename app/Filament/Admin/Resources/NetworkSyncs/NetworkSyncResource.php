@@ -4,8 +4,12 @@ namespace App\Filament\Admin\Resources\NetworkSyncs;
 
 use App\Enums\SyncStatus;
 use App\Filament\Admin\Resources\NetworkSyncs\Pages\ListNetworkSyncs;
+use App\Jobs\SyncNetworkOffersJob;
+use App\Models\Network;
 use App\Models\NetworkSync;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -77,7 +81,32 @@ class NetworkSyncResource extends Resource
                 SelectFilter::make('network_id')->label('Network')->relationship('network', 'name'),
                 SelectFilter::make('status')->options(SyncStatus::class),
             ])
-            ->recordActions([])
+            ->recordActions([
+                Action::make('unskip')
+                    ->label('Unskip samples')
+                    ->icon(Heroicon::OutlinedArrowUturnLeft)
+                    ->visible(fn (NetworkSync $record): bool => self::skipSamples($record) !== [])
+                    ->requiresConfirmation()
+                    ->modalDescription(fn (NetworkSync $record): string => 'Import these IDs on the next sync even if targeting cannot be honoured: '.implode(', ', self::skipSamples($record)).'. A $0 payout still cannot be imported.')
+                    ->action(function (NetworkSync $record): void {
+                        $network = $record->network;
+
+                        if (! $network instanceof Network) {
+                            return;
+                        }
+
+                        $network->unskipExternalIds(self::skipSamples($record));
+
+                        if ($network->syncsCatalogue()) {
+                            SyncNetworkOffersJob::dispatch($network);
+                        }
+
+                        Notification::make()
+                            ->title('Unskipped '.count(self::skipSamples($record)).' offer'.(count(self::skipSamples($record)) === 1 ? '' : 's'))
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->toolbarActions([])
             ->defaultSort('created_at', 'desc');
     }
@@ -92,5 +121,19 @@ class NetworkSyncResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function skipSamples(NetworkSync $record): array
+    {
+        return collect($record->skip_reasons ?? [])
+            ->flatMap(fn (mixed $bucket): array => is_array($bucket) ? ($bucket['samples'] ?? []) : [])
+            ->map(fn (mixed $id): string => trim((string) $id))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

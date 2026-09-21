@@ -82,6 +82,15 @@ abstract class AbstractDriver implements NetworkDriver
         return $this->skips ??= new OfferSkips;
     }
 
+    /**
+     * An admin chose to import this id even when targeting cannot be honoured.
+     * A $0 payout or a missing link still cannot be imported.
+     */
+    protected function forceImport(string $externalId): bool
+    {
+        return $this->network->forceImports($externalId);
+    }
+
     /** Every driver that talks to an API has one; `direct` overrides. */
     public function syncsCatalogue(): bool
     {

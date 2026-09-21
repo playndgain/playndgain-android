@@ -120,6 +120,8 @@ class EditNetwork extends EditRecord
     private function catalogueSourceChanged(Network $network, array $data): bool
     {
         return $data['integration'] !== ($network->integration ?? NetworkIntegration::Api)
-            || ($data['credentials'] ?? []) != ($network->credentials ?? []);
+            || ($data['credentials'] ?? []) != ($network->credentials ?? [])
+            || collect($data['unskipped_external_ids'] ?? [])->map(fn (mixed $id): string => trim((string) $id))->filter()->unique()->values()->all()
+                !== $network->unskippedExternalIds();
     }
 }

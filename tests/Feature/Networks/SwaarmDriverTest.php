@@ -125,6 +125,56 @@ it('records why it refused every offer it dropped', function () {
         ->and($skips[SwaarmDriver::SKIP_UNBOUNDED_BASE])->toBe(['1004']);
 });
 
+it('imports a payable offer that only denies a region the wall cannot filter', function () {
+    Http::fake([
+        'feed.acme.swaarm-clients.com/*' => Http::response(['ads' => [[
+            'id' => '2',
+            'name' => 'Test offer',
+            'click_url' => 'https://rplug.trckswrm.com/click?offer_id=2',
+            'payout' => 0.01,
+            'payout_currency' => 'USD',
+            'leadflow' => 'CPI',
+            'targeting' => [
+                'allowedDeviceTargeting' => ['os' => 'WEB'],
+                'allowedGeoTargeting' => ['countries' => ['US', 'GB']],
+                'disallowedGeoTargeting' => [
+                    'cities' => [],
+                    'countries' => null,
+                    'regions' => ['washington'],
+                ],
+                'disallowedDeviceTargeting' => [
+                    'deviceBrand' => null,
+                    'maxOsVersion' => null,
+                    'minOsVersion' => null,
+                    'os' => null,
+                ],
+            ],
+            'eventTypes' => [],
+        ]]]),
+    ]);
+
+    $driver = ($this->driver)();
+    $offers = collect(iterator_to_array($driver->fetchOffers(), false));
+
+    expect($offers)->toHaveCount(1)
+        ->and($offers->first()->externalId)->toBe('2')
+        ->and($offers->first()->name)->toBe('Test offer')
+        ->and($offers->first()->payout)->toBe(0.01)
+        ->and($offers->first()->countries)->toBe(['GB', 'US'])
+        ->and($driver->skippedOffers())->toBe([]);
+});
+
+it('imports a city-targeted offer when that id is unskipped', function () {
+    $this->network->update(['unskipped_external_ids' => ['1008']]);
+    ($this->catalogue)();
+
+    $offers = collect(iterator_to_array(($this->driver)()->fetchOffers(), false));
+
+    expect($offers->pluck('externalId'))->toContain('1008')
+        ->and($offers->firstWhere('externalId', '1008')->countries)->toBe(['US'])
+        ->and($offers->firstWhere('externalId', '1008')->payout)->toBe(5.0);
+});
+
 it('imports offers when swaarm sends empty disallow scaffolding', function () {
     Http::fake([
         'feed.acme.swaarm-clients.com/*' => Http::response(

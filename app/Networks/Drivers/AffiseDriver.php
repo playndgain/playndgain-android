@@ -359,7 +359,7 @@ class AffiseDriver extends AbstractDriver
             return [];
         }
 
-        if (! $this->targetingIsExpressible($row)) {
+        if (! $this->targetingIsExpressible($row) && ! $this->forceImport($id)) {
             $this->skips()->skip($id, self::SKIP_TARGETING);
 
             return [];
@@ -425,7 +425,7 @@ class AffiseDriver extends AbstractDriver
                 continue;
             }
 
-            if (filled($payment['cities'] ?? null)) {
+            if (filled($payment['cities'] ?? null) && ! $this->forceImport($id)) {
                 $this->skips()->skip($id, self::SKIP_TARGETING);
 
                 continue;

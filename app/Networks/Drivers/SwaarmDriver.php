@@ -334,7 +334,7 @@ class SwaarmDriver extends AbstractDriver
 
         $targeting = is_array($row['targeting'] ?? null) ? $row['targeting'] : [];
 
-        if (! $this->targetingIsExpressible($targeting)) {
+        if (! $this->targetingIsExpressible($targeting) && ! $this->forceImport($id)) {
             $this->skips()->skip($id, self::SKIP_TARGETING);
 
             return [];
@@ -414,8 +414,15 @@ class SwaarmDriver extends AbstractDriver
 
     /**
      * Countries and an OS are the only two dimensions `offers` can carry.
-     * Regions, cities, zip codes, OS version bounds, device brands and every
-     * deny-list are targeting the wall cannot honour.
+     * An **allow** list on a city, region, zip, OS-version bound or brand is
+     * still skipped: importing it would show the tile to people the advertiser
+     * will not pay. A **deny** on a region, city or zip is ignored instead —
+     * the wall cannot honour it, and skipping the whole offer hides inventory
+     * everywhere for one state we cannot geolocate.
+     *
+     * Country and device deny-lists still refuse the offer: those we could
+     * express, and a filled deny there is a different shape than empty Swaarm
+     * scaffolding.
      *
      * @param  array<string, mixed>  $targeting
      */
@@ -435,7 +442,7 @@ class SwaarmDriver extends AbstractDriver
 
         return $this->disallowBlockIsEmpty(
             $targeting['disallowedGeoTargeting'] ?? null,
-            ['cities', 'countries', 'regions', 'zipCodes'],
+            ['countries'],
         ) && $this->disallowBlockIsEmpty(
             $targeting['disallowedDeviceTargeting'] ?? null,
             ['deviceBrand', 'maxOsVersion', 'minOsVersion', 'os'],
