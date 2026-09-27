@@ -182,6 +182,36 @@ it('skips wall writes in test mode', function () {
     expect(IdentitySession::query()->count())->toBe(0);
 });
 
+it('records the resolved wall country, uppercased', function () {
+    wallGeo('de');
+    [$app] = wallFixture();
+
+    app(IdentityLedger::class)->recordWall(partnerContext($app, 'GEO_USER'), identityRequest('203.0.113.30'));
+
+    expect(IdentitySession::query()->sole()->country)->toBe('DE');
+});
+
+it('stores no country when the wall could not resolve one', function (?string $verdict) {
+    wallGeo($verdict);
+    [$app] = wallFixture();
+
+    app(IdentityLedger::class)->recordWall(partnerContext($app, 'NOWHERE'), identityRequest('203.0.113.31'));
+
+    expect(IdentitySession::query()->sole()->country)->toBeNull();
+})->with([
+    'no verdict' => [null],
+    'unknown placeholder' => ['XX'],
+]);
+
+it('skips a test-mode wall visit even with a country override', function () {
+    wallGeo('US');
+    [$app] = wallFixture(['test_mode' => true]);
+
+    app(IdentityLedger::class)->recordWall(partnerContext($app, 'USER_1', ['country' => 'DE']), identityRequest());
+
+    expect(IdentitySession::query()->count())->toBe(0);
+});
+
 it('dedupes a wall session write to one row per hour', function () {
     wallGeo('US');
     Cache::flush();

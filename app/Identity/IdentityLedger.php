@@ -110,6 +110,7 @@ final class IdentityLedger
             'publisher_id' => $context->app->publisher_id,
             'app_id' => $context->app->id,
             'end_user_id' => $context->endUserId,
+            'country' => self::countryCode($context->country),
             'ip' => $ip,
             'ua_hash' => hash('sha256', $ua),
             'ds_hash' => $dsHash,
@@ -117,6 +118,19 @@ final class IdentityLedger
         ]);
 
         $this->matchWall($session);
+    }
+
+    /**
+     * The country the wall already resolved for this request — live mode has
+     * no `?country=` override, so this is the IP verdict's. `XX` is the
+     * project's own "unknown" placeholder and is stored as null, never as a
+     * country.
+     */
+    private static function countryCode(?string $country): ?string
+    {
+        $code = strtoupper(trim((string) $country));
+
+        return preg_match('/^[A-Z]{2}$/', $code) === 1 && $code !== 'XX' ? $code : null;
     }
 
     private function matchPanel(IdentitySession $session): void
