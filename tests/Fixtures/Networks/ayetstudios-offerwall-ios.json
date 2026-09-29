@@ -1,0 +1,154 @@
+{
+  "status": "success",
+  "num_offers": 2,
+  "offers": [
+    {
+      "id": 271197,
+      "store_id": "6476157745",
+      "icon": "https://dyncdn.ayet.io/custom_icon/67efd9ec5a2ef.webp?c=271197&a=10000&p=20000",
+      "name": "X2 Puzzle: Number Merge 2048",
+      "description": "Earn 16051 coins by completing the following task:",
+      "tags": {
+        "tab": "apps",
+        "tasks": [
+          "multi_engagement"
+        ],
+        "categories": [
+          "games",
+          "games_board",
+          "games_puzzle"
+        ]
+      },
+      "icon_large": "https://dyncdn.ayet.io/header_image/67efd9ed5df27.webp?c=271197&a=10000&p=20000",
+      "platform": "ios",
+      "platforms": [
+        "ios"
+      ],
+      "devices": [
+        "phone",
+        "tablet"
+      ],
+      "category": "incent",
+      "conversion_type": "cpe",
+      "conversion_time": 86400,
+      "max_conversion_time": 5184000,
+      "conversion_instructions_short": "Play and complete all tasks within 60 days. New users only.<br>",
+      "currency_amount": 0,
+      "tracking_link": "https://www.ayetstudios.com/s2s/go/example-slug/271197/1000001/TOKEN-probe?pub_id=PUB-00000&sub_id_int=PL-00000&adslot_id=10000",
+      "offer_complexity": "1",
+      "payment_required": false,
+      "has_installation_callback": true,
+      "publisher_cpi_compensation": false,
+      "offer_status": "new",
+      "offer_status_days_left": null,
+      "introduction": "",
+      "impression_url": "https://www.ayetstudios.com/offers/shown/271197;10000;0;1;20000;3000000;offerwall_api;web;0000/img.gif?external_identifier=probe",
+      "rating": "4.88601",
+      "require_reservation": true,
+      "min_android_version": null,
+      "min_ios_version": "15.0",
+      "is_ios": 1,
+      "max_android_version": null,
+      "max_ios_version": null,
+      "priority": 0,
+      "cpe_instructions": [
+        {
+          "name": "Start playing for 30 seconds",
+          "uuid": "a4a620ef-bf29-3ead-a7df-7d3a49e4273e",
+          "event_name": "INSTALLATION_TRACKED",
+          "payout_base": 0,
+          "payout": 0,
+          "type": "normal",
+          "status": "available"
+        },
+        {
+          "name": "Finish Step 25",
+          "uuid": "6f1bb602-91a2-38dc-be1f-2de880893a87",
+          "event_name": "j9tstz",
+          "payout_base": 294,
+          "payout": 294,
+          "type": "normal",
+          "status": "available"
+        },
+        {
+          "name": "Finish Step 50",
+          "uuid": "7631c3e8-9493-3299-b437-49864b12494e",
+          "event_name": "g3mipt",
+          "payout_base": 413,
+          "payout": 413,
+          "type": "normal",
+          "status": "available"
+        },
+        {
+          "name": "Finish Step 100",
+          "uuid": "d29a7b3d-8f79-3fc1-b347-8dcf0f766944",
+          "event_name": "v197np",
+          "payout_base": 630,
+          "payout": 630,
+          "type": "normal",
+          "status": "available"
+        }
+      ],
+      "cpe_total_rewards_currency_name": "coins",
+      "cpe_progressbar_percentage": "5",
+      "payout": 16051,
+      "payout_base": 16051,
+      "payout_name": "16051 coins",
+      "button_text": "+16051"
+    },
+    {
+      "id": 289948,
+      "store_id": "",
+      "icon": "https://dyncdn.ayet.io/icons/campaign_373666951f6c169b1e9a25daef21f3f99bf3cef4.webp?c=289948&a=10000&p=20000",
+      "name": "Kovo Credit",
+      "description": "Earn 15400 coins by completing the following task:",
+      "tags": {
+        "tab": "tasks",
+        "tasks": [
+          "install",
+          "registration"
+        ],
+        "categories": []
+      },
+      "icon_large": "https://dyncdn.ayet.io/header_image/6ab27eb538c8d-289948.webp?c=289948&a=10000&p=20000",
+      "platform": "web",
+      "platforms": [
+        "desktop",
+        "android",
+        "ios"
+      ],
+      "devices": [
+        "phone",
+        "tablet",
+        "pc",
+        "mac"
+      ],
+      "category": "incent",
+      "conversion_type": "cpa",
+      "conversion_time": 300,
+      "max_conversion_time": 2592000,
+      "conversion_instructions_short": "Open and register. New users only.",
+      "currency_amount": 0,
+      "tracking_link": "https://www.ayetstudios.com/s2s/go/example-slug/289948/1000001/TOKEN-probe?pub_id=PUB-00000&sub_id_int=PL-00000&adslot_id=10000",
+      "offer_complexity": "0",
+      "payment_required": false,
+      "has_installation_callback": false,
+      "publisher_cpi_compensation": false,
+      "offer_status": "new",
+      "offer_status_days_left": null,
+      "introduction": "Earn referral payouts by promoting Kovo Credit Builder, which helps people build credit and earn rewards toward their financial goals.",
+      "impression_url": "https://www.ayetstudios.com/offers/shown/289948;10000;0;1;20000;3000000;offerwall_api;web;0000/img.gif?external_identifier=probe",
+      "rating": null,
+      "require_reservation": true,
+      "min_android_version": null,
+      "min_ios_version": null,
+      "max_android_version": null,
+      "max_ios_version": null,
+      "priority": 0,
+      "payout_base": 15400,
+      "payout": 15400,
+      "payout_name": "15400 coins",
+      "button_text": "+15400"
+    }
+  ]
+}

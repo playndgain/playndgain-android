@@ -183,8 +183,8 @@ class Network extends Model
      * and `SyncNetworkOffersJob` already reads it. Whether *we* will call that
      * catalogue is an admin's choice (`integration`). Storing a second "the
      * driver has an API" flag would be free to disagree with the class; storing
-     * "do not call it" is what lets an embed-only Ayet row skip the Static API
-     * keys and skip the sweep that would otherwise fail on empty credentials.
+     * "do not call it" is what lets an embed-only Ayet row skip the catalogue
+     * credentials and the sweep that would otherwise fail without them.
      *
      * A wall is also an admin's declaration (`hosts_wall`, kept in step with
      * `integration` on save). Derived from `wall_url` it would appear only

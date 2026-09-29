@@ -7,6 +7,7 @@ use App\Fraud\FraudPipeline;
 use App\Http\Controllers\Controller;
 use App\Models\Offer;
 use App\Models\OfferClick;
+use App\Networks\Contracts\ResolvesTrackingUrlPerUser;
 use App\Networks\NetworkDriverManager;
 use App\Services\Wall\IpAnonymizer;
 use App\Services\Wall\OfferFeed;
@@ -36,6 +37,9 @@ use Throwable;
 class ClickController extends Controller
 {
     use RendersWallPages;
+
+    /** The network had no link for this user when asked at click time. */
+    public const UNAVAILABLE_FOR_USER = 'unavailable_for_user';
 
     public function __construct(
         private readonly WallGate $gate,
@@ -105,13 +109,28 @@ class ClickController extends Controller
         }
 
         try {
-            $url = $this->networks->make($offer->network)->buildTrackingUrl($offer, (string) $click->click_id);
+            $driver = $this->networks->make($offer->network);
+
+            // A network that mints links per user answers for this user here,
+            // after the fraud verdict, so blocked traffic never reaches it. Its
+            // stored link belongs to someone else and is never the fallback:
+            // no link for this user is an unavailable offer, and the row is
+            // marked so it does not read as a click that went out.
+            $url = $driver instanceof ResolvesTrackingUrlPerUser
+                ? $driver->resolveTrackingUrl($offer, $click)
+                : $driver->buildTrackingUrl($offer, (string) $click->click_id);
         } catch (Throwable $e) {
             // A driver without a tracking URL is our problem, not the user's,
             // and it must not surface as a 500 on the busiest route we own.
             Log::error('Tracking URL build failed', ['offer' => $offer->id, 'error' => $e->getMessage()]);
 
             return $this->notice('offer_gone', $context, Response::HTTP_BAD_GATEWAY);
+        }
+
+        if ($url === null) {
+            $click->update(['blocked' => true, 'blocked_reason' => self::UNAVAILABLE_FOR_USER]);
+
+            return $this->notice('offer_gone', $context, Response::HTTP_GONE);
         }
 
         // 302. See the class docblock — a 301 here silently misattributes

@@ -36,7 +36,7 @@ it('builds the documented paste url for a network that writes its own template',
 })->with([
     'ayetstudios' => [
         AyetStudiosDriver::class,
-        'callback_type={callback_type}&transaction_id={transaction_id}&is_chargeback={is_chargeback}&payout_usd={payout_usd}&custom_1={custom_1}&external_identifier={external_identifier}&offer_id={offer_id}&offer_name={offer_name}&ip={ip}',
+        'callback_type={callback_type}&transaction_id={transaction_id}&is_chargeback={is_chargeback}&payout_usd={payout_usd}&currency_amount={currency_amount}&custom_1={custom_1}&external_identifier={external_identifier}&offer_id={offer_id}&offer_name={offer_name}&ip={ip}',
     ],
     'gemiad' => [
         GemiAdDriver::class,

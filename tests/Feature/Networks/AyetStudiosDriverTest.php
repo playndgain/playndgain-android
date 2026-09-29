@@ -1,103 +1,320 @@
 <?php
 
+use App\Enums\IncomingPostbackResult;
+use App\Models\IncomingPostback;
 use App\Models\Network;
-use App\Models\Offer;
 use App\Networks\Drivers\AyetStudiosDriver;
+use App\Networks\DTO\OfferDTO;
+use App\Networks\Support\CountryProbeIps;
+use GuzzleHttp\Promise\PromiseInterface;
+use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
+
+/**
+ * All probes hit one URL, so a fake answers by the country the `ip` places
+ * and the platform the `user_agent` names. Unlisted cells answer an empty
+ * success, which is what most of the world looks like to one adslot.
+ *
+ * @return array<string, mixed>
+ */
+function ayetFixture(string $name): array
+{
+    return json_decode((string) file_get_contents(base_path("tests/Fixtures/Networks/ayetstudios-offerwall-{$name}.json")), true);
+}
+
+/** @return array<string, string> */
+function ayetQuery(ClientRequest $request): array
+{
+    parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+
+    return $query;
+}
+
+function ayetCell(ClientRequest $request): string
+{
+    $query = ayetQuery($request);
+    $country = array_search($query['ip'] ?? '', CountryProbeIps::IPS, true) ?: 'SERVER';
+    $agent = (string) ($query['user_agent'] ?? '');
+    $platform = match (true) {
+        str_contains($agent, 'Android') => 'android',
+        str_contains($agent, 'iPhone') => 'ios',
+        default => 'desktop',
+    };
+
+    return "{$country}/{$platform}";
+}
+
+/**
+ * @param  array<string, mixed>|callable(string): mixed  $cells  "US/android" => body, or a responder
+ */
+function fakeAyet(array|callable $cells): void
+{
+    // A fresh factory each time: `Http::fake()` appends stubs behind the
+    // first match and keeps the recorded calls, and each call here is meant
+    // to be a new upstream with a clean count.
+    Http::swap(new HttpFactory(app('events')));
+
+    Http::fake(['www.ayetstudios.com/*' => function (ClientRequest $request) use ($cells) {
+        $cell = ayetCell($request);
+        $answer = is_callable($cells) ? $cells($cell) : ($cells[$cell] ?? null);
+
+        return $answer instanceof PromiseInterface
+            ? $answer
+            : Http::response($answer ?? ['status' => 'success', 'num_offers' => 0, 'offers' => []]);
+    }]);
+}
+
+/** @return array<string, OfferDTO> */
+function ayetSync(Network $network): array
+{
+    $offers = [];
+
+    foreach ((new AyetStudiosDriver($network->fresh()))->fetchOffers() as $dto) {
+        $offers[$dto->externalId] = $dto;
+    }
+
+    return $offers;
+}
 
 beforeEach(function () {
+    Sleep::fake();
+
     $this->network = Network::factory()->create([
         'driver' => 'ayetstudios',
-        'credentials' => ['adslot_id' => '4471', 'api_key' => 'ayet-key'],
+        'sync_interval_minutes' => 60,
+        'credentials' => [
+            'adslot_id' => '10000',
+            'coins_per_usd' => '1000',
+            // Hot tier, so these cells are probed first on every run.
+            'probe_countries' => 'US, EG',
+        ],
     ]);
+
+    $android = ayetFixture('android');
+    $ios = ayetFixture('ios');
+
+    $this->cells = [
+        'US/android' => $android,
+        'US/ios' => $ios,
+        // Egypt sees only the multi-platform offer.
+        'EG/android' => [...$android, 'offers' => [$android['offers'][1]]],
+    ];
 });
 
-it('maps a recorded catalogue into normalized offers', function () {
-    Http::fake([
-        'ayetstudios.com/*' => Http::response(file_get_contents(base_path('tests/Fixtures/Networks/ayetstudios-offers.json'))),
-    ]);
+it('merges every probe into one catalogue whose countries are where each offer was seen', function () {
+    fakeAyet($this->cells);
 
-    $offers = iterator_to_array((new AyetStudiosDriver($this->network))->fetchOffers(), false);
+    $offers = ayetSync($this->network);
 
-    expect($offers)->toHaveCount(2);
+    expect(array_map('strval', array_keys($offers)))->toBe(['271197', '281296', '289948'])
+        ->and($offers['289948']->countries)->toBe(['EG', 'US'])
+        ->and($offers['281296']->countries)->toBe(['US'])
+        ->and($offers['271197']->countries)->toBe(['US']);
 
-    expect($offers[0]->externalId)->toBe('918204')
-        // Every task completed is what the offer is worth: 2.10 + 4.40 + 7.50.
-        ->and($offers[0]->payout)->toBe(14.0)
-        ->and($offers[0]->isMultiReward)->toBeTrue()
-        ->and($offers[0]->goals)->toBe([
-            ['name' => 'Reach village 5', 'payout' => 2.1],
-            ['name' => 'Reach village 10', 'payout' => 4.4],
-            ['name' => 'Reach village 15', 'payout' => 7.5],
+    // An empty list is "worldwide" to the wall; no offer may carry one.
+    foreach ($offers as $offer) {
+        expect($offer->countries)->not->toBe([]);
+    }
+});
+
+it('converts coins to USD for flat and task offers', function () {
+    fakeAyet($this->cells);
+
+    $offers = ayetSync($this->network);
+
+    // Flat offer: payout_base 15400 coins at 1000 per USD.
+    expect($offers['289948']->payout)->toBe(15.4)
+        ->and($offers['289948']->isMultiReward)->toBeFalse()
+        ->and($offers['289948']->goals)->toBe([])
+        ->and($offers['289948']->devices)->toBe(['desktop', 'android', 'ios'])
+        ->and($offers['289948']->osMinVersion)->toBeNull()
+        // No tag categories, so how it converts and ayeT's shelf stand in.
+        ->and($offers['289948']->categories)->toBe(['cpa', 'incent']);
+
+    // Task offer: the sum of its tasks (0 + 1260 + 3150 + 12600), a
+    // zero-paying install step included as a step.
+    expect($offers['281296']->payout)->toBe(17.01)
+        ->and($offers['281296']->isMultiReward)->toBeTrue()
+        ->and($offers['281296']->goals)->toBe([
+            ['name' => 'Start playing for 30 seconds', 'payout' => 0.0],
+            ['name' => 'Track your first steps', 'payout' => 1.26],
+            ['name' => 'Earn a total reward of $1', 'payout' => 3.15],
+            ['name' => 'Receive your first withdrawal from the app', 'payout' => 12.6],
         ])
-        ->and($offers[0]->description)->toBe('Install Coin Master and reach village 15.')
-        ->and($offers[0]->instructions)->toBe("Reach village 15 within 14 days.\nSpin, raid and build your way to village 15.")
-        ->and($offers[0]->iconUrl)->toBe('https://cdn.ayetstudios.com/offers/918204.png')
-        ->and($offers[0]->countries)->toBe(['US', 'CA'])
-        ->and($offers[0]->devices)->toBe(['android'])
-        ->and($offers[0]->categories)->toBe(['Games', 'Casual'])
-        ->and($offers[0]->conversionType)->toBe('cpi')
-        // The path placeholder is Ayet's user slot on this one; `custom_1` is
-        // ours and is appended because the link has nowhere else to put it.
-        ->and($offers[0]->trackingUrl)->toBe('https://www.ayetstudios.com/offers/click/918204/{click_id}?custom_1={click_id}');
+        ->and($offers['281296']->devices)->toBe(['android'])
+        ->and($offers['281296']->osMinVersion)->toBe('10')
+        ->and($offers['281296']->categories)->toBe(['health_and_fitness']);
 
-    expect($offers[1]->payout)->toBe(12.5)
-        ->and($offers[1]->isMultiReward)->toBeFalse()
-        ->and($offers[1]->goals)->toBe([])
-        // Blank description, so the introduction is the only blurb there is.
-        ->and($offers[1]->description)->toBe('Order your first box and get cooking.')
-        ->and($offers[1]->iconUrl)->toBeNull()
-        ->and($offers[1]->countries)->toBe([])
-        // Single-platform offers carry `platform` instead of `platforms`.
-        ->and($offers[1]->devices)->toBe(['ios'])
-        // No tags, so how it converts and where Ayet files it stand in.
-        ->and($offers[1]->categories)->toBe(['purchase', 'Shopping'])
-        ->and($offers[1]->conversionType)->toBe('purchase')
-        ->and($offers[1]->trackingUrl)->toBe('https://www.ayetstudios.com/offers/click/918377?adslot=4471&external_identifier={click_id}&custom_1={click_id}');
+    expect($offers['271197']->devices)->toBe(['ios'])
+        ->and($offers['271197']->osMinVersion)->toBe('15.0');
 });
 
-it('calls the adslot endpoint with the api key', function () {
-    Http::fake([
-        'ayetstudios.com/*' => Http::response(file_get_contents(base_path('tests/Fixtures/Networks/ayetstudios-offers.json'))),
-    ]);
+it('asks each cell as a user standing there, with no api key', function () {
+    fakeAyet($this->cells);
 
-    iterator_to_array((new AyetStudiosDriver($this->network))->fetchOffers(), false);
+    ayetSync($this->network);
 
-    Http::assertSent(function ($request) {
-        expect($request->url())->toContain('/offers/get/4471');
+    $sent = collect(Http::recorded())->map(fn (array $pair) => $pair[0]);
+    $us = $sent->first(fn (ClientRequest $request) => ayetCell($request) === 'US/android');
+    $desktop = $sent->first(fn (ClientRequest $request) => ayetCell($request) === 'US/desktop');
 
-        return str_contains($request->url(), 'apiKey=ayet-key');
-    });
+    expect($us->url())->toStartWith('https://www.ayetstudios.com/offers/offerwall_api/10000?')
+        ->and(ayetQuery($us))->not->toHaveKey('apiKey')
+        ->and(ayetQuery($us)['num_offers'])->toBe('1000')
+        ->and(ayetQuery($us)['ip'])->toBe(CountryProbeIps::for('US'))
+        // Opaque, and shaped like a real user's so a probe reads as one.
+        ->and(ayetQuery($us)['external_identifier'])->toMatch('/^[0-9a-f]{32}$/')
+        ->and(ayetQuery($us))->not->toHaveKey('include_mobile_offers')
+        // Desktop answers nothing without it.
+        ->and(ayetQuery($desktop)['include_mobile_offers'])->toBe('true');
+
+    // Stable across runs: the same cell is the same "user" every time.
+    fakeAyet($this->cells);
+    ayetSync($this->network);
+
+    $again = collect(Http::recorded())->map(fn (array $pair) => $pair[0])
+        ->first(fn (ClientRequest $request) => ayetCell($request) === 'US/android');
+
+    expect(ayetQuery($again)['external_identifier'])->toBe(ayetQuery($us)['external_identifier']);
 });
 
-it('fails the connection test on an http error', function () {
-    Http::fake(['ayetstudios.com/*' => Http::response('nope', 503)]);
+it('stores the probe link for previews and keeps the click slot for ours', function () {
+    fakeAyet($this->cells);
+
+    $offer = ayetSync($this->network)['289948'];
+
+    expect($offer->trackingUrl)->toBe('https://www.ayetstudios.com/s2s/go/example-slug/289948/1000001/TOKEN-probe?pub_id=PUB-00000&sub_id_int=PL-00000&adslot_id=10000');
+});
+
+it('stops on a 429 and keeps the countries it already knew', function () {
+    fakeAyet($this->cells);
+    ayetSync($this->network);
+
+    fakeAyet(fn () => Http::response(['status' => 'error', 'error' => 'Too many consecutive API requests, throttled.'], 429));
+
+    $offers = ayetSync($this->network);
+
+    // One call, then nothing: throttling is a signal to stop, not to retry.
+    Http::assertSentCount(1);
+
+    expect(array_map('strval', array_keys($offers)))->toBe(['271197', '281296', '289948'])
+        ->and($offers['289948']->countries)->toBe(['EG', 'US']);
+});
+
+it('throws rather than yield nothing when no probe has ever succeeded', function () {
+    fakeAyet(fn () => Http::response(['status' => 'error', 'error' => 'Too many consecutive API requests, throttled.'], 429));
+
+    expect(fn () => ayetSync($this->network))->toThrow(RuntimeException::class, 'no probe has succeeded');
+});
+
+it('forgets cells older than three days', function () {
+    fakeAyet($this->cells);
+    ayetSync($this->network);
+
+    $this->travel(73)->hours();
+
+    // Every cell probed now answers empty. The old answers are past their
+    // age, so they no longer place any offer anywhere.
+    fakeAyet([]);
+
+    expect(ayetSync($this->network))->toBe([]);
+});
+
+it('fails loudly when every probe of a run fails, stored cells or not', function () {
+    fakeAyet($this->cells);
+    ayetSync($this->network);
+
+    // Republishing the stored cells here would read as a healthy sync for
+    // three days while ayeT answered nothing but errors.
+    fakeAyet(fn () => Http::response('upstream down', 502));
+
+    expect(fn () => ayetSync($this->network))->toThrow(RuntimeException::class, 'every probe this run failed (HTTP 502');
+
+    // Three failures in a row end the run; the rest of the matrix is not dialled.
+    Http::assertSentCount(3);
+});
+
+it('walks the rest of the world stalest first', function () {
+    $this->network->update(['credentials' => [...$this->network->credentials, 'probe_countries' => '']]);
+    fakeAyet([]);
+
+    $countries = function (): array {
+        $seen = collect(Http::recorded())->map(fn (array $pair) => explode('/', ayetCell($pair[0]))[0])->unique()->values()->all();
+        fakeAyet([]);
+
+        return $seen;
+    };
+
+    ayetSync($this->network);
+    $first = $countries();
+
+    ayetSync($this->network);
+    $second = $countries();
+
+    // 232 countries over 24 hourly runs is ten a run, never repeating until
+    // every country has had its turn.
+    expect($first)->toHaveCount(10)
+        ->and($second)->toHaveCount(10)
+        ->and(array_intersect($first, $second))->toBe([]);
+});
+
+it('fails the sync on an unknown adslot instead of spending the run on it', function () {
+    fakeAyet(fn () => Http::response(['status' => 'error', 'errorCode' => 101, 'errorMessage' => 'Unknown or inactive adslot or placement.']));
+
+    expect(fn () => ayetSync($this->network))->toThrow(RuntimeException::class, '[101] Unknown or inactive adslot');
+
+    Http::assertSentCount(1);
+});
+
+it('refuses to sync without a currency rate', function () {
+    $this->network->update(['credentials' => ['adslot_id' => '10000']]);
+    fakeAyet($this->cells);
+
+    expect(fn () => ayetSync($this->network))->toThrow(RuntimeException::class, 'coins_per_usd');
+
+    Http::assertNothingSent();
+});
+
+it('reports a connected adslot with its offer count', function () {
+    fakeAyet(['SERVER/android' => ayetFixture('android')]);
 
     $result = (new AyetStudiosDriver($this->network))->testConnection();
 
-    expect($result->ok)->toBeFalse()
-        ->and($result->message)->toContain('HTTP 503');
+    expect($result->ok)->toBeTrue()
+        ->and($result->offerCount)->toBe(2);
 });
 
-it('treats a non-success status carrying http 200 as a failure', function () {
-    // Ayet rejects a bad key inside the envelope, with the status line saying
-    // the call went fine. Read as an empty catalogue this deactivates every
-    // Ayet offer we have, and the connection test goes green on a typo.
-    Http::fake([
-        'ayetstudios.com/*' => Http::response(['status' => 'error', 'message' => 'invalid api key', 'offers' => []]),
-    ]);
+it('reports both of ayeT\'s error envelopes in the connection test', function (mixed $body, int $status, array $expected) {
+    fakeAyet(fn () => Http::response($body, $status));
 
-    $driver = new AyetStudiosDriver($this->network);
+    $result = (new AyetStudiosDriver($this->network))->testConnection();
 
-    expect($driver->testConnection()->ok)->toBeFalse();
+    expect($result->ok)->toBeFalse();
 
-    // The thrown message is what lands in `networks.last_sync_error` and on the
-    // admin health page, so it carries Ayet's sentence rather than the status
-    // word every one of their failures shares.
-    expect(fn () => iterator_to_array($driver->fetchOffers(), false))
-        ->toThrow(RuntimeException::class, 'invalid api key');
-});
+    foreach ($expected as $fragment) {
+        expect($result->message)->toContain($fragment);
+    }
+})->with([
+    'http 200 with errorCode' => [
+        ['status' => 'error', 'errorCode' => 101, 'errorMessage' => 'Unknown or inactive adslot or placement.'],
+        200,
+        ['[101]', 'Unknown or inactive adslot or placement.'],
+    ],
+    'http 429 with error' => [
+        ['status' => 'error', 'error' => 'Too many consecutive API requests, throttled.'],
+        429,
+        ['HTTP 429', 'throttled'],
+    ],
+    'http 401 with error' => [
+        ['status' => 'error', 'error' => 'Unauthorized'],
+        401,
+        ['HTTP 401', 'Unauthorized'],
+    ],
+]);
 
 it('parses a credited conversion callback', function () {
     $dto = (new AyetStudiosDriver($this->network))->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
@@ -105,10 +322,11 @@ it('parses a credited conversion callback', function () {
         'transaction_id' => '55512345',
         'is_chargeback' => '0',
         'payout_usd' => '4.40',
+        'currency_amount' => '4400',
         'custom_1' => '9f8c1d2e-4a5b-4c6d-8e7f-0a1b2c3d4e5f',
-        'external_identifier' => 'ayet-user-77',
-        'offer_id' => '918204',
-        'offer_name' => 'Coin Master - Reach Village 15',
+        'external_identifier' => '0123456789abcdef0123456789abcdef',
+        'offer_id' => '289948',
+        'offer_name' => 'Kovo Credit',
         'ip' => '203.0.113.9',
     ]));
 
@@ -116,18 +334,27 @@ it('parses a credited conversion callback', function () {
         ->and($dto->clickId)->toBe('9f8c1d2e-4a5b-4c6d-8e7f-0a1b2c3d4e5f')
         ->and($dto->payout)->toBe(4.4)
         ->and($dto->status)->toBe('credited')
-        ->and($dto->offerExternalId)->toBe('918204')
-        ->and($dto->offerName)->toBe('Coin Master - Reach Village 15')
+        ->and($dto->offerExternalId)->toBe('289948')
+        ->and($dto->offerName)->toBe('Kovo Credit')
         ->and($dto->ip)->toBe('203.0.113.9')
-        // Neither slot holds an end user of ours: `external_identifier` is the
-        // click id we sent, and Ayet's own account id is not the identity the
-        // ban list or the fraud rules are keyed on. The click supplies it.
         ->and($dto->endUserId)->toBeNull();
+});
+
+it('never reads a click id out of external_identifier', function () {
+    // It carries our hashed user identifier now, which matches no click.
+    $dto = (new AyetStudiosDriver($this->network))->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
+        'transaction_id' => '55512345',
+        'payout_usd' => '4.40',
+        'external_identifier' => '0123456789abcdef0123456789abcdef',
+    ]));
+
+    expect($dto)->not->toBeNull()
+        ->and($dto->clickId)->toBeNull();
 });
 
 it('matches a chargeback to the key its own credit was written under', function () {
     $driver = new AyetStudiosDriver($this->network);
-    $payload = ['custom_1' => 'click-uuid', 'offer_id' => '918204'];
+    $payload = ['custom_1' => 'click-uuid', 'offer_id' => '289948'];
 
     $credit = $driver->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
         ...$payload,
@@ -136,16 +363,11 @@ it('matches a chargeback to the key its own credit was written under', function 
         'payout_usd' => '4.40',
     ]));
 
-    // Ayet prepends `r-` to the transaction id on a chargeback. Carried through
-    // as-is it never meets the credit it reverses: `ConversionProcessor::
-    // reverse()` matches `network_txid` exactly, so every Ayet chargeback would
-    // fail with "no conversion for network_txid" and the money would stay paid.
     $chargeback = $driver->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
         ...$payload,
         'callback_type' => 'chargeback',
         'transaction_id' => 'r-55512345',
         'is_chargeback' => '1',
-        'chargeback_reason' => 'advertiser rejected',
         'payout_usd' => '-4.40',
     ]));
 
@@ -156,9 +378,6 @@ it('matches a chargeback to the key its own credit was written under', function 
 });
 
 it('treats is_chargeback on its own as a reversal', function () {
-    // Either flag is believed alone. A pasted template that dropped
-    // `callback_type` would otherwise credit the publisher a second time for
-    // money the advertiser has just taken back.
     $dto = (new AyetStudiosDriver($this->network))->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
         'transaction_id' => 'r-55512345',
         'is_chargeback' => '1',
@@ -174,8 +393,6 @@ it('treats is_chargeback on its own as a reversal', function () {
 it('does not parse a postback with no transaction id or no amount', function () {
     $driver = new AyetStudiosDriver($this->network);
 
-    // The transaction id is the idempotency key; without it a retry cannot be
-    // told apart from a second conversion.
     expect($driver->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
         'custom_1' => 'click-uuid',
         'payout_usd' => '4.40',
@@ -187,165 +404,86 @@ it('does not parse a postback with no transaction id or no amount', function () 
     ])))->toBeNull();
 });
 
-it('still parses a postback whose click id never came back', function () {
-    // Not a rejection. A 422 here buys twelve retries of the same unparseable
-    // payload over the next hour; a DTO with a null click is logged once, at
-    // 200, where an admin can attach it to the click by hand.
-    $dto = (new AyetStudiosDriver($this->network))->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
-        'transaction_id' => '55512345',
-        'payout_usd' => '4.40',
+it('warns when a callback implies a different currency rate', function () {
+    Log::spy();
+
+    $driver = new AyetStudiosDriver($this->network);
+
+    // 4.40 USD and 4400 coins: the configured 1000 per USD. Silent.
+    $driver->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
+        'transaction_id' => '1', 'payout_usd' => '4.40', 'currency_amount' => '4400', 'custom_1' => 'c',
     ]));
 
-    expect($dto)->not->toBeNull()
-        ->and($dto->clickId)->toBeNull();
-});
+    Log::shouldNotHaveReceived('warning');
 
-it('reads the click id out of external_identifier when custom_1 is absent', function () {
-    // Clicks made before `custom_1` became the carrier are still in flight —
-    // the Coin Master offer gives the user fourteen days — and they come back
-    // with the click id in the slot it used to occupy.
-    $dto = (new AyetStudiosDriver($this->network))->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
-        'transaction_id' => '55512345',
-        'payout_usd' => '4.40',
-        'external_identifier' => 'legacy-click-uuid',
+    // 4.40 USD and 5000 coins is 1136 per USD, 13.6% off. Logged, still parsed.
+    $dto = $driver->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
+        'transaction_id' => '2', 'payout_usd' => '4.40', 'currency_amount' => '5000', 'custom_1' => 'c',
     ]));
 
-    expect($dto->clickId)->toBe('legacy-click-uuid');
+    expect($dto)->not->toBeNull()->and($dto->payout)->toBe(4.4);
+
+    Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message, array $context) => str_contains($message, 'currency rate')
+        && $context['coins_per_usd'] === 1000.0);
 });
 
-it('accepts a postback signed with the publisher api key', function () {
-    $this->network->update(['credentials' => [
-        'adslot_id' => '4471',
-        'api_key' => 'ayet-key',
-        'publisher_api_key' => 'publisher-key',
-    ]]);
+it('verifies the signature over the raw query, empty values included', function () {
+    $this->network->update(['credentials' => [...$this->network->credentials, 'publisher_api_key' => 'publisher-key']]);
 
-    $params = [
-        'transaction_id' => '55512345',
-        'payout_usd' => '4.40',
-        'custom_1' => 'click-uuid',
-        'callback_type' => 'conversion',
-    ];
-
-    // The recipe is spelled out here rather than borrowed from the driver, so
-    // that changing the driver's interpretation has to change this line too.
+    // ayeT's own recipe, spelled out here so a change to the driver's
+    // interpretation has to change this line too.
+    $params = ['transaction_id' => '55512345', 'payout_usd' => '4.40', 'custom_1' => '', 'offer_name' => 'Kovo Credit '];
     $signed = $params;
     ksort($signed, SORT_STRING);
-    $hash = hash_hmac('sha256', http_build_query($signed), 'publisher-key');
+    $hash = hash_hmac('sha256', http_build_query($signed, '', '&'), 'publisher-key');
 
-    $request = Request::create('/postback/ayetstudios', 'GET', $params, [], [], [
+    $request = Request::create('/postback/ayetstudios?'.http_build_query($params), 'GET', [], [], [], [
         'HTTP_X_AYETSTUDIOS_SECURITY_HASH' => $hash,
     ]);
 
-    expect((new AyetStudiosDriver($this->network))->verifyPostback($request))->toBeTrue();
+    // What TrimStrings and ConvertEmptyStringsToNull leave behind on the
+    // route. Hashing this would drop `custom_1` and the trailing space.
+    $request->query->replace(['transaction_id' => '55512345', 'payout_usd' => '4.40', 'custom_1' => null, 'offer_name' => 'Kovo Credit']);
+
+    $driver = new AyetStudiosDriver($this->network->fresh());
+
+    expect($driver->verifyPostback($request))->toBeTrue();
+
+    $request->headers->set('X-Ayetstudios-Security-Hash', str_repeat('0', 64));
+
+    expect($driver->verifyPostback($request))->toBeFalse();
 });
 
-it('rejects a postback whose hash does not match', function () {
-    $this->network->update(['credentials' => [
-        'adslot_id' => '4471',
-        'api_key' => 'ayet-key',
-        'publisher_api_key' => 'publisher-key',
-    ]]);
+it('admits a signed callback with an empty macro through the real route', function () {
+    $this->network->update(['credentials' => [...$this->network->credentials, 'publisher_api_key' => 'publisher-key']]);
 
-    $request = Request::create('/postback/ayetstudios', 'GET', [
+    $params = [
+        'callback_type' => 'conversion',
         'transaction_id' => '55512345',
         'payout_usd' => '4.40',
-    ], [], [], ['HTTP_X_AYETSTUDIOS_SECURITY_HASH' => str_repeat('0', 64)]);
+        'custom_1' => '',
+        'offer_name' => 'Kovo Credit ',
+    ];
+    $signed = $params;
+    ksort($signed, SORT_STRING);
 
-    expect((new AyetStudiosDriver($this->network))->verifyPostback($request))->toBeFalse();
+    $key = $this->network->fresh()->postback_key;
 
-    // An unsigned request against a configured key is the same rejection. The
-    // header is the only place the hash can arrive.
-    expect((new AyetStudiosDriver($this->network))->verifyPostback(
+    $this->withHeaders(['X-Ayetstudios-Security-Hash' => hash_hmac('sha256', http_build_query($signed, '', '&'), 'publisher-key')])
+        ->get("/postback/{$key}?".http_build_query($params))
+        ->assertOk();
+
+    expect(IncomingPostback::query()->sole()->result)->not->toBe(IncomingPostbackResult::Rejected);
+});
+
+it('rejects an unsigned request once a key is configured', function () {
+    $this->network->update(['credentials' => [...$this->network->credentials, 'publisher_api_key' => 'publisher-key']]);
+
+    expect((new AyetStudiosDriver($this->network->fresh()))->verifyPostback(
         Request::create('/postback/ayetstudios', 'GET', ['transaction_id' => '55512345'])
     ))->toBeFalse();
 });
 
 it('leaves the allowlist as the only guard when no publisher key is configured', function () {
-    // The publisher API key is account-level and optional, and a live Ayet
-    // integration can be syncing and earning long before anyone finds it.
-    // Failing closed would take a working network off the air; the source-IP
-    // allowlist — which rejects when empty — is the floor underneath.
     expect((new AyetStudiosDriver($this->network))->verifyPostback(Request::create('/postback/ayetstudios')))->toBeTrue();
-});
-
-it('puts the click id in custom_1 and fills Ayet\'s user slot as well', function () {
-    $driver = new AyetStudiosDriver($this->network);
-
-    $tracked = Offer::factory()->create([
-        'network_id' => $this->network->id,
-        'tracking_url' => 'https://www.ayetstudios.com/offers/click/918204/{click_id}?custom_1={click_id}',
-    ]);
-
-    expect($driver->buildTrackingUrl($tracked, 'click-uuid'))
-        ->toBe('https://www.ayetstudios.com/offers/click/918204/click-uuid?custom_1=click-uuid');
-
-    // A link with nowhere to put the id is never handed over untouched: an
-    // untracked click is a conversion nobody can be paid for.
-    $untracked = Offer::factory()->create([
-        'network_id' => $this->network->id,
-        'tracking_url' => 'https://www.ayetstudios.com/offers/click/918377?adslot=4471',
-    ]);
-
-    expect($driver->buildTrackingUrl($untracked, 'click-uuid'))
-        ->toBe('https://www.ayetstudios.com/offers/click/918377?adslot=4471&custom_1=click-uuid');
-});
-
-it('round-trips the click id from the tracking link back out of a postback', function () {
-    $driver = new AyetStudiosDriver($this->network);
-
-    $offer = Offer::factory()->create([
-        'network_id' => $this->network->id,
-        'tracking_url' => 'https://www.ayetstudios.com/offers/click/918377?adslot=4471&external_identifier=[USER_ID]',
-    ]);
-
-    $clickId = '9f8c1d2e-4a5b-4c6d-8e7f-0a1b2c3d4e5f';
-
-    // The link is taken apart rather than string-matched. If the parameter
-    // buildTrackingUrl() writes ever stops being the one parsePostback() reads,
-    // a string assertion on the URL still passes while every conversion in
-    // production goes unattributed with nothing logged.
-    parse_str((string) parse_url($driver->buildTrackingUrl($offer, $clickId), PHP_URL_QUERY), $params);
-
-    $dto = $driver->parsePostback(Request::create('/postback/ayetstudios', 'GET', [
-        'transaction_id' => '55512345',
-        'payout_usd' => '4.40',
-        // Ayet echoes back what the click carried.
-        ...$params,
-        // Except this, deliberately: the fallback in parsePostback() must not
-        // be able to rescue a carrier mismatch and hide it from this test.
-        'external_identifier' => 'ayet-user-77',
-    ]));
-
-    expect($dto->clickId)->toBe($clickId);
-});
-
-it('reports the reason Ayet gave, not just the word error', function () {
-    // The real payload from a live adslot misconfiguration. `status` is the
-    // literal string "error" on every failure, so surfacing it tells the admin
-    // nothing; `errorMessage` is the sentence that names the actual problem and
-    // `errorCode` is what their account manager asks for.
-    Http::fake([
-        'www.ayetstudios.com/*' => Http::response([
-            'status' => 'error',
-            'errorCode' => 103,
-            'errorMessage' => 'Unknown adslot 28833, invalid adslot type or adslot api key incorrect.',
-        ]),
-    ]);
-
-    $result = (new AyetStudiosDriver($this->network))->testConnection();
-
-    expect($result->ok)->toBeFalse()
-        ->and($result->message)->toContain('103')
-        ->and($result->message)->toContain('Unknown adslot 28833')
-        // The word on its own was the entire message before this test existed.
-        ->and($result->message)->not->toBe('Ayet Studios rejected the request: error');
-});
-
-it('falls back to the status when Ayet explains nothing', function () {
-    Http::fake([
-        'www.ayetstudios.com/*' => Http::response(['status' => 'error']),
-    ]);
-
-    expect((new AyetStudiosDriver($this->network))->testConnection()->message)->toContain('error');
 });

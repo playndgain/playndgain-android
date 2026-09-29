@@ -3,104 +3,136 @@
 namespace App\Networks\Drivers;
 
 use App\Enums\ConnectorCategory;
+use App\Enums\DeviceType;
+use App\Enums\IdentityKind;
 use App\Models\Offer;
+use App\Models\OfferClick;
 use App\Networks\AbstractDriver;
 use App\Networks\Connector;
+use App\Networks\Contracts\ResolvesTrackingUrlPerUser;
 use App\Networks\Drivers\Concerns\NormalizesFields;
 use App\Networks\DTO\ConnectionResult;
 use App\Networks\DTO\OfferDTO;
 use App\Networks\DTO\PostbackDTO;
+use App\Networks\Support\CountryProbeIps;
+use App\Networks\Support\ProbeSnapshots;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 use RuntimeException;
+use Throwable;
 
 /**
- * The adslot is the endpoint; the API key is the only credential in the query.
+ * ayeT through its Offerwall API, the only adslot type we have: one GET per
+ * user, no API key, and an answer filtered to that user.
  *
- * The catalogue call and its field mapping are ported from a working Ayet
- * integration, so endpoint, auth and offer shape are known-good. Three things
- * about this network are unlike the others here:
+ *   GET https://www.ayetstudios.com/offers/offerwall_api/{adslot}
+ *       ?external_identifier=…&ip=…&user_agent=…&num_offers=1000
  *
- *   - It answers a rejected key with HTTP 200 and `status` set to something
- *     other than `success`. Every method below checks the envelope, because
- *     the status line alone says the call went fine.
- *   - We write the postback contract, not Ayet. Their Conversion Callback is a
- *     URL template an admin pastes into the dashboard under Placements →
- *     Settings, and Ayet substitutes macros into it on the way out. Nothing
- *     below can work until that template is pasted, and the template exists
- *     nowhere else in this repository, so here it is:
+ * Three facts about that endpoint shape everything below:
  *
- *       https://{host}/postback/ayetstudios
- *           ?callback_type={callback_type}
- *           &transaction_id={transaction_id}
- *           &is_chargeback={is_chargeback}
- *           &payout_usd={payout_usd}
- *           &custom_1={custom_1}
- *           &external_identifier={external_identifier}
- *           &offer_id={offer_id}
- *           &offer_name={offer_name}
- *           &ip={ip}
+ *   - The answer is filtered by the caller's country (from `ip`) and device
+ *     (from `user_agent`), and the offers carry no country list. The only way
+ *     to learn where an offer runs is to ask as someone standing there. So the
+ *     catalogue is a probe matrix, country × {android, ios, desktop}, and an
+ *     offer's countries are the cells whose latest answer contained it. See
+ *     `fetchOffers()` for the tiers and the pacing.
+ *   - `tracking_link` is minted per user. Every offer in the answer carries a
+ *     signed token for the `external_identifier` that asked, so the link a
+ *     probe stored belongs to a probe. It is kept for the admin and publisher
+ *     previews only; a real click asks again as its own user
+ *     (`resolveTrackingUrl()`) and never falls back to the stored one.
+ *   - Amounts are in the adslot's currency. `payout_base` is the figure to
+ *     read (`payout` can include currency sales, `currency_amount` is 0), and
+ *     `coins_per_usd` turns it into the USD the rest of the app expects.
  *
- *     Every parameter there is read below and nothing read below is missing
- *     from it. Dropping most of them fails silently — the postback still
- *     arrives, still answers 200, and the field it fed is simply null forever.
- *     Two of them do not: without `transaction_id` or `payout_usd` there is no
- *     idempotency key and no amount, `parsePostback()` returns null, and the
- *     422 that follows buys twelve retries of every event. The two chargeback
- *     flags are the safe ones to lose — they are read as three independent
- *     signals and any one of them still reverses.
- *   - Ayet retries any non-200 twelve times over an hour, so every rejection
- *     path in `PostbackController` is a retry storm rather than one lost
- *     conversion. A postback we cannot attribute to a click deliberately is
- *     not one of those paths — `parsePostback()` returns a DTO with a null
- *     click, the controller answers 200, and the row waits in the log for an
- *     admin to attach by hand.
+ * Errors arrive two ways: HTTP 200 with `{status: error, errorCode,
+ * errorMessage}` (101 is an unknown adslot), and HTTP 400/401/429 with
+ * `{status: error, error}`. 429 is ayeT throttling us and is treated as a
+ * signal to stop, never to retry.
  *
- * Postbacks carry an `X-Ayetstudios-Security-Hash` header, checked by
- * `verifyPostback()` when the account-level key is configured. The source-IP
- * allowlist on the `networks` row is the other half and is not optional: the
- * seeded `ayetstudios` row carries all six addresses Ayet fires from, and a
- * partial list is the failure that costs money rather than the one that looks
- * broken — the network works, and the conversions fired from the missing
- * addresses are rejected at the door and never paid.
+ * The postback contract did not change with the API. We write it; an admin
+ * pastes it under Placements → Settings → Conversion Callback:
+ *
+ *   https://{host}/postback/{key}
+ *       ?callback_type={callback_type}&transaction_id={transaction_id}
+ *       &is_chargeback={is_chargeback}&payout_usd={payout_usd}
+ *       &currency_amount={currency_amount}&custom_1={custom_1}
+ *       &external_identifier={external_identifier}&offer_id={offer_id}
+ *       &offer_name={offer_name}&ip={ip}
+ *
+ * Without `transaction_id` or `payout_usd` a postback cannot be parsed and
+ * the 422 buys twelve retries over an hour; any other macro dropped fails
+ * silently. Postbacks are signed with `X-Ayetstudios-Security-Hash` when the
+ * account-level publisher API key is configured, and the six source IPs on
+ * the seeded row are the other gate. A partial IP list is the failure that
+ * costs money: the network looks fine and the missing addresses' conversions
+ * are rejected at the door.
  */
-class AyetStudiosDriver extends AbstractDriver
+class AyetStudiosDriver extends AbstractDriver implements ResolvesTrackingUrlPerUser
 {
     use NormalizesFields;
 
+    private const ENDPOINT = 'https://www.ayetstudios.com/offers/offerwall_api/';
+
     /**
-     * Our click id rides in `custom_1`, not in `external_identifier`.
-     *
-     * Ayet documents `external_identifier` as a *persistent user* identifier:
-     * it keys their reward-status lookups, and a publisher who cannot supply a
-     * stable one needs account-manager sign-off. Our click id is a fresh UUID
-     * per tap, so claiming that slot tells Ayet every single click is a brand
-     * new user. `custom_1` is documented as exactly what we need and nothing
-     * else — "custom parameter to pass variables to the conversion callbacks",
-     * appended to Static API and Offerwall API tracking links — and Ayet gives
-     * it no meaning of its own that we could collide with.
-     *
-     * The catalogue's own user placeholders still get filled with the click id;
-     * `withClickIdMacro()` explains why that is the least-bad option available
-     * to a method that is handed a click id and nothing else.
+     * Our click id rides in `custom_1`. ayeT appends a `custom_1` passed to
+     * the API onto every link verbatim, so appending it ourselves is the same
+     * link, and it comes back in the callback unchanged.
      */
     private const CLICK_PARAM = 'custom_1';
 
-    /** The signature header Ayet sends on every callback. */
     private const HASH_HEADER = 'X-Ayetstudios-Security-Hash';
 
-    /**
-     * The placeholder tokens catalogue links actually arrive with. Ayet
-     * substitutes some into the path and templates others into the query, and
-     * every one of them marks the `external_identifier` slot.
-     */
-    private const USER_PLACEHOLDERS = [
-        'user=1' => 'user={click_id}',
-        '[USER_ID]' => '{click_id}',
-        '[user_id]' => '{click_id}',
-        'USER_ID_HERE' => '{click_id}',
-        '{{userid}}' => '{click_id}',
+    /** A plausible current browser per probe platform. The API reads the device from this. */
+    private const PLATFORM_AGENTS = [
+        'android' => 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36',
+        'ios' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1',
+        'desktop' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
     ];
+
+    /** The API's default page is small; ask for everything. */
+    private const NUM_OFFERS = 1000;
+
+    /** Wall-traffic countries probed every run, busiest first. The rest roll. */
+    private const HOT_COUNTRIES = 25;
+
+    private const ROLLING_MIN = 5;
+
+    private const ROLLING_MAX = 30;
+
+    /** Hard ceiling on API calls in one sync run, whatever the tiers ask for. */
+    private const MAX_CALLS_PER_RUN = 120;
+
+    /** Stop probing after this long; the job's own timeout is 600s. */
+    private const RUN_BUDGET_SECONDS = 420;
+
+    /** Gap between probe calls, jittered, so a run reads as traffic rather than a sweep. */
+    private const PACE_MIN_MS = 1500;
+
+    private const PACE_MAX_MS = 2000;
+
+    private const MAX_CONSECUTIVE_FAILURES = 3;
+
+    /** A cell older than this no longer says anything about its country. */
+    private const SNAPSHOT_TTL_HOURS = 72;
+
+    private const LINK_CACHE_MINUTES = 15;
+
+    /** After a 429, neither the sync nor a click calls ayeT again for this long. */
+    private const THROTTLE_COOLDOWN_SECONDS = 60;
+
+    /** A click waits on this call; a user will not sit through the 30s catalogue timeout. */
+    private const CLICK_TIMEOUT_SECONDS = 5;
+
+    /** Tolerated drift between a callback's currency_amount/payout_usd and coins_per_usd. */
+    private const RATE_TOLERANCE = 0.02;
 
     public static function key(): string
     {
@@ -122,6 +154,7 @@ class AyetStudiosDriver extends AbstractDriver
             'transaction_id' => '{transaction_id}',
             'is_chargeback' => '{is_chargeback}',
             'payout_usd' => '{payout_usd}',
+            'currency_amount' => '{currency_amount}',
             'custom_1' => '{custom_1}',
             'external_identifier' => '{external_identifier}',
             'offer_id' => '{offer_id}',
@@ -131,110 +164,115 @@ class AyetStudiosDriver extends AbstractDriver
     }
 
     /**
-     * @return array<string, array{label: string, required?: bool, secret?: bool}>
+     * @return array<string, array{label: string, required?: bool, secret?: bool, helper?: string, rule?: callable(?string): bool, rule_message?: string, placeholder?: string}>
      */
     public static function credentialSchema(): array
     {
-        // The first two labels name the *adslot* deliberately. Ayet issues an
-        // account-level API key under Account Settings, and it is not this one:
-        // their documentation is explicit that the Static API key "is adslot
-        // specific and available in the adslot details once approved by your
-        // account manager". Pasting the account key here returns error 103 with
-        // a message that blames the adslot, which is a long way to travel to
-        // find out you copied the wrong field.
-        //
-        // The account key now has a home of its own, which is the third field —
-        // it signs the postbacks and it fetches nothing. Swapping the two
-        // breaks both halves at once and neither failure names the other, so
-        // each label says which key it wants rather than trusting the order.
         return [
-            'adslot_id' => ['label' => 'Adslot ID', 'required' => true],
-            'api_key' => [
-                'label' => 'Static API key (adslot-specific, not the account API key)',
+            'adslot_id' => [
+                'label' => 'Adslot ID (Offerwall API adslot)',
                 'required' => true,
-                'secret' => true,
+            ],
+            'coins_per_usd' => [
+                'label' => 'Adslot currency per USD',
+                'required' => true,
+                'helper' => '1000 means $1 = 1000 coins. Offers and callbacks are priced in the adslot currency; this converts them to USD.',
+                'placeholder' => '1000',
+                'rule' => fn (?string $value): bool => is_numeric($value) && (float) $value > 0,
+                'rule_message' => 'Enter a number greater than zero.',
             ],
             'publisher_api_key' => [
-                'label' => 'Publisher API key (account-level, signs postbacks — not the Static API key above)',
+                'label' => 'Publisher API key (account-level, signs postbacks)',
                 'required' => false,
                 'secret' => true,
+            ],
+            'probe_countries' => [
+                'label' => 'Extra countries to refresh every sync',
+                'required' => false,
+                'helper' => 'Comma-separated ISO-2 codes, e.g. US, DE. Countries with wall traffic in the last 30 days are refreshed every sync already; every other country is refreshed on a rolling basis.',
+                'placeholder' => 'US, DE',
             ],
         ];
     }
 
     public function testConnection(): ConnectionResult
     {
-        $response = $this->http()->get($this->endpoint(), $this->authParams());
-
-        if ($response->failed()) {
-            return ConnectionResult::fail("Ayet Studios returned HTTP {$response->status()}.");
+        try {
+            // From the server's own IP: this checks the adslot answers, not
+            // what any particular country sees.
+            $response = $this->request(30)->get($this->endpoint(), [
+                'external_identifier' => $this->identifier('connection-test'),
+                'user_agent' => self::PLATFORM_AGENTS['android'],
+                'num_offers' => self::NUM_OFFERS,
+            ]);
+        } catch (ConnectionException $e) {
+            return ConnectionResult::fail('Could not reach ayeT Studios: '.$e->getMessage());
         }
 
-        // A wrong key, a wrong adslot and a disabled account all arrive as
-        // HTTP 200. Reporting that as "connected, 0 offers" is the worst
-        // possible answer: the admin pastes a typo, the button goes green, and
-        // the network is switched on to sync nothing.
-        if (! $this->succeeded($response)) {
-            return ConnectionResult::fail('Ayet Studios rejected the request: '.$this->statusText($response));
+        if ($this->succeeded($response)) {
+            $offers = $response->json('offers');
+
+            return ConnectionResult::ok('Connected.', is_array($offers) ? count($offers) : 0);
         }
 
-        $offers = $response->json('offers');
+        $prefix = $response->successful()
+            ? 'ayeT Studios rejected the request: '
+            : "ayeT Studios returned HTTP {$response->status()}: ";
 
-        return ConnectionResult::ok('Connected.', is_array($offers) ? count($offers) : 0);
+        return ConnectionResult::fail($prefix.$this->statusText($response));
     }
 
     /**
-     * ponytail: read into memory rather than streamed off disk. One adslot's
-     * catalogue fits; if one stops fitting, stream the `offers` array.
+     * Probe, store, then rebuild the whole catalogue from everything stored.
+     *
+     * Two tiers of countries. Hot: the admin's extra list, then the countries
+     * with wall traffic in the last 30 days, busiest first, capped at
+     * HOT_COUNTRIES; probed every run on all three platforms. Rolling: every
+     * other country in `CountryProbeIps`, stalest first, sized from the sync
+     * interval so the whole table is walked about once a day (clamped to
+     * ROLLING_MIN–ROLLING_MAX countries per run).
+     *
+     * The run is deliberately quiet: one call at a time, 1.5–2s apart with
+     * jitter, at most MAX_CALLS_PER_RUN calls and RUN_BUDGET_SECONDS of wall
+     * time, and hot cells first so a cut-short run loses rolling coverage
+     * rather than the countries users are in. A 429 ends the run on the spot.
+     *
+     * A cut-short run is not a failed run. Cells not probed keep their last
+     * answer, and the catalogue is rebuilt from every cell younger than
+     * SNAPSHOT_TTL_HOURS, so a throttled afternoon costs freshness rather than
+     * inventory. The one thing that throws is having no stored cell at all:
+     * yielding nothing would tell the sync job every ayeT offer is gone.
      *
      * @return iterable<OfferDTO>
      */
     public function fetchOffers(): iterable
     {
-        $response = $this->http()
-            ->timeout(180)
-            ->get($this->endpoint(), $this->authParams())
-            ->throw();
+        $rate = $this->coinsPerUsd();
 
-        // Failing loudly rather than yielding nothing. A driver that returns an
-        // empty catalogue tells the sync job the network has no offers left, and
-        // the sweep deactivates every Ayet offer we have — the collapse guard
-        // only catches that above twenty offers. Throwing puts the reason in
-        // `last_sync_error` where someone will read it.
-        if (! $this->succeeded($response)) {
-            throw new RuntimeException('Ayet Studios rejected the offers request: '.$this->statusText($response));
+        if (blank($this->credential('adslot_id'))) {
+            throw new RuntimeException('ayeT Studios: adslot_id is not configured.');
         }
 
-        $rows = $response->json('offers');
+        $store = new ProbeSnapshots((int) $this->network->id);
+        $store->prune(now()->subHours(self::SNAPSHOT_TTL_HOURS));
 
-        foreach (is_array($rows) ? $rows : [] as $row) {
-            if (! is_array($row) || ! isset($row['id'])) {
+        $this->probeMatrix($store);
+
+        $catalogue = $store->catalogue();
+
+        if ($catalogue === [] && $store->oldestProbePerCountry() === []) {
+            throw new RuntimeException('ayeT Studios: no probe has succeeded in the last '.self::SNAPSHOT_TTL_HOURS.' hours, so there is no catalogue to publish.');
+        }
+
+        foreach ($catalogue as $externalId => ['payload' => $payload, 'countries' => $countries]) {
+            // Never empty in practice: an offer is only here because a cell
+            // named it. Guarded anyway, because an empty list is "worldwide"
+            // to the wall.
+            if ($countries === []) {
                 continue;
             }
 
-            $tasks = array_values(array_filter($row['tasks'] ?? [], 'is_array'));
-
-            yield new OfferDTO(
-                externalId: (string) $row['id'],
-                name: (string) ($row['name'] ?? 'Untitled offer'),
-                trackingUrl: $this->withClickIdMacro((string) ($row['tracking_link'] ?? '')),
-                // A task-based offer prices each step, and completing all of
-                // them is what the offer is worth to us. `payout_usd` is the
-                // authority only when there are no tasks to add up.
-                payout: $tasks === [] ? (float) ($row['payout_usd'] ?? 0) : $this->sumPayouts($tasks),
-                // `introduction` is the fuller blurb on offers that carry both,
-                // and the only one on offers that carry no description at all.
-                description: $this->nullableString($row['description'] ?? null)
-                    ?? $this->nullableString($row['introduction'] ?? null),
-                instructions: $this->instructions($row),
-                iconUrl: $this->nullableString($row['icon'] ?? null),
-                countries: $this->parseCountries($row['countries'] ?? []),
-                devices: $this->parseDevices($this->platforms($row)),
-                categories: $this->categoryNames($this->categories($row)),
-                conversionType: $this->conversionType($row['conversion_type'] ?? null),
-                isMultiReward: count($tasks) > 1,
-                goals: $this->goalList($tasks, 'name', 'payout'),
-            );
+            yield $this->toDto((string) $externalId, $payload, $countries, $rate);
         }
     }
 
@@ -243,173 +281,559 @@ class AyetStudiosDriver extends AbstractDriver
         $transactionId = $this->nullableString($request->input('transaction_id'));
         $payout = $request->input('payout_usd');
 
-        // The transaction id is the idempotency key, so a postback without one
-        // cannot be told apart from a retry of itself. The click id is *not*
-        // required: an unattributable postback is still a real event, and
-        // returning null here would answer 422 and buy twelve retries of the
-        // same unparseable payload. Handing back a DTO with a null click logs
-        // it once, at 200, where an admin can attach it by hand.
+        // The transaction id is the idempotency key. A missing click id is
+        // not a reason to refuse: a DTO with a null click logs once at 200
+        // where an admin can attach it, and null here buys twelve retries.
         if ($transactionId === null || ! is_numeric($payout)) {
             return null;
         }
 
         $amount = (float) $payout;
 
-        // Three signals, any one of which is believed on its own. Ayet's docs
-        // describe a chargeback as all three at once — `callback_type` set to
-        // `chargeback`, `is_chargeback` set to 1, and the amounts negative — so
-        // requiring them to agree buys nothing and costs everything the day one
-        // of them goes missing from the pasted template. The asymmetry settles
-        // it: reading a chargeback as a credit pays the publisher a second time
-        // for money the advertiser just took back, while reading a credit as a
-        // chargeback finds no conversion to reverse and says so in the log.
+        // Three signals, any one believed alone. Reading a chargeback as a
+        // credit pays twice for money the advertiser took back; reading a
+        // credit as a chargeback finds nothing to reverse and says so.
         $reversed = (string) $request->input('callback_type') === 'chargeback'
             || (string) $request->input('is_chargeback') === '1'
             || $amount < 0;
 
+        $this->checkRate($request, $amount, $transactionId);
+
         return new PostbackDTO(
-            // Ayet prepends `r-` to the transaction id on a chargeback and
-            // nowhere else, and `ConversionProcessor::reverse()` finds the
-            // credit to charge back by exact `network_txid` match. Left alone,
-            // a reversal reporting `r-12345` would never meet the `12345` its
-            // credit was written under: every Ayet chargeback would fail with
-            // "no conversion for network_txid" and the publisher would keep
-            // money we did not. Stripped only on a reversal and only once, so a
-            // credit whose own id happens to begin `r-` stores as `r-X`, its
-            // chargeback arrives as `r-r-X`, and the two still meet.
-            //
-            // The other consequence of keying on this id is worth being plain
-            // about: Ayet fires the Conversion Callback and any Optional
-            // Callbacks for one user event simultaneously, all sharing a single
-            // transaction id, and their docs say to use that id for duplicate
-            // checks. So the siblings collapse into one credit at the
-            // `(network_id, network_txid)` unique index. That is the direction
-            // to err in — under-crediting arrives as a support ticket,
-            // over-crediting arrives as a refund.
-            //
-            // ponytail: the ceiling is an optional or iap callback that is
-            // meant to pay on top of its conversion. Appending `callback_type`
-            // to the key would separate those — and break the chargeback above,
-            // whose type is `chargeback` where its credit's was `conversion`.
-            // Pay for it with an explicit exemption for reversals, not by
-            // widening the key and hoping.
+            // ayeT prefixes `r-` on a chargeback's transaction id and nowhere
+            // else, and reversal finds its credit by exact `network_txid`.
+            // Stripped once and only on a reversal, so a credit whose own id
+            // starts `r-` still meets its `r-r-` chargeback. Sibling callbacks
+            // for one event share a transaction id and collapse into one credit
+            // at the unique index, which is the direction to err in.
             networkTxId: $reversed && str_starts_with($transactionId, 'r-')
                 ? substr($transactionId, 2)
                 : $transactionId,
-            // `custom_1` is where `buildTrackingUrl()` puts the click id.
-            // `external_identifier` is the fallback because it is where the id
-            // used to go: a click made before this deploy carries a link with
-            // only that parameter on it, and Ayet's conversion windows run to
-            // weeks — the Coin Master offer in our own fixture gives the user
-            // fourteen days. Without the fallback every one of those in-flight
-            // clicks converts unattributed, at 200, with nothing anywhere
-            // saying why.
-            clickId: $this->nullableString($request->input(self::CLICK_PARAM))
-                ?? $this->nullableString($request->input('external_identifier')),
-            // The sign lives in the status, and the amount is always positive —
-            // the same shape every other driver here hands the processor, so
-            // `reverse()` gets a chargeback that looks like its own credit.
+            // `custom_1` only. `external_identifier` now carries our hashed
+            // user identifier (see `userIdentifier()`), never a click id, so
+            // reading it as one would attach conversions to nothing, or worse.
+            clickId: $this->nullableString($request->input(self::CLICK_PARAM)),
             payout: $reversed ? -abs($amount) : abs($amount),
             status: $reversed ? 'reversed' : 'credited',
             offerExternalId: $this->nullableString($request->input('offer_id')),
             offerName: $this->nullableString($request->input('offer_name')),
-            // No `endUserId`. Everything Ayet sends that resembles one is not
-            // one: `external_identifier` is our own value echoed back, and
-            // `user_id` is Ayet's internal account id for the player. The
-            // processor falls back to the click's `end_user_id`, which is the
-            // publisher's identity for that user and the key the ban list and
-            // the fraud rules are written against. Filling this field would
-            // overwrite it with an id that matches nothing we hold.
+            // No `endUserId`: nothing ayeT sends is the publisher's user id.
+            // The processor takes it from the click, which is what the ban
+            // list and fraud rules are keyed on.
             ip: $this->nullableString($request->input('ip')),
             raw: $request->all(),
         );
     }
 
+    /**
+     * ayeT's own sample: `ksort($_GET, SORT_STRING)`, then HMAC-SHA256 of
+     * `http_build_query($params, '', '&')` with the publisher API key.
+     *
+     * Built from the raw query string, not `$request->all()`. TrimStrings and
+     * ConvertEmptyStringsToNull run on the postback route: a trimmed value no
+     * longer hashes the same, and `http_build_query` drops a null outright, so
+     * any callback with an empty macro (`custom_1=` is common) would fail.
+     * `parse_str` still decodes `+` and `%20` the way `$_GET` does, which is
+     * why the pairs are rebuilt rather than hashing the raw bytes.
+     *
+     * Open when no key is configured: the key is optional and account-level,
+     * and the source-IP allowlist, which rejects when empty, is the floor.
+     */
     public function verifyPostback(Request $request): bool
     {
         $apiKey = $this->credential('publisher_api_key');
 
-        // Open when the credential is absent, the same way AdGate's is. The
-        // HMAC needs the account-level publisher API key from dashboard
-        // Settings, which is a different credential from the adslot Static API
-        // key the catalogue runs on — a live integration can be syncing offers
-        // and earning for months before anybody goes and finds it. Failing
-        // closed on a field the schema itself calls optional would take a
-        // working network off the air the moment this file shipped. The
-        // source-IP allowlist is the floor underneath, and it rejects when
-        // empty rather than admitting everyone.
         if (blank($apiKey)) {
             return true;
         }
 
-        // Ayet's whole specification is "(1) Get all request parameters (2)
-        // Order the request parameters alphabetically (3) Build and compare the
-        // HMAC hash using the ordered request parameter string and your API
-        // key", so "ordered request parameter string" is an interpretation and
-        // this one is ours: the parameters sorted by key as strings and
-        // rendered as a urlencoded `k=v&k=v` query string, which is what
-        // `http_build_query` over a `ksort`ed array produces and what Ayet's
-        // own PHP would produce from that same sentence. Two readings rejected:
-        // concatenating the values alone with no keys and no separators, and
-        // joining the pairs raw rather than percent-encoded. We cannot settle
-        // which is right without a live fire.
-        //
-        // A wrong recipe rejects every postback, and a network that 403s
-        // everything looks exactly like a network that is down. The escape
-        // hatch is the credential itself — clear `publisher_api_key` and the
-        // network is back to running on the allowlist alone while the recipe
-        // gets fixed. The hash header is not a request parameter, so it is not
-        // part of the string it signs.
-        $params = $request->all();
+        parse_str((string) $request->server('QUERY_STRING'), $params);
         ksort($params, SORT_STRING);
 
         return hash_equals(
-            hash_hmac('sha256', http_build_query($params), $apiKey),
+            hash_hmac('sha256', http_build_query($params, '', '&'), $apiKey),
             $this->nullableString($request->header(self::HASH_HEADER)) ?? '',
         );
     }
 
+    /**
+     * Previews only. The stored link belongs to a probe identity, which is
+     * harmless for an admin or publisher looking at where an offer goes and
+     * wrong for anyone who could convert on it. Real clicks go through
+     * `resolveTrackingUrl()`.
+     */
     public function buildTrackingUrl(Offer $offer, string $clickId): string
     {
-        // Through the same helper the catalogue went through, not a bare
-        // str_replace. A stored link with no macro in it — hand-edited, or
-        // synced before this driver normalized links — would otherwise be handed
-        // to the user untouched, and every conversion off it comes back with no
-        // click id at all. Nobody is paid and nothing logs an error.
-        return str_replace('{click_id}', $clickId, $this->withClickIdMacro($offer->tracking_url));
+        return $this->withClickId((string) $offer->tracking_url, $clickId);
+    }
+
+    /**
+     * The link ayeT minted for this click's user, with our click id on it.
+     *
+     * Asks as the user: their hashed identifier, the IP and user agent the
+     * click was recorded with (masked when the app anonymises IPs, which still
+     * places the country). The user's whole {offer => link} map is cached for
+     * LINK_CACHE_MINUTES per identifier, country and device, so browsing the
+     * wall and tapping several offers costs one call. Null when the offer is
+     * not in the user's answer, on any error, and while a 429 cooldown runs.
+     */
+    public function resolveTrackingUrl(Offer $offer, OfferClick $click): ?string
+    {
+        $identifier = $this->userIdentifier((int) $click->app_id, (string) $click->end_user_id);
+        $device = $click->device_type instanceof DeviceType ? $click->device_type->value : (string) $click->device_type;
+        $key = sprintf('ayet:links:%d:%s:%s:%s', (int) $this->network->id, $identifier, (string) $click->country, $device);
+
+        $links = Cache::get($key);
+
+        if (! is_array($links)) {
+            $links = $this->fetchUserLinks($identifier, $click, $device);
+
+            if ($links === null) {
+                return null;
+            }
+
+            Cache::put($key, $links, now()->addMinutes(self::LINK_CACHE_MINUTES));
+        }
+
+        $link = $links[(string) $offer->external_id] ?? null;
+
+        return is_string($link) && $link !== '' ? $this->withClickId($link, (string) $click->click_id) : null;
+    }
+
+    /**
+     * @return array<string, string>|null offer id => tracking link; null on any failure
+     */
+    private function fetchUserLinks(string $identifier, OfferClick $click, string $device): ?array
+    {
+        if ($this->coolingDown() || blank($this->credential('adslot_id'))) {
+            return null;
+        }
+
+        $query = [
+            'external_identifier' => $identifier,
+            'ip' => (string) $click->ip,
+            // The API reads the device from this; a click with no user agent
+            // is asked about as the device it was recorded as.
+            'user_agent' => $this->nullableString($click->user_agent) ?? self::PLATFORM_AGENTS[$device] ?? self::PLATFORM_AGENTS['desktop'],
+            'num_offers' => self::NUM_OFFERS,
+        ];
+
+        if ($device === DeviceType::Desktop->value) {
+            $query['include_mobile_offers'] = 'true';
+        }
+
+        try {
+            $response = $this->request(self::CLICK_TIMEOUT_SECONDS)->get($this->endpoint(), $query);
+        } catch (Throwable $e) {
+            Log::warning('ayeT per-user link lookup failed', ['network' => $this->network->id, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+
+        if ($this->throttled($response)) {
+            $this->startCooldown();
+
+            return null;
+        }
+
+        if (! $this->succeeded($response)) {
+            Log::warning('ayeT per-user link lookup refused', [
+                'network' => $this->network->id,
+                'status' => $response->status(),
+                'error' => $this->statusText($response),
+            ]);
+
+            return null;
+        }
+
+        $links = [];
+
+        foreach ($this->rows($response) as $row) {
+            $link = $this->nullableString($row['tracking_link'] ?? null);
+
+            if ($link !== null) {
+                $links[(string) $row['id']] = $link;
+            }
+        }
+
+        return $links;
+    }
+
+    /**
+     * A run that stops on a 429 or on its budget keeps what it has. A run in
+     * which ayeT answered and every answer was a failure throws instead: the
+     * stored cells would otherwise be republished as a healthy sync for three
+     * days while nobody is told, then vanish at once. Nothing has been yielded
+     * at that point, so the job deactivates nothing.
+     */
+    private function probeMatrix(ProbeSnapshots $store): void
+    {
+        $deadline = microtime(true) + self::RUN_BUDGET_SECONDS;
+        $calls = 0;
+        $failures = 0;
+        $successes = 0;
+        $lastError = null;
+
+        foreach ($this->plannedCells($store) as [$country, $platform]) {
+            if ($calls >= self::MAX_CALLS_PER_RUN || microtime(true) >= $deadline || $this->coolingDown()) {
+                break;
+            }
+
+            if ($calls > 0) {
+                Sleep::for(random_int(self::PACE_MIN_MS, self::PACE_MAX_MS))->milliseconds();
+            }
+
+            $calls++;
+
+            $response = $this->probe($country, $platform);
+
+            if ($response !== null && $this->throttled($response)) {
+                $this->startCooldown();
+
+                Log::warning('ayeT probe run stopped early: throttled', [
+                    'network' => $this->network->id,
+                    'calls' => $calls,
+                    'at' => "{$country}/{$platform}",
+                ]);
+
+                return;
+            }
+
+            if ($response !== null && $this->succeeded($response)) {
+                $failures = 0;
+                $successes++;
+                $store->record($country, $platform, $this->payloads($response), now());
+
+                continue;
+            }
+
+            // An unknown adslot or a refused credential is the same answer in
+            // every cell. Throwing on the first one puts the reason in
+            // `last_sync_error` instead of spending the run collecting it.
+            if ($response !== null && $this->configurationError($response)) {
+                throw new RuntimeException('ayeT Studios rejected the offers request: '.$this->statusText($response));
+            }
+
+            $lastError = $response === null
+                ? 'connection failed'
+                : "HTTP {$response->status()}: {$this->statusText($response)}";
+
+            Log::warning('ayeT probe failed', [
+                'network' => $this->network->id,
+                'at' => "{$country}/{$platform}",
+                'error' => $lastError,
+            ]);
+
+            if (++$failures >= self::MAX_CONSECUTIVE_FAILURES) {
+                break;
+            }
+        }
+
+        if ($successes === 0 && $lastError !== null) {
+            throw new RuntimeException("ayeT Studios: every probe this run failed ({$lastError}).");
+        }
+    }
+
+    private function probe(string $country, string $platform): ?Response
+    {
+        $query = [
+            'external_identifier' => $this->identifier("probe:{$country}:{$platform}"),
+            'ip' => (string) CountryProbeIps::for($country),
+            'user_agent' => self::PLATFORM_AGENTS[$platform],
+            'num_offers' => self::NUM_OFFERS,
+        ];
+
+        // Desktop answers with no offers at all unless mobile ones are asked for.
+        if ($platform === 'desktop') {
+            $query['include_mobile_offers'] = 'true';
+        }
+
+        try {
+            return $this->request(30)->get($this->endpoint(), $query);
+        } catch (ConnectionException) {
+            return null;
+        }
+    }
+
+    /**
+     * Hot cells first, then rolling ones.
+     *
+     * @return list<array{0: string, 1: string}>
+     */
+    private function plannedCells(ProbeSnapshots $store): array
+    {
+        $known = CountryProbeIps::countries();
+        $hot = array_slice(array_values(array_unique(array_filter(
+            [...$this->parseCountries($this->credential('probe_countries')), ...$this->trafficCountries()],
+            fn (string $country): bool => in_array($country, $known, true),
+        ))), 0, self::HOT_COUNTRIES);
+
+        $oldest = $store->oldestProbePerCountry();
+        $rolling = array_values(array_diff($known, $hot));
+
+        // Never-probed first, then stalest; alphabetical within a tie so a
+        // run is reproducible.
+        usort($rolling, fn (string $a, string $b): int => [isset($oldest[$a]) ? $oldest[$a]->getTimestamp() : 0, $a]
+            <=> [isset($oldest[$b]) ? $oldest[$b]->getTimestamp() : 0, $b]);
+
+        $cells = [];
+
+        foreach ([...$hot, ...array_slice($rolling, 0, $this->rollingSliceSize(count($known)))] as $country) {
+            foreach (array_keys(self::PLATFORM_AGENTS) as $platform) {
+                $cells[] = [$country, $platform];
+            }
+        }
+
+        return $cells;
+    }
+
+    /**
+     * Countries with wall opens in the last 30 days, busiest first. The wall
+     * identity ledger, not clicks: a user who opens the wall and finds
+     * nothing never clicks, and that is exactly the country to probe.
+     *
+     * @return list<string>
+     */
+    private function trafficCountries(): array
+    {
+        return DB::table('identity_sessions')
+            ->where('kind', IdentityKind::Wall->value)
+            ->whereNotNull('country')
+            ->where('created_at', '>=', now()->subDays(30))
+            ->groupBy('country')
+            ->orderByRaw('COUNT(*) DESC')
+            ->orderBy('country')
+            ->limit(self::HOT_COUNTRIES)
+            ->pluck('country')
+            ->map(fn (mixed $country): string => strtoupper((string) $country))
+            ->all();
+    }
+
+    private function rollingSliceSize(int $total): int
+    {
+        $runsPerDay = max(1, intdiv(24 * 60, max(1, (int) $this->network->sync_interval_minutes)));
+
+        return max(self::ROLLING_MIN, min(self::ROLLING_MAX, (int) ceil($total / $runsPerDay)));
+    }
+
+    /**
+     * What a cell stores per offer: everything the DTO needs except the
+     * countries, which come from the cells, and with amounts still in coins so
+     * a corrected rate applies to stored cells on the next run.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function payloads(Response $response): array
+    {
+        $payloads = [];
+
+        foreach ($this->rows($response) as $row) {
+            $tasks = array_values(array_filter(is_array($row['cpe_instructions'] ?? null) ? $row['cpe_instructions'] : [], 'is_array'));
+            $devices = $this->parseDevices($this->platforms($row));
+
+            $payloads[(string) $row['id']] = [
+                'name' => (string) ($this->nullableString($row['name'] ?? null) ?? 'Untitled offer'),
+                'tracking_url' => (string) ($this->nullableString($row['tracking_link'] ?? null) ?? ''),
+                // Completing every task is what a task offer is worth to us,
+                // the same convention every multi-step driver here uses.
+                'payout_coins' => $tasks === [] ? (float) ($row['payout_base'] ?? 0) : $this->sumPayouts($tasks, 'payout_base'),
+                'description' => $this->nullableString($row['description'] ?? null)
+                    ?? $this->nullableString($row['introduction'] ?? null),
+                'instructions' => $this->instructions($row),
+                'icon_url' => $this->nullableString($row['icon'] ?? null)
+                    ?? $this->nullableString($row['icon_large'] ?? null),
+                'devices' => $devices,
+                'os_min_version' => $this->osFloor($row, $devices),
+                'categories' => $this->categoryNames($this->categories($row)),
+                'conversion_type' => $this->conversionType($row['conversion_type'] ?? null),
+                'is_multi_reward' => count($tasks) > 1,
+                'goals' => collect($tasks)
+                    ->map(fn (array $task): array => [
+                        'name' => (string) ($this->nullableString($task['name'] ?? null) ?? ''),
+                        'coins' => (float) ($task['payout_base'] ?? 0),
+                    ])
+                    ->filter(fn (array $goal): bool => $goal['name'] !== '')
+                    ->values()
+                    ->all(),
+            ];
+        }
+
+        return $payloads;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  list<string>  $countries
+     */
+    private function toDto(string $externalId, array $payload, array $countries, float $rate): OfferDTO
+    {
+        $goals = is_array($payload['goals'] ?? null) ? $payload['goals'] : [];
+
+        return new OfferDTO(
+            externalId: $externalId,
+            name: (string) ($payload['name'] ?? 'Untitled offer'),
+            trackingUrl: (string) ($payload['tracking_url'] ?? ''),
+            payout: round((float) ($payload['payout_coins'] ?? 0) / $rate, 6),
+            description: $this->nullableString($payload['description'] ?? null),
+            instructions: $this->nullableString($payload['instructions'] ?? null),
+            iconUrl: $this->nullableString($payload['icon_url'] ?? null),
+            countries: $countries,
+            devices: array_values(array_filter(is_array($payload['devices'] ?? null) ? $payload['devices'] : [], 'is_string')),
+            osMinVersion: $this->nullableString($payload['os_min_version'] ?? null),
+            categories: array_values(array_filter(is_array($payload['categories'] ?? null) ? $payload['categories'] : [], 'is_string')),
+            conversionType: (string) ($payload['conversion_type'] ?? 'cpa'),
+            isMultiReward: (bool) ($payload['is_multi_reward'] ?? false),
+            goals: collect($goals)
+                ->filter(fn (mixed $goal): bool => is_array($goal))
+                ->map(fn (array $goal): array => [
+                    'name' => (string) ($goal['name'] ?? ''),
+                    'payout' => round((float) ($goal['coins'] ?? 0) / $rate, 6),
+                ])
+                ->values()
+                ->all(),
+        );
+    }
+
+    /**
+     * `os_min_version` is one number compared against whatever OS the user
+     * runs, so it can only be set for an offer that runs on one OS.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  list<string>  $devices
+     */
+    private function osFloor(array $row, array $devices): ?string
+    {
+        return match ($devices) {
+            ['android'] => $this->nullableString($row['min_android_version'] ?? null),
+            ['ios'] => $this->nullableString($row['min_ios_version'] ?? null),
+            default => null,
+        };
+    }
+
+    /**
+     * A callback carrying both amounts implies a rate. A different rate from
+     * the configured one means offers are being priced wrong on the wall, so
+     * it is logged for the admin; the conversion itself is not refused over it.
+     */
+    private function checkRate(Request $request, float $payoutUsd, string $transactionId): void
+    {
+        $currency = $request->input('currency_amount');
+        $rate = $this->credential('coins_per_usd');
+
+        if (! is_numeric($currency) || (float) $currency == 0.0 || $payoutUsd == 0.0 || ! is_numeric($rate) || (float) $rate <= 0) {
+            return;
+        }
+
+        $implied = abs((float) $currency) / abs($payoutUsd);
+
+        if (abs($implied - (float) $rate) / (float) $rate > self::RATE_TOLERANCE) {
+            Log::warning('ayeT callback implies a different currency rate than coins_per_usd', [
+                'network' => $this->network->id,
+                'transaction_id' => $transactionId,
+                'implied_rate' => round($implied, 4),
+                'coins_per_usd' => (float) $rate,
+            ]);
+        }
+    }
+
+    private function coinsPerUsd(): float
+    {
+        $rate = $this->credential('coins_per_usd');
+
+        if (! is_numeric($rate) || (float) $rate <= 0) {
+            throw new RuntimeException('ayeT Studios: coins_per_usd is not configured. Set the adslot currency rate (1000 means $1 = 1000 coins).');
+        }
+
+        return (float) $rate;
+    }
+
+    /**
+     * Stable, and not reversible without the app key: ayeT sees the same
+     * person on every visit and never the publisher's own user id.
+     */
+    private function userIdentifier(int $appId, string $endUserId): string
+    {
+        return $this->identifier("user:{$appId}:{$endUserId}");
+    }
+
+    /** Probes use the same shape as real users, so a probe reads as one. */
+    private function identifier(string $seed): string
+    {
+        return substr(hash_hmac('sha256', $seed, (string) config('app.key')), 0, 32);
+    }
+
+    /**
+     * No retry. `http()` retries three times, which is exactly the wrong
+     * answer to a 429 and a needless one to a probe whose cell simply keeps
+     * its last answer.
+     */
+    private function request(int $timeout): PendingRequest
+    {
+        return Http::timeout($timeout)
+            ->connectTimeout(min($timeout, 5))
+            ->withoutRedirecting()
+            ->acceptJson();
     }
 
     private function endpoint(): string
     {
-        return 'https://www.ayetstudios.com/offers/get/'.(string) $this->credential('adslot_id');
+        return self::ENDPOINT.rawurlencode((string) $this->credential('adslot_id'));
     }
 
     /**
-     * @return array<string, string>
+     * @return list<array<string, mixed>>
      */
-    private function authParams(): array
+    private function rows(Response $response): array
     {
-        return ['apiKey' => (string) $this->credential('api_key')];
+        $rows = $response->json('offers');
+
+        return array_values(array_filter(
+            is_array($rows) ? $rows : [],
+            fn (mixed $row): bool => is_array($row) && isset($row['id']) && is_scalar($row['id']),
+        ));
     }
 
     private function succeeded(Response $response): bool
     {
-        return $response->json('status') === 'success';
+        return $response->successful() && $response->json('status') === 'success';
+    }
+
+    private function throttled(Response $response): bool
+    {
+        return $response->status() === 429
+            || str_contains(strtolower((string) $this->nullableString($response->json('error'))), 'throttled');
+    }
+
+    private function configurationError(Response $response): bool
+    {
+        return in_array($response->status(), [401, 403], true)
+            || (int) $response->json('errorCode') === 101;
+    }
+
+    private function coolingDown(): bool
+    {
+        return Cache::has($this->cooldownKey());
+    }
+
+    private function startCooldown(): void
+    {
+        Cache::put($this->cooldownKey(), true, now()->addSeconds(self::THROTTLE_COOLDOWN_SECONDS));
+    }
+
+    private function cooldownKey(): string
+    {
+        return 'ayet:throttled:'.(int) $this->network->id;
     }
 
     /**
-     * Whatever Ayet put in the envelope instead of `success`, for the operator.
-     *
-     * `status` is read last, not first. It is always the literal string
-     * "error", which tells the admin staring at the Test connection button
-     * precisely nothing — the sentence they need is in `errorMessage`, and the
-     * code beside it is what their account manager will ask for. Reporting the
-     * useless field because it is the one we branch on is how a driver turns a
-     * five-minute configuration fix into a support ticket.
+     * The sentence ayeT put in the envelope, for the operator. `status` is
+     * always the word "error" and is the last resort. 200-shaped failures
+     * carry `errorMessage` and `errorCode`; 4xx ones carry `error`.
      */
     private function statusText(Response $response): string
     {
         $message = $this->nullableString($response->json('errorMessage'))
+            ?? $this->nullableString($response->json('error'))
             ?? $this->nullableString($response->json('message'));
 
         $code = $response->json('errorCode');
@@ -422,43 +846,17 @@ class AyetStudiosDriver extends AbstractDriver
     }
 
     /**
-     * Idempotent: a link already carrying `custom_1={click_id}` is left alone.
-     *
-     * Two slots get filled here, for two unrelated reasons. `custom_1` is ours
-     * and is the one `parsePostback()` reads back, so it is the one that must
-     * always be present — a link with no slot gets one rather than being
-     * returned untouched.
-     *
-     * Ayet's own user placeholder gets the click id as well, because every
-     * alternative is worse. Left as the literal `USER_ID_HERE`, every click in
-     * the system is the same user to Ayet, and a network that caps an offer per
-     * user pays us once and never again. A per-click UUID at least keeps the
-     * clicks distinct. It is emphatically not the stable identifier Ayet asks
-     * for in that field — this method is handed a click id and nothing else —
-     * which is exactly why attribution does not depend on it.
-     *
-     * A stray `custom_1` already on a link is appended after rather than
-     * rewritten in place. On any server that reads the last of a repeated key,
-     * PHP's included, ours is the one that wins.
+     * A `custom_1` already on the link is left and ours appended after it; on
+     * any server that reads the last of a repeated key, PHP's included, ours
+     * wins.
      */
-    private function withClickIdMacro(string $link): string
+    private function withClickId(string $link, string $clickId): string
     {
-        $link = str_replace(
-            array_keys(self::USER_PLACEHOLDERS),
-            array_values(self::USER_PLACEHOLDERS),
-            $link,
-        );
-
-        if (str_contains($link, self::CLICK_PARAM.'={click_id}')) {
-            return $link;
-        }
-
-        return $link.(str_contains($link, '?') ? '&' : '?').self::CLICK_PARAM.'={click_id}';
+        return $link.(str_contains($link, '?') ? '&' : '?').self::CLICK_PARAM.'='.rawurlencode($clickId);
     }
 
     /**
-     * Two short fields, either of which may be absent: what the user has to do,
-     * then the pitch that sets it up.
+     * What the user has to do, then the pitch that sets it up.
      *
      * @param  array<string, mixed>  $row
      */
@@ -473,9 +871,6 @@ class AyetStudiosDriver extends AbstractDriver
     }
 
     /**
-     * `platforms` is the list form; single-platform offers carry `platform`
-     * instead. `parseDevices` throws away whatever does not map.
-     *
      * @param  array<string, mixed>  $row
      * @return list<string>
      */
@@ -493,9 +888,8 @@ class AyetStudiosDriver extends AbstractDriver
     }
 
     /**
-     * The tags are the categories a user would recognise on the wall. Offers
-     * that carry none fall back to how the offer converts and what shelf Ayet
-     * files it under, which is thin but better than an uncategorised offer.
+     * The tags are the categories a user recognises. Offers without any fall
+     * back to how the offer converts and the shelf ayeT files it under.
      *
      * @param  array<string, mixed>  $row
      * @return list<mixed>
