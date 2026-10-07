@@ -41,6 +41,13 @@ server {
     # where that becomes true.
     include /etc/nginx/snippets/playndgain-gzip.conf;
 
+    # The wall lives on its own host. An embed pointed at this one would get
+    # SAMEORIGIN and render "refused to connect"; send it to the wall host
+    # instead. 308 keeps the consent POST a POST.
+    location ~ ^/wall(/|$) {
+        return 308 https://${WALL_DOMAIN}$request_uri;
+    }
+
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }

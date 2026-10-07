@@ -3,12 +3,15 @@
 use App\Enums\PaymentMethodType;
 use App\Enums\WithdrawalStatus;
 use App\Filament\Publisher\Auth\Login as PublisherLogin;
+use App\Filament\Publisher\Resources\Apps\AppResource;
 use App\Models\App;
 use App\Models\Network;
 use App\Models\OfferClick;
 use App\Models\PaymentMethod;
 use App\Models\Publisher;
 use App\Models\Withdrawal;
+use App\Support\Docs\DocSource;
+use App\Support\Identity;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
@@ -257,6 +260,22 @@ it('keeps the container nginx blocks in step with the deployed ones', function (
     // the same address.
     expect($container('docker/nginx/nginx.conf'))->toContain('real_ip_header    X-Forwarded-For;')
         ->and($container('docker/nginx/nginx.conf'))->toContain('real_ip_recursive on;');
+});
+
+it('points every embed at the wall host, never the frame-protected site host', function () {
+    config(['app.url' => 'https://playndgain.com', 'playndgain.wall_url' => 'https://wall.playndgain.com']);
+
+    expect(Identity::wallUrl())->toBe('https://wall.playndgain.com')
+        ->and(AppResource::snippet(null))
+        ->toContain('src="https://wall.playndgain.com/wall?appid=YOUR_APP_ID')
+        ->and(DocSource::substitute('{APP_URL}/wall?appid=1 {APP_URL}/docs'))
+        ->toBe('https://wall.playndgain.com/wall?appid=1 https://playndgain.com/docs');
+
+    // A stale embed on the site host is sent to the wall host instead of
+    // rendering "refused to connect".
+    expect(deployFile('nginx/playndgain.com.conf'))->toContain('return 308 https://wall.playndgain.com$request_uri;')
+        ->and((string) file_get_contents(base_path('docker/nginx/templates/10-site.conf.template')))
+        ->toContain('return 308 https://${WALL_DOMAIN}$request_uri;');
 });
 
 it('lets the nginx worker write spilled request bodies', function () {

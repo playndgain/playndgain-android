@@ -70,8 +70,8 @@ class DocsController extends Controller
             // serves every reader — the page a logged-in publisher gets differs
             // from an anonymous one by a string replacement, not a second parse.
             'html' => str_replace(
-                ['YOUR_APP_ID', '{APP_URL}'],
-                [$credentials['app_id'] ?? 'YOUR_APP_ID', Identity::url()],
+                ['YOUR_APP_ID', '{APP_URL}/wall', '{APP_URL}'],
+                [$credentials['app_id'] ?? 'YOUR_APP_ID', Identity::wallUrl().'/wall', Identity::url()],
                 $page['html'],
             ),
             'nav' => $this->nav(),

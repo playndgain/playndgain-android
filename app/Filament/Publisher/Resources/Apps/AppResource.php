@@ -17,6 +17,7 @@ use App\Models\App;
 use App\Services\Money\MacroResolver;
 use App\Services\Wall\WallContext;
 use App\Support\Contrast;
+use App\Support\Identity;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
@@ -376,7 +377,7 @@ class AppResource extends PublisherScopedResource
             return '<span class="text-xs text-gray-500">Your live wall opens from here once the app is approved and active.</span>';
         }
 
-        $url = route('wall', array_filter([
+        $url = Identity::wallUrl().'/wall?'.http_build_query(array_filter([
             'appid' => $record->app_id,
             'userid' => 'PREVIEW',
             'sig' => $record->require_signed_wall
@@ -396,8 +397,8 @@ class AppResource extends PublisherScopedResource
         $appId = $record === null ? 'YOUR_APP_ID' : (string) $record->app_id;
 
         return sprintf(
-            '<iframe src="%s/?appid=%s&userid=USER_ID"'."\n".'        width="100%%" height="800" frameborder="0"></iframe>',
-            rtrim((string) config('app.url'), '/').'/wall',
+            '<iframe src="%s?appid=%s&userid=USER_ID"'."\n".'        width="100%%" height="800" frameborder="0"></iframe>',
+            Identity::wallUrl().'/wall',
             $appId,
         );
     }

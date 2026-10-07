@@ -30,6 +30,17 @@ final class Identity
     }
 
     /**
+     * Base URL for anything a publisher embeds. The site host is
+     * frame-protected; the wall host is the only one an iframe can load.
+     */
+    public static function wallUrl(): string
+    {
+        $wall = (string) config('playndgain.wall_url');
+
+        return $wall !== '' ? rtrim($wall, '/') : self::url();
+    }
+
+    /**
      * @return array{name: string, address: string, city: string, country: string, vat: string, website: string, email: string, directors: string, vat_rate: string}
      */
     public static function invoice(): array

@@ -27,6 +27,7 @@ use App\Services\Publisher\PublisherNotifier;
 use App\Services\Wall\WallContext;
 use App\Services\Wall\WallGate;
 use App\Support\Contrast;
+use App\Support\Identity;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
@@ -289,7 +290,7 @@ class AppResource extends Resource
         $appId = (string) $record->app_id;
         $userId = 'ADMIN_PREVIEW';
 
-        return rtrim((string) config('app.url'), '/').'/wall?'.http_build_query([
+        return Identity::wallUrl().'/wall?'.http_build_query([
             'appid' => $appId,
             'userid' => $userId,
             // The gate owns the formula; asking it is what keeps this preview

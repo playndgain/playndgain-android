@@ -118,7 +118,7 @@ final class DocSource
 
     public static function substitute(string $text): string
     {
-        return str_replace('{APP_URL}', Identity::url(), $text);
+        return str_replace(['{APP_URL}/wall', '{APP_URL}'], [Identity::wallUrl().'/wall', Identity::url()], $text);
     }
 
     public static function brand(): string
