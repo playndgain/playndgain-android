@@ -339,3 +339,23 @@ it('drops exactly the template strings it computes per request', function (strin
 
     expect($dropped)->toBe(['earn', 'offer.steps_note', 'people', 'steps']);
 })->with(['en', 'ar']);
+
+it('builds per-offer labels and history statuses in the request language', function () {
+    [$app, $network] = wallFixture();
+    $offer = wallOffer($network, ['countries' => [], 'devices' => [], 'goals' => [['name' => 'A', 'payout' => 0.5], ['name' => 'B', 'payout' => 0.5]]]);
+    wallClick($app, $offer)->assertRedirect();
+
+    app()->setLocale('ar');
+    $steps = (string) trans_choice('wall.steps', 2, ['count' => 2]);
+    $started = (string) __('wall.history.status.started');
+    app()->setLocale('en');
+
+    expect($steps)->not->toBe((string) trans_choice('wall.steps', 2, ['count' => 2]));
+
+    sdkGet('wall', $app, extra: ['lang' => 'ar'])->assertOk()
+        ->assertJsonPath('data.offers.0.steps_label', $steps);
+    sdkGet("offers/{$offer->id}", $app, extra: ['lang' => 'ar'])->assertOk()
+        ->assertJsonPath('data.steps_label', $steps);
+    sdkGet('history', $app, extra: ['lang' => 'ar'])->assertOk()
+        ->assertJsonPath('data.rows.0.status_label', $started);
+});

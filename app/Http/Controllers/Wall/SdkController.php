@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Wall;
 
 use App\Enums\DeviceType;
 use App\Http\Controllers\Controller;
+use App\Models\App;
 use App\Models\Offer;
 use App\Services\Wall\ConsentRecorder;
 use App\Services\Wall\HistoryFeed;
@@ -74,7 +75,7 @@ class SdkController extends Controller
             return $this->respond('unavailable', null, Response::HTTP_SERVICE_UNAVAILABLE);
         }
 
-        $context = $this->gate->context($request, $app);
+        $context = $this->context($request, $app);
 
         // OfferDetailController's own checks, its own codes: a detail URL is a
         // deep link, never a first visit, so no consent screen here.
@@ -149,7 +150,7 @@ class SdkController extends Controller
             return $this->respond('unavailable', null, Response::HTTP_SERVICE_UNAVAILABLE);
         }
 
-        $context = $this->gate->context($request, $app);
+        $context = $this->context($request, $app);
         $action = $request->input('action');
 
         abort_unless(in_array($action, ['accept', 'decline'], true), Response::HTTP_BAD_REQUEST);
@@ -183,7 +184,7 @@ class SdkController extends Controller
                 return [null, $this->respond('unavailable', null, Response::HTTP_SERVICE_UNAVAILABLE)];
             }
 
-            $context = $this->gate->context($request, $app);
+            $context = $this->context($request, $app);
         }
 
         $admission = $this->gate->admit(
@@ -202,6 +203,19 @@ class SdkController extends Controller
             'banned' => [$context, $this->respond('banned', $context)],
             default => [$context, $this->respond('blocked', $context, Response::HTTP_FORBIDDEN, notice: $admission->refusal)],
         };
+    }
+
+    /**
+     * The context, with the app locale switched to it at once: per-offer
+     * labels (`steps_label`, `steps_note`) and history statuses are built
+     * before `respond()` runs, and would otherwise be in the default locale.
+     */
+    private function context(Request $request, App $app): WallContext
+    {
+        $context = $this->gate->context($request, $app);
+        app()->setLocale($context->locale);
+
+        return $context;
     }
 
     /**
