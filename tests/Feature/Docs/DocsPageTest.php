@@ -10,7 +10,7 @@ it('serves the index and every page in the navigation', function () {
 
     $slugs = array_column(array_merge(...array_column(config('docs.nav'), 'pages')), 'slug');
 
-    expect($slugs)->toHaveCount(23);
+    expect($slugs)->toHaveCount(24);
 
     foreach ($slugs as $slug) {
         $this->get("/docs/{$slug}")->assertOk();
@@ -132,9 +132,13 @@ it('documents every macro the resolver actually resolves', function () {
 
     expect($matches[1])->toHaveCount(12);
 
+    // The publisher sub-ids are built in a loop (`MacroResolver::subs()`), so
+    // the source scan above cannot see them. Listed here instead.
+    $macros = [...$matches[1], '{sub1}', '{sub2}', '{sub3}', '{sub4}', '{sub5}'];
+
     $html = (string) $this->get('/docs/macro-reference')->getContent();
 
-    foreach ($matches[1] as $macro) {
+    foreach ($macros as $macro) {
         expect($html)->toContain('<code>'.$macro.'</code>');
     }
 });

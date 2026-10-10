@@ -23,6 +23,11 @@ This table is the public contract. Renaming or dropping a macro would break ever
 | `{status}` | string | `credited` \| `reversed` | Only these two values ever reach you |
 | `{timestamp}` | int | `1754179200` | Unix seconds. Regenerated on every attempt, so never dedupe on it |
 | `{signature}` | string | `a3f9…` | See below |
+| `{sub1}` | string | `spring_promo` | The `sub1` you passed on the wall URL or in the SDK options. Empty when not sent, and always empty for partner wall conversions |
+| `{sub2}` | string | | Same, for `sub2` |
+| `{sub3}` | string | | Same, for `sub3` |
+| `{sub4}` | string | | Same, for `sub4` |
+| `{sub5}` | string | | Same, for `sub5` |
 
 ## The signature
 

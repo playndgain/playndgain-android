@@ -141,8 +141,8 @@ final class LandingContent
     {
         return [
             [
-                'title' => 'Embed one iframe',
-                'body' => 'Point a WebView or an iframe at the wall URL with your app id and the player\'s id. No SDK, no build step, no app-store review.',
+                'title' => 'Embed the wall',
+                'body' => 'Add the Android or iOS SDK to your app, or point a WebView or an iframe at the wall URL with your app id and the player\'s id. No build step on our side.',
             ],
             [
                 'title' => 'Players complete offers',

@@ -395,3 +395,15 @@ This is the single feature that turns integration support from a conversation in
 - The topbar shows `?balance=` grouped when it is an integer string and verbatim otherwise; no parameter, no pill.
 - The menu's appearance toggle offers the opposite scheme and keeps `appid`, `userid` and `balance` on the URL.
 - Both navigations mark the current page.
+
+## 9. The SDK API
+
+`/sdk/v1/wall`, `/sdk/v1/offers/{offer}`, `/sdk/v1/history` (GET) and `/sdk/v1/consent` (POST), inside the stateless `wall` group and under `throttle:wall`. Versioned in the path because a shipped app cannot be redeployed with the server.
+
+- **One gate.** Steps 1–6 are `WallGate::app/isServable/context`; steps 7–9 are `WallGate::admit()`, which `WallController` and `HistoryController` call too. The order cannot drift between an iframe user and an SDK user.
+- **No clicks here.** The SDK opens `click_url`, which is `/click/{offer}`. Every pre-click rule, the click row and the postback path are the iframe's.
+- **Whitelist.** `SdkPayload` lists every field by hand. No upstream payout, no network identity, no template strings (`:placeholders` and plurals are resolved server-side).
+- **User-Agent.** Each SDK sends the platform WebView UA plus `PlayndgainSDK/<v>`, so `DeviceDetector`, `ua_anomaly` and `emulator_device` see what the iframe would.
+- **Device hint (`dh`).** `Build.*` on Android, `utsname` on iOS. Read by `emulator_device` *with* the User-Agent, at render and at click, because an SDK click opens in the system browser whose reduced UA has no build string. It can only add a match. Ignored without `sdk`.
+- **Envelope.** `{status, app, strings, notice?, data?}`. Status is one of `ok`, `consent_required`, `declined`, `banned`, `blocked`, `unavailable`, `unplaced`, `offer_gone`, `invalid`, `rate_limited`. The SDKs branch on `status`, never on the HTTP code.
+- **Sub-ids.** `sub1`..`sub5` ride every wall link, land on `offer_clicks`, and resolve as `{sub1}`..`{sub5}` on the publisher postback. Not on the partner-wall embed row: it is reused per (app, partner, end user), so a per-open sub-id would be wrong, and those postbacks resolve the macros empty.

@@ -38,7 +38,7 @@ These were settled during design. They are not open questions.
 | Decision | Choice |
 |---|---|
 | Market sides | Aggregator only. No advertiser signup, no direct campaigns. |
-| Offerwall delivery | Hosted iframe only. No REST catalogue API, no JS SDK, no mobile SDK in v1. |
+| Offerwall delivery | Hosted iframe, plus native Android and iOS SDKs that read a JSON API on the wall host (`/sdk/v1`, docs/03 §9). No public catalogue REST API, no JS SDK. |
 | Payout model | Rev-share % per publisher, calendar-month hold (clears on the 1st), $20 minimum, manual admin approval. |
 | Partner integration | One generic adapter interface + concrete drivers. Accounts are created from **Networks → New network**, start `disabled`, and are enabled after credentials pass Test connection. A `direct` row is the house channel: offers we sell ourselves, added by hand. |
 | Fraud | Admin-tunable rules engine. Every block logged with a reason. |
@@ -53,7 +53,7 @@ These were settled during design. They are not open questions.
 
 ### Explicitly out of scope for v1
 
-Sub-accounts · CSV/Excel exports · mobile SDKs · offer catalogue REST API · advertiser panel · IAB TCF vendor registration · surveys · custom in-house offers · multi-currency payouts (USD only).
+Sub-accounts · CSV/Excel exports · offer catalogue REST API · advertiser panel · IAB TCF vendor registration · surveys · custom in-house offers · multi-currency payouts (USD only).
 
 The schema leaves room for the catalogue API and the advertiser side. Nothing else is pre-built for them. See [12-roadmap.md](12-roadmap.md).
 

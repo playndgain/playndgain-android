@@ -169,7 +169,7 @@ Ordered by expected value, not by how interesting they are to build.
 
 ### Later
 
-6. Mobile SDKs (Android/iOS).
+6. ~~Mobile SDKs (Android/iOS).~~ Done: native SDKs over `/sdk/v1` (docs/03 §9). Unity, React Native and Flutter wrappers stay here.
 7. Surveys and in-house offers — requires direct advertiser relationships.
 8. Advertiser panel — the third side of the market. Real product expansion, not a feature.
 9. Fraud scoring model trained on `fraud_events` and reversal outcomes.

@@ -31,6 +31,7 @@ return [
         'section' => 'The wall',
         'pages' => [
             ['slug' => 'offerwall-iframe', 'title' => 'Embedding the wall'],
+            ['slug' => 'mobile-sdk', 'title' => 'Mobile SDKs'],
             ['slug' => 'url-parameters', 'title' => 'URL parameters'],
             ['slug' => 'signed-urls', 'title' => 'Signed wall URLs'],
             ['slug' => 'theming', 'title' => 'Theming'],

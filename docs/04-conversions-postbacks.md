@@ -144,6 +144,7 @@ Publishers put these in their callback URL. This table is the public contract an
 | `{status}` | string | `credited` \| `reversed` | |
 | `{timestamp}` | int | `1754179200` | Unix seconds |
 | `{signature}` | string | `a3f9…` | See below |
+| `{sub1}` … `{sub5}` | string | `spring_promo` | The sub-ids passed on the wall URL or in the SDK options, read off the click. Empty when not sent, and always empty for partner-wall conversions (their embed click row is reused per user, so per-open sub-ids would be wrong) |
 
 ### Signature
 

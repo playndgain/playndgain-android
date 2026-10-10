@@ -13,6 +13,9 @@ Query parameters on `{APP_URL}/wall`.
 | `country` | string | no | ISO-3166-1 alpha-2, to preview another geo. **Ignored unless the app is in test mode** |
 | `theme` | string | no | `light` or `dark`. Defaults to the app's configured theme |
 | `lang` | string | no | ISO-639-1. `en` and `ar` ship today. Anything else falls back to `en` |
+| `sub1` … `sub5` | string | no | Your own tracking values. Letters, digits and `_ - . @ : \|`, up to 100 characters each. Stored on the click and echoed back as `{sub1}` … `{sub5}` on the postback. A value outside those rules is dropped, not refused |
+
+The native SDKs also add `sdk`, `sdk_v`, `model`, `dh` and `ds`. They describe the device, are used for traffic quality only, and you never set them yourself.
 
 ## userid
 

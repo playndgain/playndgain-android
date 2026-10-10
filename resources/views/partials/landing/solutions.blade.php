@@ -17,7 +17,7 @@
         </span>
         <p class="label mt-7 text-fog-500">Your wall, your brand</p>
         <h3 class="display-3 mt-3">Monetise every player.</h3>
-        <p class="lead mt-4 max-w-[44ch] text-fog-300">Embed the wall, keep your brand, and get paid monthly for every verified offer your players complete. No SDK, no app-store review.</p>
+        <p class="lead mt-4 max-w-[44ch] text-fog-300">Embed the wall, keep your brand, and get paid monthly for every verified offer your players complete. An iframe, a WebView or the Android and iOS SDKs.</p>
         <a href="/dashboard/register" class="btn btn-white mt-7">Start earning <svg class="size-4" aria-hidden="true"><use href="#i-arrow"/></svg></a>
       </div>
 
