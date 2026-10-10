@@ -25,15 +25,17 @@ function partnerGet(App\Models\App $app, ?Network $network = null, string $user 
 it('shows partner cards until the user opens one, then frames it', function () {
     wallGeo('US');
     [$app] = wallFixture();
-    $second = partnerNetwork(['priority' => 1, 'name' => 'Second']);
-    $first = partnerNetwork(['priority' => 9, 'name' => 'First', 'logo_path' => 'img/networks/ayetstudios.webp']);
+    $second = partnerNetwork(['priority' => 1, 'name' => 'Zebrawall Second']);
+    $first = partnerNetwork(['priority' => 9, 'name' => 'Quokkawall First', 'logo_path' => 'img/networks/partner-logo.webp']);
 
     partnerGet($app)->assertOk()
         ->assertSee('wall-launch', false)
-        ->assertSee($first->name)
-        ->assertSee($second->name)
+        // Never the partner's name, logo or initial: numbered in catalogue order.
+        ->assertDontSee($first->name)
+        ->assertDontSee($second->name)
+        ->assertSeeInOrder([__('wall.partner.numbered', ['n' => 1]), __('wall.partner.numbered', ['n' => 2])])
         ->assertSee(__('wall.partner.kicker'))
-        ->assertSee('img/networks/ayetstudios.webp', false)
+        ->assertDontSee('img/networks/', false)
         ->assertSee("/wall/partners/{$first->id}?", false)
         ->assertSee('open=1', false)
         ->assertDontSee('<iframe', false)
@@ -74,13 +76,16 @@ it('frames a partner in our wall even when it is marked to open elsewhere', func
     wallGeo('US');
     [$app] = wallFixture();
     $partner = partnerNetwork([
+        'name' => 'Pangolinwall',
         'wall_new_tab' => true,
         'logo_path' => 'img/networks/ayetstudios.webp',
     ]);
 
     partnerGet($app)->assertOk()
         ->assertSee('wall-launch', false)
-        ->assertSee($partner->name)
+        ->assertDontSee($partner->name)
+        ->assertDontSee('img/networks/', false)
+        ->assertSee(__('wall.partner.numbered', ['n' => 1]))
         ->assertSee(__('wall.partner.kicker'))
         ->assertSee("/wall/partners/{$partner->id}?", false)
         ->assertDontSee('<iframe', false)

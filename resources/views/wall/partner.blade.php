@@ -41,7 +41,7 @@
                 @foreach ($partners as $option)
                     <a class="wall-chip @if ($option->is($partner)) is-on @endif"
                        @if ($option->is($partner)) aria-current="page" @endif
-                       href="{{ route('wall.partner', $option) }}?{{ $openQuery }}">{{ $option->name }}</a>
+                       href="{{ route('wall.partner', $option) }}?{{ $openQuery }}">{{ __('wall.partner.numbered', ['n' => $loop->iteration]) }}</a>
                 @endforeach
             </div>
         @endif
@@ -75,19 +75,17 @@
             <div class="wall-launch-wrap">
                 @foreach ($partners as $option)
                     <a class="wall-launch" href="{{ route('wall.partner', $option) }}?{{ $openQuery }}">
+                        {{-- A number, never the partner's logo, name or first
+                             letter: the wall does not say whose inventory it is
+                             (AGENTS.md, network anonymity). Same order as the
+                             chips above, so a chip and its card agree. --}}
                         <span class="wall-launch__stage">
-                            @if (filled($option->logo_path))
-                                <img src="{{ asset($option->logo_path) }}" alt=""
-                                     width="240" height="80"
-                                     loading="lazy" decoding="async" onerror="this.remove()">
-                            @else
-                                <span class="wall-launch__letter" aria-hidden="true">{{ mb_substr($option->name, 0, 1) }}</span>
-                            @endif
+                            <span class="wall-launch__letter" aria-hidden="true">{{ $loop->iteration }}</span>
                         </span>
 
                         <span class="wall-launch__meta">
                             <span class="wall-launch__kicker">{{ __('wall.partner.kicker') }}</span>
-                            <span class="wall-launch__name">{{ $option->name }}</span>
+                            <span class="wall-launch__name">{{ __('wall.partner.numbered', ['n' => $loop->iteration]) }}</span>
                             <span class="wall-launch__go">
                                 {{ __('wall.partner.open') }}
                                 <svg aria-hidden="true"><use href="#ic-chevron"/></svg>

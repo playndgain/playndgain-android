@@ -259,7 +259,9 @@ it('shows what an embedded partner wall paid, named and timed by its own postbac
     $response = historyGet($app)->assertOk()
         ->assertSee('micro_reward')
         ->assertSee('Default')
-        ->assertSee('MyChips')
+        // The generic label, never the network's own name.
+        ->assertSee(__('wall.partner.kicker'))
+        ->assertDontSee($partner->name)
         ->assertSee('+50')
         ->assertSee('+30')
         ->assertSee(now()->format('Y-m-d'))

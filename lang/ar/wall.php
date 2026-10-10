@@ -184,6 +184,7 @@ return [
 
     'partner' => [
         'kicker' => 'جدار شريك',
+        'numbered' => 'جدار العروض :n',
         'open' => 'افتح',
         'back' => 'رجوع',
         'empty' => [

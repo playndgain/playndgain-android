@@ -226,6 +226,9 @@ return [
 
     'partner' => [
         'kicker' => 'Partner wall',
+        // Partners are never named on the wall (AGENTS.md: network anonymity).
+        // A number, in the catalogue's own order, is the whole label.
+        'numbered' => 'Offerwall :n',
         'open' => 'Open',
         'back' => 'Back',
         'empty' => [
