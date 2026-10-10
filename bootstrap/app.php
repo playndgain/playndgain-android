@@ -71,6 +71,16 @@ return Application::configure(basePath: dirname(__DIR__))
         // is a stale link, and the framework's own error page inside someone
         // else's iframe reads as their site being broken.
         $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
+            // The native SDKs read JSON, never a page. A bad userid (400), a
+            // bad signature (403), an unknown app, offer or path (404) or a
+            // wrong method (405) is one status the SDK can branch on. Matched
+            // on the path too: an unrouted `sdk/v1/*` URL has no route name.
+            if (($request->routeIs('sdk.*') || $request->is('sdk/*')) && in_array($e->getStatusCode(), [400, 403, 404, 405], true)) {
+                return response()
+                    ->json(['status' => 'invalid'], $e->getStatusCode())
+                    ->header('Cache-Control', 'private, no-store');
+            }
+
             if (! in_array($e->getStatusCode(), [400, 404], true) || ! $request->routeIs('wall', 'wall.*')) {
                 return null;
             }

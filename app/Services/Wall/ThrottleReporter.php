@@ -55,6 +55,15 @@ class ThrottleReporter
             ]);
         }
 
+        // The native SDKs branch on a JSON status, not on prose.
+        if (str_starts_with($request->path(), 'sdk/')) {
+            return new Response(
+                (string) json_encode(['status' => 'rate_limited']),
+                Response::HTTP_TOO_MANY_REQUESTS,
+                ['Cache-Control' => 'private, no-store', 'Content-Type' => 'application/json'],
+            );
+        }
+
         return new Response(
             __('wall.too_many'),
             Response::HTTP_TOO_MANY_REQUESTS,

@@ -253,3 +253,53 @@ it('keeps every connector out of the public docs', function () {
         );
     }
 });
+
+it('never names a partner wall on the end-user partner tab or in history', function () {
+    require_once __DIR__.'/../Wall/WallFixtures.php';
+
+    wallGeo('US');
+    [$app] = wallFixture();
+    $network = partnerNetwork(['name' => 'Acme Media Partnerwall', 'logo_path' => 'img/networks/acme.webp']);
+
+    $query = http_build_query(['appid' => $app->app_id, 'userid' => 'USER_1']);
+    $get = fn (string $path) => $this->withHeaders(['User-Agent' => WALL_UA])->get("{$path}?{$query}")->assertOk()->getContent();
+
+    assertAnonymous($get('/wall/partners'), $network, 'The partner tab');
+    expect($get('/wall/partners'))->not->toContain('img/networks/');
+
+    // The frame's own src is the partner's host by necessity: it is the
+    // partner's wall. Everything around it has to say nothing.
+    $framed = $this->withHeaders(['User-Agent' => WALL_UA])
+        ->get("/wall/partners/{$network->id}?{$query}&open=1")->assertOk()->getContent();
+    assertAnonymous((string) preg_replace('/src="[^"]*"/', 'src="#"', $framed), $network, 'The framed partner wall');
+
+    $embed = OfferClickFactory::new()->create([
+        'app_id' => $app->id, 'publisher_id' => $app->publisher_id,
+        'offer_id' => null, 'network_id' => $network->id, 'end_user_id' => 'USER_1',
+    ]);
+    Conversion::factory()->create([
+        'app_id' => $app->id, 'publisher_id' => $app->publisher_id, 'offer_id' => null,
+        'network_id' => $network->id, 'offer_click_id' => $embed->id, 'end_user_id' => 'USER_1',
+        'offer_name' => 'Level 5', 'status' => ConversionStatus::Approved, 'is_test' => false,
+    ]);
+
+    $history = $get('/wall/history');
+    expect($history)->toContain('Level 5');
+    assertAnonymous($history, $network, 'The wall history');
+});
+
+it('never names the upstream account in any sdk response', function () {
+    require_once __DIR__.'/../Wall/WallFixtures.php';
+
+    wallGeo('US');
+    [, $app, $offer, , $network] = anonymityFixture();
+
+    $query = http_build_query(['appid' => $app->app_id, 'userid' => 'USER_1', 'sdk' => 'android']);
+    $ua = 'Mozilla/5.0 (Linux; Android 14; Pixel 7 Build/UQ1A; wv) AppleWebKit/537.36 Chrome/129.0 Mobile Safari/537.36 PlayndgainSDK/1.0.0';
+
+    foreach (['wall', "offers/{$offer->id}", 'history'] as $path) {
+        $body = $this->withHeaders(['User-Agent' => $ua])->get("/sdk/v1/{$path}?{$query}")->assertOk()->getContent();
+
+        assertAnonymous($body, $network, "The SDK endpoint {$path}");
+    }
+});

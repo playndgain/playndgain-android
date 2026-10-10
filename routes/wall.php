@@ -7,6 +7,7 @@ use App\Http\Controllers\Wall\OfferDetailController;
 use App\Http\Controllers\Wall\OfferIconController;
 use App\Http\Controllers\Wall\PartnerWallController;
 use App\Http\Controllers\Wall\PrivacyController;
+use App\Http\Controllers\Wall\SdkController;
 use App\Http\Controllers\Wall\WallController;
 use Illuminate\Support\Facades\Route;
 
@@ -89,4 +90,15 @@ Route::middleware('wall')->group(function (): void {
     Route::post('/privacy/delete', [PrivacyController::class, 'destroy'])
         ->middleware('throttle:privacy')
         ->name('privacy.delete');
+
+    // The native SDKs — docs/03 §9. Same gate, same limits, same stateless
+    // group as the HTML wall; JSON instead of Blade. Versioned in the path
+    // because a shipped app cannot be redeployed with the server. Clicks are
+    // not here: the SDK opens `wall.click`, so every fraud check is shared.
+    Route::prefix('sdk/v1')->middleware('throttle:wall')->group(function (): void {
+        Route::get('wall', [SdkController::class, 'wall'])->name('sdk.wall');
+        Route::get('offers/{offer}', [SdkController::class, 'offer'])->name('sdk.offer');
+        Route::get('history', [SdkController::class, 'history'])->name('sdk.history');
+        Route::post('consent', [SdkController::class, 'consent'])->name('sdk.consent');
+    });
 });

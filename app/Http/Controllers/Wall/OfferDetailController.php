@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Wall;
 use App\Http\Controllers\Controller;
 use App\Models\Offer;
 use App\Services\Wall\OfferFeed;
-use App\Services\Wall\WallContext;
 use App\Services\Wall\WallGate;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -82,7 +81,7 @@ class OfferDetailController extends Controller
             'context' => $context,
             'offer' => $offer,
             'reward' => OfferFeed::rewardLabel($this->feed->convert($context, (float) $offer->payout)),
-            'steps' => $this->steps($context, $offer),
+            'steps' => $this->feed->steps($context, $offer),
             // The same figure the card carries, so the screen the user landed
             // on confirms the one they tapped. This page does not read the
             // cached payload, so it runs the count for its one offer id.
@@ -92,32 +91,5 @@ class OfferDetailController extends Controller
         // Same URL, two shapes. The wall's dialog fetches the fragment; a user
         // with JS off — or one who opened the link in a new tab — gets the page.
         return $this->page($request->boolean('fragment') ? 'partials.offer' : 'offer', $data);
-    }
-
-    /**
-     * The offer as a task list.
-     *
-     * An offer with no stored goals still gets one row rather than an empty
-     * panel: it has exactly one thing to do, and saying so is information.
-     * Rewards are converted per step from USD, so the steps add up to the
-     * headline figure instead of being a second, differently-rounded answer.
-     *
-     * @return list<array{name: string, reward: string}>
-     */
-    private function steps(WallContext $context, Offer $offer): array
-    {
-        $goals = array_values(array_filter((array) ($offer->goals ?? []), 'is_array'));
-
-        if ($goals === []) {
-            return [[
-                'name' => __('wall.offer.single_step'),
-                'reward' => OfferFeed::rewardLabel($this->feed->convert($context, (float) $offer->payout)),
-            ]];
-        }
-
-        return array_map(fn (array $goal): array => [
-            'name' => (string) ($goal['name'] ?? ''),
-            'reward' => OfferFeed::rewardLabel($this->feed->convert($context, (float) ($goal['payout'] ?? 0))),
-        ], $goals);
     }
 }

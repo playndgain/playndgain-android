@@ -511,6 +511,33 @@ class OfferFeed
     }
 
     /**
+     * The offer as a task list. Shared by the HTML detail view and the SDK API.
+     *
+     * An offer with no stored goals still gets one row rather than an empty
+     * panel: it has exactly one thing to do, and saying so is information.
+     * Rewards are converted per step from USD, so the steps add up to the
+     * headline figure instead of being a second, differently-rounded answer.
+     *
+     * @return list<array{name: string, reward: string}>
+     */
+    public function steps(WallContext $context, Offer $offer): array
+    {
+        $goals = array_values(array_filter((array) ($offer->goals ?? []), 'is_array'));
+
+        if ($goals === []) {
+            return [[
+                'name' => __('wall.offer.single_step'),
+                'reward' => self::rewardLabel($this->convert($context, (float) $offer->payout)),
+            ]];
+        }
+
+        return array_map(fn (array $goal): array => [
+            'name' => (string) ($goal['name'] ?? ''),
+            'reward' => self::rewardLabel($this->convert($context, (float) ($goal['payout'] ?? 0))),
+        ], $goals);
+    }
+
+    /**
      * Test mode's `$0.01` offer, pinned above everything (docs/03 §7). The row
      * itself is platform inventory, named by `settings.test_offer_id`, so a
      * click on it runs the real pipeline instead of a simulation.

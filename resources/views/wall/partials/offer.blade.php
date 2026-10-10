@@ -9,16 +9,9 @@
     $devices = array_values(array_filter((array) ($offer->devices ?? []), 'is_string'));
     $categories = array_values(array_filter((array) ($offer->categories ?? []), 'is_string'));
 
-    // ISO-2 or nothing. `offers.countries` is a JSON column fed by nine network
-    // catalogues and by an admin typing into a tag field, and this view puts
-    // each code into a filename, an attribute and a display string. A code that
-    // is not two letters cannot match `$context->country` anyway — the offer
-    // would be invisible to the targeting SQL — so anything else is malformed
-    // data with no legitimate rendering, and dropping it is the honest answer.
-    $countries = array_values(array_filter(
-        (array) ($offer->countries ?? []),
-        fn (mixed $code): bool => is_string($code) && preg_match('/^[A-Za-z]{2}$/', $code) === 1,
-    ));
+    // ISO-2 or nothing — see App\Services\Wall\OfferCountries, shared with the
+    // SDK API so the HTML sheet and the native sheet agree.
+    $countries = \App\Services\Wall\OfferCountries::of($offer);
 
     // Networks pack several sentences into one field — newline-separated, or
     // `<br>`-separated, or both. Split makes them a list; unsplit they run
@@ -27,13 +20,7 @@
     $notes = \App\Support\Plain::lines($offer->instructions);
     $lead = \App\Support\Plain::text($offer->description);
 
-    // ISO-2 is a code, not an answer. `intl` already knows every country's name
-    // in both locales the wall ships, so the tooltip is a lookup rather than a
-    // 250-row table we would have to translate and then maintain. Without the
-    // extension the code itself is still a truthful label.
-    $countryName = fn (string $code): string => class_exists(\Locale::class)
-        ? (\Locale::getDisplayRegion('-'.$code, app()->getLocale()) ?: $code)
-        : $code;
+    $countryName = fn (string $code): string => \App\Services\Wall\OfferCountries::name($code);
 
     // Eight is what fits two rows on a phone. The rest become one chip that
     // says how many, because a hundred flags is a texture, not information.
