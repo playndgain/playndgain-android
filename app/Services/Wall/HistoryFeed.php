@@ -153,22 +153,11 @@ final class HistoryFeed
     {
         $reason = trim((string) $reason);
 
-        if ($reason === '' || in_array($reason, self::internalReasons(), true)) {
+        if ($reason === '' || $reason === ConversionProcessor::NETWORK_REJECTED || app(RuleRegistry::class)->has($reason)) {
             return null;
         }
 
         return $reason;
-    }
-
-    /** @return list<string> */
-    private static function internalReasons(): array
-    {
-        static $keys = null;
-
-        return $keys ??= [
-            ConversionProcessor::NETWORK_REJECTED,
-            ...array_map(fn (string $rule): string => $rule::key(), app(RuleRegistry::class)->all()),
-        ];
     }
 
     /** The partner's offer name, or the generic label when it is blank or is the network's name. */
@@ -177,7 +166,9 @@ final class HistoryFeed
         $name = trim((string) $conversion->offer_name);
         $network = trim((string) $conversion->network?->name);
 
-        return $name === '' || ($network !== '' && strcasecmp($name, $network) === 0)
+        // ConversionProcessor no longer writes the network's name here; the
+        // comparison stays for rows a backfill missed (renamed networks).
+        return $name === '' || $name === ConversionProcessor::PARTNER_OFFER_NAME || ($network !== '' && strcasecmp($name, $network) === 0)
             ? (string) __('wall.partner.kicker')
             : $name;
     }

@@ -13,6 +13,7 @@ use App\Models\Publisher;
 use App\Networks\Drivers\FakeNetworkDriver;
 use App\Networks\DTO\PostbackDTO;
 use App\Networks\NetworkDriverManager;
+use App\Services\Money\ConversionProcessor;
 use App\Services\Money\MacroResolver;
 use Database\Factories\OfferClickFactory;
 use Illuminate\Support\Facades\Queue;
@@ -62,7 +63,7 @@ it('credits a partner postback that carries an embed click id', function () {
         ->and(LedgerEntry::query()->count())->toBe(1);
 });
 
-it('names the partner when the postback carries no offer name', function () {
+it('stores a generic name, never the partner, when the postback carries no offer name', function () {
     Queue::fake();
 
     $click = embedFixture();
@@ -74,9 +75,12 @@ it('names the partner when the postback carries no offer name', function () {
         status: 'credited',
     ))->assertOk();
 
-    // `conversions.offer_name` is NOT NULL, and there is no offer to fall back
-    // to. The partner's name is the only true thing left to say.
-    expect(Conversion::query()->sole()->offer_name)->toBe('Partner Wall Co');
+    // `conversions.offer_name` is NOT NULL and there is no offer to fall back
+    // to, but the column reaches the publisher and the {offer_name} macro, so
+    // it must not name the network (AGENTS.md, network anonymity).
+    expect(Conversion::query()->sole()->offer_name)
+        ->toBe(ConversionProcessor::PARTNER_OFFER_NAME)
+        ->not->toBe('Partner Wall Co');
 });
 
 it('writes one conversion when the partner sends the same postback twice', function () {

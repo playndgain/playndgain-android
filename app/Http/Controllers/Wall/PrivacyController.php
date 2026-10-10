@@ -35,7 +35,7 @@ class PrivacyController extends Controller
     private const ROW_LIMIT = 100;
 
     /** Fraud-event inputs that describe the person or their device, dropped on delete. */
-    private const FRAUD_CONTEXT_PII = ['ip', 'click_ip', 'end_user_id', 'user_agent', 'device_hint', 'referrer'];
+    private const FRAUD_CONTEXT_PII = ['ip', 'click_ip', 'conversion_ip', 'end_user_id', 'user_agent', 'device_hint', 'referrer'];
 
     public function __construct(private readonly WallGate $gate) {}
 
@@ -118,9 +118,13 @@ class PrivacyController extends Controller
 
             // Fraud events keep the decision (rule, action, time) for audit,
             // not the inputs that identify the person or their phone.
+            // Rate-limit events are written before the app is resolved, so
+            // they carry the appid only inside their context, not in app_id.
             FraudEvent::query()
-                ->where('app_id', $app->id)
                 ->where('end_user_id', $endUserId)
+                ->where(fn ($q) => $q->where('app_id', $app->id)->orWhere(fn ($q) => $q
+                    ->whereNull('app_id')
+                    ->where('context->appid', (string) $app->app_id)))
                 ->chunkById(500, function ($events) use ($pseudonym): void {
                     foreach ($events as $event) {
                         $event->forceFill([

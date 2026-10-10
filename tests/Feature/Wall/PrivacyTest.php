@@ -136,3 +136,23 @@ it('strips identifying inputs from fraud events on delete and keeps the decision
         ->and($event->rule_key)->toBe('emulator_device')
         ->and($event->context)->toBe(['reason' => 'x', 'signature' => 'sdk_gphone']);
 });
+
+it('also strips the conversion ip and the app-less rate-limit events', function () {
+    [$app] = wallSubject();
+
+    $make = fn (array $attrs) => FraudEvent::query()->create([
+        'rule_key' => 'x', 'stage' => 'pre_click', 'subject_type' => '', 'subject_id' => 0,
+        'end_user_id' => 'USER_1', 'action_taken' => 'flagged', ...$attrs,
+    ]);
+    $conversion = $make(['app_id' => $app->id, 'context' => ['reason' => 'geo', 'conversion_ip' => '198.51.100.7']]);
+    $throttled = $make(['app_id' => null, 'context' => ['reason' => 'rate_limit_exceeded', 'ip' => '198.51.100.8', 'appid' => (string) $app->app_id, 'path' => 'sdk/v1/wall']]);
+    $otherApp = $make(['app_id' => null, 'context' => ['reason' => 'rate_limit_exceeded', 'ip' => '198.51.100.9', 'appid' => '99999']]);
+
+    test()->post('/privacy/delete', ['appid' => $app->app_id, 'userid' => 'USER_1', 'sig' => wallSig($app)])->assertOk();
+
+    expect($conversion->refresh()->context)->toBe(['reason' => 'geo'])
+        ->and($throttled->refresh()->context)->toEqual(['reason' => 'rate_limit_exceeded', 'path' => 'sdk/v1/wall', 'appid' => (string) $app->app_id])
+        ->and($throttled->end_user_id)->not->toBe('USER_1')
+        // Another app's user who happens to share the id is not this request's subject.
+        ->and($otherApp->refresh()->end_user_id)->toBe('USER_1');
+});

@@ -48,6 +48,9 @@ class ConversionProcessor
      */
     public const NETWORK_REJECTED = 'network_rejected';
 
+    /** `offer_name` for a partner-wall conversion whose postback named nothing. */
+    public const PARTNER_OFFER_NAME = 'Partner wall offer';
+
     /**
      * The rule key that rejected the conversion being recorded, set by
      * `evaluateFraudRules()` on the way past. docs/01 §7 puts the rule key in
@@ -132,8 +135,11 @@ class ConversionProcessor
                     'network_id' => $network->id,
                     'end_user_id' => $dto->endUserId ?? $click->end_user_id,
                     // An embedded partner wall has no offer of ours, and the column is NOT
-                    // NULL. The partner's name is the only true thing left to say.
-                    'offer_name' => $dto->offerName ?? $offer->name ?? $network->name,
+                    // NULL. Never the network's name: this column reaches the
+                    // publisher panel, the {offer_name} postback macro and the
+                    // end user's history (AGENTS.md, network anonymity). The
+                    // admin still sees the network through `network_id`.
+                    'offer_name' => $dto->offerName ?? $offer->name ?? self::PARTNER_OFFER_NAME,
                     'revenue' => $revenue,
                     'payout' => $payout,
                     'rev_share_applied' => $revShare,
