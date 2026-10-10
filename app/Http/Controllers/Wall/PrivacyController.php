@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\App;
 use App\Models\Consent;
 use App\Models\Conversion;
+use App\Models\FraudEvent;
 use App\Models\OfferClick;
 use App\Services\Wall\IpAnonymizer;
 use App\Services\Wall\WallGate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -31,6 +33,9 @@ class PrivacyController extends Controller
 {
     /** A subject access request is a summary plus evidence, not a table dump. */
     private const ROW_LIMIT = 100;
+
+    /** Fraud-event inputs that describe the person or their device, dropped on delete. */
+    private const FRAUD_CONTEXT_PII = ['ip', 'click_ip', 'end_user_id', 'user_agent', 'device_hint', 'referrer'];
 
     public function __construct(private readonly WallGate $gate) {}
 
@@ -110,6 +115,20 @@ class PrivacyController extends Controller
                 ->where('app_id', $app->id)
                 ->where('end_user_id', $endUserId)
                 ->update(['ip' => null, 'end_user_id' => $pseudonym]);
+
+            // Fraud events keep the decision (rule, action, time) for audit,
+            // not the inputs that identify the person or their phone.
+            FraudEvent::query()
+                ->where('app_id', $app->id)
+                ->where('end_user_id', $endUserId)
+                ->chunkById(500, function ($events) use ($pseudonym): void {
+                    foreach ($events as $event) {
+                        $event->forceFill([
+                            'end_user_id' => $pseudonym,
+                            'context' => Arr::except((array) $event->context, self::FRAUD_CONTEXT_PII),
+                        ])->save();
+                    }
+                });
 
             // The consent row is the one thing that would still name them, and
             // it documents processing that is now over.

@@ -169,6 +169,24 @@ it('names the newest status and carries a rejection reason', function () {
         ->assertDontSee(__('wall.history.status.approved'));
 });
 
+it('never shows a fraud rule key or an internal code as a rejection reason', function (string $key) {
+    wallGeo('US');
+    [$app, $network] = wallFixture();
+    $offer = wallOffer($network, ['name' => 'Flagged Offer', 'countries' => [], 'devices' => []]);
+    $click = historyClick($app, $offer);
+
+    Conversion::factory()->create([
+        'app_id' => $app->id, 'publisher_id' => $app->publisher_id,
+        'offer_id' => $offer->id, 'network_id' => $network->id,
+        'offer_click_id' => $click->id, 'end_user_id' => 'USER_1',
+        'status' => ConversionStatus::Rejected, 'rejected_reason' => $key,
+    ]);
+
+    historyGet($app)->assertOk()
+        ->assertSee(__('wall.history.status.rejected'))
+        ->assertDontSee($key);
+})->with(['emulator_device', 'geo_mismatch', 'network_rejected']);
+
 it('shows a user only their own clicks, on only this app', function () {
     wallGeo('US');
     [$app, $network] = wallFixture();

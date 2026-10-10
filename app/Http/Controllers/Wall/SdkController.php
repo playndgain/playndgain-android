@@ -81,7 +81,13 @@ class SdkController extends Controller
         if ($this->gate->consentRequired($context->country)) {
             $consent = $this->gate->consent($app, $context->endUserId);
 
-            if ($consent === null || ! $consent->granted) {
+            // Same 403 as the HTML route, but the SDK is told which case it
+            // is: never asked goes to the consent screen, refused to the notice.
+            if ($consent === null) {
+                return $this->respond('consent_required', $context, Response::HTTP_FORBIDDEN);
+            }
+
+            if (! $consent->granted) {
                 return $this->respond('declined', $context, Response::HTTP_FORBIDDEN);
             }
         }

@@ -105,6 +105,18 @@ it('lands on offers after answering a reopened consent', function () {
         ->assertJsonPath('status', 'ok');
 });
 
+it('records where the user really is, not a test-mode country preview', function () {
+    wallConsentCountries(['DE']);
+    [$app, $network] = wallFixture(['test_mode' => true]);
+    wallOffer($network, ['countries' => [], 'devices' => []]);
+
+    test()->withHeaders(['User-Agent' => SDK_ANDROID_UA])
+        ->postJson('/sdk/v1/consent?'.http_build_query(['appid' => $app->app_id, 'userid' => 'USER_1', 'sdk' => 'android', 'country' => 'DE']), ['action' => 'accept'])
+        ->assertOk();
+
+    expect(Consent::query()->sole()->country)->toBe('US');
+});
+
 it('answers a wrong method and an unknown sdk path with json', function () {
     [$app] = wallFixture();
 
@@ -313,3 +325,17 @@ it('refuses the ios sdk wherever the render gate refuses the iframe', function (
         ->assertJsonPath('status', 'blocked')
         ->assertJsonPath('notice.key', 'blocked_proxy');
 });
+
+it('drops exactly the template strings it computes per request', function (string $locale) {
+    // A new wall string that happens to look like a template would vanish from
+    // the SDK without anyone noticing. This list changes only on purpose.
+    app()->setLocale($locale);
+    $all = (array) trans('wall');
+    unset($all['partner'], $all['menu']);
+
+    $dropped = collect(Arr::dot($all))
+        ->filter(fn (mixed $value): bool => is_string($value) && SdkPayload::isTemplate($value))
+        ->keys()->sort()->values()->all();
+
+    expect($dropped)->toBe(['earn', 'offer.steps_note', 'people', 'steps']);
+})->with(['en', 'ar']);

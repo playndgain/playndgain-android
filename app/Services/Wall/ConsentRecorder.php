@@ -28,7 +28,10 @@ final class ConsentRecorder
                 // Evidence of consent, so it follows the app's own IP rule
                 // rather than storing more than the wall itself would.
                 'ip' => $app->anonymize_ip ? IpAnonymizer::mask($context->ip) : $context->ip,
-                'country' => $context->country,
+                // Where the user really is. A test-mode `?country=` preview is
+                // not an answer about them; the HTML form drops it before it
+                // gets here, the SDK API cannot, so it is undone here for both.
+                'country' => $context->countryOverridden ? $context->verdict->country : $context->country,
                 // Hashed: the row proves which client agreed without keeping a
                 // fingerprintable string for the life of the account.
                 'user_agent_hash' => hash('sha256', (string) $context->userAgent),

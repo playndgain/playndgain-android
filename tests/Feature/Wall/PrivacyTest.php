@@ -3,6 +3,7 @@
 use App\Models\App;
 use App\Models\Consent;
 use App\Models\Conversion;
+use App\Models\FraudEvent;
 use App\Models\Offer;
 use App\Models\OfferClick;
 use Database\Factories\ConsentFactory;
@@ -116,4 +117,22 @@ it('exports and then erases sub ids and native device strings', function () {
         ->and($click->sub5)->toBeNull()
         ->and($click->device_model)->toBeNull()
         ->and($click->device_hint)->toBeNull();
+});
+
+it('strips identifying inputs from fraud events on delete and keeps the decision', function () {
+    [$app] = wallSubject();
+
+    $event = FraudEvent::query()->create([
+        'rule_key' => 'emulator_device', 'stage' => 'pre_click', 'subject_type' => 'offer_click', 'subject_id' => 1,
+        'app_id' => $app->id, 'publisher_id' => $app->publisher_id, 'end_user_id' => 'USER_1', 'action_taken' => 'blocked',
+        'context' => ['reason' => 'x', 'signature' => 'sdk_gphone', 'ip' => '203.0.113.9', 'user_agent' => 'UA', 'device_hint' => 'Pixel 7|panther', 'end_user_id' => 'USER_1'],
+    ]);
+
+    test()->post('/privacy/delete', ['appid' => $app->app_id, 'userid' => 'USER_1', 'sig' => wallSig($app)])->assertOk();
+
+    $event->refresh();
+
+    expect($event->end_user_id)->not->toBe('USER_1')
+        ->and($event->rule_key)->toBe('emulator_device')
+        ->and($event->context)->toBe(['reason' => 'x', 'signature' => 'sdk_gphone']);
 });

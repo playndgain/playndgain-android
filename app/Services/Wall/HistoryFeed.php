@@ -3,8 +3,10 @@
 namespace App\Services\Wall;
 
 use App\Enums\ConversionStatus;
+use App\Fraud\RuleRegistry;
 use App\Models\Conversion;
 use App\Models\OfferClick;
+use App\Services\Money\ConversionProcessor;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -132,10 +134,41 @@ final class HistoryFeed
                     ? OfferFeed::rewardLabel((float) $conversion->currency_amount)
                     : null,
                 'reason' => $conversion->status === ConversionStatus::Rejected
-                    ? ($conversion->rejected_reason ?: null)
+                    ? self::reason($conversion->rejected_reason)
                     : null,
             ])
             ->all();
+    }
+
+    /**
+     * A rejection reason fit to show the end user, or none.
+     *
+     * A post-conversion fraud block stores the rule's own key here
+     * (`emulator_device`, `geo_mismatch`), and a plain network refusal stores
+     * the processor's internal code. Naming the signal tells a farm which
+     * string to change, so internal keys never leave the server; a reason a
+     * network wrote in words is still shown.
+     */
+    private static function reason(?string $reason): ?string
+    {
+        $reason = trim((string) $reason);
+
+        if ($reason === '' || in_array($reason, self::internalReasons(), true)) {
+            return null;
+        }
+
+        return $reason;
+    }
+
+    /** @return list<string> */
+    private static function internalReasons(): array
+    {
+        static $keys = null;
+
+        return $keys ??= [
+            ConversionProcessor::NETWORK_REJECTED,
+            ...array_map(fn (string $rule): string => $rule::key(), app(RuleRegistry::class)->all()),
+        ];
     }
 
     /** The partner's offer name, or the generic label when it is blank or is the network's name. */
@@ -208,7 +241,7 @@ final class HistoryFeed
             // that says nothing and reads like a balance.
             'reward' => $credited > 0 ? OfferFeed::rewardLabel((float) $credited) : null,
             'reason' => $latest?->status === ConversionStatus::Rejected
-                ? ($latest->rejected_reason ?: null)
+                ? self::reason($latest->rejected_reason)
                 : null,
         ];
     }
