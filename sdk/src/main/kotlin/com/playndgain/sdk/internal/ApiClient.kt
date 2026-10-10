@@ -30,7 +30,12 @@ internal class ApiClient(
     private val options: PlayndgainOptions,
 ) {
     private val base: String = Playndgain.config.baseUrl.trimEnd('/')
-    private val device = DeviceInfo.of(context)
+    /**
+     * Built on first use, which is always a request on the I/O thread. The
+     * first WebView User-Agent read loads the WebView provider, which takes
+     * seconds on a cold device; on the main thread that is an ANR.
+     */
+    private val device by lazy { DeviceInfo.of(context) }
     /** The signature and the user session it was issued for. */
     @Volatile private var sig: Pair<Int, String>? = null
 
@@ -176,7 +181,11 @@ internal object Responses {
         if (parsed == null) {
             throw ApiException(if (code == 429) PlayndgainError.RATE_LIMITED else PlayndgainError.WALL_UNAVAILABLE)
         }
-        if (parsed.status == "invalid" && parsed.app == null) throw ApiException(PlayndgainError.SIGNATURE_UNAVAILABLE)
+        if (parsed.status == "invalid" && parsed.app == null) {
+            // The wall refuses a missing or wrong signature with 403. A bad user
+            // id, an unknown app or path (400/404/405) is not the signature.
+            throw ApiException(if (code == 403) PlayndgainError.SIGNATURE_UNAVAILABLE else PlayndgainError.WALL_UNAVAILABLE)
+        }
         return parsed
     }
 }

@@ -722,7 +722,7 @@ public class PlayndgainActivity : Activity() {
             gravity = Gravity.CENTER
             style(fonts, 15f, 600, p.onPrimary)
             background = rounded(p.primary, dp(999).toFloat())
-            setOnClickListener { startOffer(d.clickUrl) }
+            setOnClickListener { closeSheet(animated = false); startOffer(d.clickUrl) }
         }
         wrap.addView(start, LinearLayout.LayoutParams(MATCH_PARENT, dp(52)).apply { setMargins(dp(20), dp(8), dp(20), dp(20)) })
         wrap.addView(TextView(this).apply {

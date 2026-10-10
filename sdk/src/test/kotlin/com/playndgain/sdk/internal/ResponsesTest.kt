@@ -66,8 +66,11 @@ class ResponsesTest {
     }
 
     @Test
-    fun `an invalid envelope with no app is a signature problem`() {
-        assertEquals(PlayndgainError.SIGNATURE_UNAVAILABLE, errorOf(400, fixture("invalid")))
+    fun `an invalid envelope is a signature problem only on 403`() {
+        assertEquals(PlayndgainError.SIGNATURE_UNAVAILABLE, errorOf(403, fixture("invalid")))
+        // Unknown app, bad user id, wrong path: not the signature.
+        assertEquals(PlayndgainError.WALL_UNAVAILABLE, errorOf(400, fixture("invalid")))
+        assertEquals(PlayndgainError.WALL_UNAVAILABLE, errorOf(404, fixture("invalid")))
     }
 
     @Test
