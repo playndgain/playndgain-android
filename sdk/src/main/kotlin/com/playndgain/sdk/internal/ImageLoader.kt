@@ -37,7 +37,7 @@ internal object ImageLoader {
                     c.connectTimeout = 10_000
                     c.readTimeout = 10_000
                     val bytes = c.inputStream.use { readCapped(it) }
-                    bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+                    bytes?.let { decodeSampled(it) }
                 } finally {
                     c.disconnect()
                 }
@@ -53,6 +53,15 @@ internal object ImageLoader {
                 onLoaded(bmp != null)
             }
         }
+    }
+
+    /** Icons render at most about 64 dp; decode near that, not at full size. */
+    private fun decodeSampled(bytes: ByteArray, target: Int = 256): android.graphics.Bitmap? {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        var sample = 1
+        while (bounds.outWidth / (sample * 2) >= target && bounds.outHeight / (sample * 2) >= target) sample *= 2
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
     }
 
     private fun readCapped(input: InputStream): ByteArray? {

@@ -26,6 +26,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
+import android.window.OnBackInvokedDispatcher
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsClient
 import androidx.browser.customtabs.CustomTabsIntent
@@ -66,6 +67,7 @@ public class PlayndgainActivity : Activity() {
         private const val STATE_SORT = "pg.sort"
         private const val STATE_CATEGORY = "pg.category"
         private const val STATE_QUERY = "pg.query"
+        private const val STATE_OPENED = "pg.opened"
 
         /** The options ride in the intent, so recreation and process death keep them. */
         fun intent(context: Context, options: PlayndgainOptions): Intent =
@@ -124,6 +126,7 @@ public class PlayndgainActivity : Activity() {
             sort = st.getString(STATE_SORT)
             category = st.getString(STATE_CATEGORY)
             queryText = st.getString(STATE_QUERY).orEmpty()
+            opened = st.getBoolean(STATE_OPENED)
         }
         fonts = Fonts(this)
         try {
@@ -142,6 +145,7 @@ public class PlayndgainActivity : Activity() {
         body = FrameLayout(this)
         root.addView(page, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         setContentView(root)
+        registerBackCallback()
         showLoading()
         // onResume reloads when a reward check is owed; one request is enough.
         if (!pendingRewardCheck) reload()
@@ -154,6 +158,7 @@ public class PlayndgainActivity : Activity() {
         outState.putString(STATE_SORT, sort)
         outState.putString(STATE_CATEGORY, category)
         outState.putString(STATE_QUERY, queryText)
+        outState.putBoolean(STATE_OPENED, opened)
     }
 
     override fun onResume() {
@@ -173,10 +178,25 @@ public class PlayndgainActivity : Activity() {
 
     @Deprecated("Activity back handling, kept for API 23")
     override fun onBackPressed() {
-        when {
-            sheet != null -> closeSheet()
-            tab == Tab.HISTORY -> switchTab(Tab.OFFERS)
-            else -> { emitClosedOnce(); @Suppress("DEPRECATION") super.onBackPressed() }
+        if (!handleBack()) { emitClosedOnce(); @Suppress("DEPRECATION") super.onBackPressed() }
+    }
+
+    /** Closes the sheet, or leaves History. False when back should close the wall. */
+    private fun handleBack(): Boolean = when {
+        sheet != null -> { closeSheet(); true }
+        tab == Tab.HISTORY -> { switchTab(Tab.OFFERS); true }
+        else -> false
+    }
+
+    /**
+     * On API 33+ a host with `enableOnBackInvokedCallback="true"` never calls
+     * onBackPressed, so back would close the wall from inside a sheet. The
+     * same rules run from a registered callback there.
+     */
+    private fun registerBackCallback() {
+        if (Build.VERSION.SDK_INT < 33) return
+        onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT) {
+            if (!handleBack()) { emitClosedOnce(); finish() }
         }
     }
 
@@ -646,8 +666,11 @@ public class PlayndgainActivity : Activity() {
         val g = ++detailGeneration
         run({ api.offer(id) }, { g == detailGeneration }, { error -> showSheetNotice(null, error) }) { r ->
             val d = r.detail
-            // Never asked (the answer was reset since the list loaded): ask now.
-            if (r.status == "consent_required") { closeSheet(animated = false); showConsent(); return@run }
+            // The host hears a rate limit on this path too, as on a page load.
+            if (r.status == "rate_limited") Playndgain.emitError(PlayndgainError.RATE_LIMITED)
+            // Never asked (the answer was reset since the list loaded): ask now,
+            // and retire any page load in flight so it cannot replace the screen.
+            if (r.status == "consent_required") { generation++; closeSheet(animated = false); showConsent(); return@run }
             if (r.status != "ok" || d == null) { showSheetNotice(r, null); return@run }
             showSheet(detailView(d))
         }
