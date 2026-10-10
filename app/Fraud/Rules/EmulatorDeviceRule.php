@@ -96,13 +96,19 @@ class EmulatorDeviceRule implements RenderGateRule
             return RuleResult::pass();
         }
 
-        $haystack = strtolower($ua);
+        // The native SDK's build string is read *with* the User-Agent, never
+        // instead of it. An SDK click opens in the system browser, whose
+        // reduced UA has no model or build, so without the hint this rule
+        // could not fire on any SDK click at all. Appended, not substituted:
+        // a forged clean hint adds nothing and removes nothing.
+        $haystack = strtolower(trim($ua.' '.(string) $context->deviceHint));
 
         foreach ($this->signatures($config) as $signature) {
             if ($signature !== '' && str_contains($haystack, $signature)) {
                 return RuleResult::trigger('user agent carries an emulator build signature', [
                     'signature' => $signature,
                     'user_agent' => $ua,
+                    'device_hint' => $context->deviceHint,
                     'device' => $context->device,
                     'os' => $context->os,
                 ]);

@@ -58,6 +58,12 @@ final class FraudContext
          * time, means a rule falls back to `inspect()` and hits the cache.
          */
         public readonly ?IpVerdict $verdict = null,
+        /**
+         * The native SDK's build string, when the request came from one. Read
+         * by `EmulatorDeviceRule` alongside the User-Agent and never instead of
+         * it — see `WallContext::$deviceHint`.
+         */
+        public readonly ?string $deviceHint = null,
     ) {}
 
     public function publisherId(): int

@@ -95,6 +95,7 @@ class WallGate
         IpScoreHistogram::record($verdict->riskScore);
 
         $override = $this->countryOverride($request, $testMode);
+        $sdk = self::sdkPlatform($request);
 
         return new WallContext(
             app: $app,
@@ -113,7 +114,49 @@ class WallGate
             testMode: $testMode,
             balance: $this->stringParam($request, 'balance'),
             countryOverridden: $override !== null,
+            sdkPlatform: $sdk,
+            sdkVersion: $sdk !== null ? self::matching($request, 'sdk_v', '/^\d{1,3}(\.\d{1,3}){0,2}$/') : null,
+            deviceModel: $sdk !== null ? self::matching($request, 'model', '/^[A-Za-z0-9 ._()+,\-]{1,64}$/') : null,
+            subs: self::subs($request),
+            deviceHint: $sdk !== null ? self::matching($request, 'dh', '/^[A-Za-z0-9 ._:\/|,()+\-]{1,256}$/') : null,
         );
+    }
+
+    /** `android` or `ios`; anything else is no SDK at all. */
+    public static function sdkPlatform(Request $request): ?string
+    {
+        $value = self::param($request, 'sdk');
+
+        return in_array($value, ['android', 'ios'], true) ? $value : null;
+    }
+
+    /**
+     * Same alphabet as the user id, shorter. A value that fails is dropped
+     * rather than refused: a bad sub-id is the publisher's typo, not a reason
+     * to show their user an error page.
+     *
+     * @return array<string, string>
+     */
+    public static function subs(Request $request): array
+    {
+        $subs = [];
+
+        foreach (range(1, 5) as $n) {
+            $value = self::matching($request, "sub{$n}", '/^[A-Za-z0-9._:@|\-]{1,100}$/');
+
+            if ($value !== null) {
+                $subs["sub{$n}"] = $value;
+            }
+        }
+
+        return $subs;
+    }
+
+    private static function matching(Request $request, string $key, string $pattern): ?string
+    {
+        $value = self::param($request, $key);
+
+        return preg_match($pattern, $value) === 1 ? $value : null;
     }
 
     /**
@@ -214,6 +257,68 @@ class WallGate
             : null;
     }
 
+    /**
+     * Steps 7–9 in the one order docs/03 §2 allows. The HTML wall, its history
+     * page and the SDK API all call this, so the order cannot drift between an
+     * iframe user and an SDK user.
+     *
+     * The order is the point. Consent first, so nothing is processed for a user
+     * who has not answered. Ban next. Escalation (a paid IP lookup) only after a
+     * real "yes", never on the displayed country alone — it can be a test-mode
+     * override. Identity after that. The render gate last, so a user with no
+     * consent decision lands on the consent screen instead of in a fraud_event.
+     *
+     * @param  bool  $protect  Run the render gate. History passes false: it has
+     *                         never been gated, and a blocked user may still
+     *                         read their own past clicks.
+     * @param  bool  $escalate  Re-ask the IP provider with consent. History
+     *                          passes false to keep its existing behaviour.
+     */
+    public function admit(
+        Request $request,
+        WallContext $context,
+        bool $protect = true,
+        bool $reviewConsent = false,
+        bool $escalate = true,
+    ): Admission {
+        $app = $context->app;
+        $granted = false;
+
+        if ($this->consentRequired($context->country)) {
+            // `consent=review` is how a user reopens their own answer; without
+            // it a declined consent is permanent and the gate is a trap.
+            $consent = $reviewConsent ? null : $this->consent($app, $context->endUserId);
+
+            if ($consent === null) {
+                return new Admission($context, 'consent');
+            }
+
+            if (! $consent->granted) {
+                return new Admission($context, 'declined');
+            }
+
+            $granted = true;
+        }
+
+        if ($this->isBanned($app, $context->endUserId)) {
+            $this->observeIdentity($request, $context);
+
+            return new Admission($context, 'banned');
+        }
+
+        if ($granted && $escalate) {
+            $context = $this->escalate($context);
+        }
+
+        $this->observeIdentity($request, $context);
+
+        if ($protect && ($blocked = $this->protectionBlock($context)) !== null) {
+            return new Admission($context, $blocked);
+        }
+
+        return new Admission($context);
+    }
+
     /** Step 7. */
     public function consentRequired(?string $country): bool
     {
@@ -274,6 +379,10 @@ class WallGate
             // granted, in escalate()) — carrying it here is what keeps the
             // render gate's five IP rules from each re-deriving it themselves.
             verdict: $context->verdict,
+            // Same evidence at render as at click: the SDK's build string sits
+            // beside the User-Agent for `emulator_device`, exactly as the
+            // click pipeline sees it through `WallContext::fraudContext()`.
+            deviceHint: $context->deviceHint,
         );
 
         foreach ($rows as $row) {

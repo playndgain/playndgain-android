@@ -161,6 +161,14 @@ class ClickController extends Controller
             'device_type' => $context->device,
             'os' => $context->os,
             'browser' => $context->browser,
+            // Native SDK provenance and the publisher's sub-ids. Null on every
+            // iframe click; `device_hint` is kept so a click blocked by
+            // `emulator_device` on SDK evidence can be explained afterwards.
+            'sdk_platform' => $context->sdkPlatform,
+            'sdk_version' => $context->sdkVersion,
+            'device_model' => $context->deviceModel,
+            'device_hint' => $context->deviceHint,
+            ...$context->subs,
             'referrer' => $context->referrer,
             'risk_score' => $banned ? max($decision->score, 100) : $decision->score,
             'blocked' => $banned || $decision->blocked,

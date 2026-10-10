@@ -448,6 +448,7 @@ class AppResource extends PublisherScopedResource
             '{status}' => 'credited or reversed',
             '{timestamp}' => 'unix seconds',
             '{signature}' => 'sha256(trans_id + payout_usd + secret_key)',
+            '{sub1}..{sub5}' => 'the sub-ids you passed on the wall URL or in the SDK options, empty when not sent and on partner wall conversions',
         ];
 
         $rows = collect($macros)

@@ -95,3 +95,25 @@ it('refuses an unsigned delete', function () {
 
     expect(OfferClick::query()->withoutGlobalScopes()->sole()->end_user_id)->toBe('USER_1');
 });
+
+it('exports and then erases sub ids and native device strings', function () {
+    [$app] = wallSubject();
+
+    OfferClick::query()->withoutGlobalScopes()->update([
+        'sub1' => 'a@b.c', 'sub5' => 'z', 'device_model' => 'Pixel 7', 'device_hint' => 'Pixel 7|panther',
+    ]);
+
+    test()->get('/privacy/data?'.http_build_query(['appid' => $app->app_id, 'userid' => 'USER_1', 'sig' => wallSig($app)]))
+        ->assertOk()
+        ->assertJsonPath('clicks.rows.0.sub1', 'a@b.c')
+        ->assertJsonPath('clicks.rows.0.device_model', 'Pixel 7');
+
+    test()->post('/privacy/delete', ['appid' => $app->app_id, 'userid' => 'USER_1', 'sig' => wallSig($app)])->assertOk();
+
+    $click = OfferClick::query()->withoutGlobalScopes()->sole();
+
+    expect($click->sub1)->toBeNull()
+        ->and($click->sub5)->toBeNull()
+        ->and($click->device_model)->toBeNull()
+        ->and($click->device_hint)->toBeNull();
+});

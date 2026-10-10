@@ -88,6 +88,30 @@ final class WallContext
          * on earth. Those are exactly the conversions a network charges back.
          */
         public readonly bool $countryOverridden = false,
+        /**
+         * Which native SDK sent this request, if any: `android` or `ios`, its
+         * version, and the device model. Logging only. Never an input to
+         * targeting, because a client can send anything here.
+         */
+        public readonly ?string $sdkPlatform = null,
+        public readonly ?string $sdkVersion = null,
+        public readonly ?string $deviceModel = null,
+        /**
+         * Publisher sub-ids, echoed on the postback as {sub1}..{sub5}.
+         *
+         * @var array<string, string> keyed sub1..sub5, only the valid ones
+         */
+        public readonly array $subs = [],
+        /**
+         * The SDK's build string (`Build.*` on Android, `utsname` on iOS).
+         *
+         * It exists for one rule. An SDK click opens in the system browser,
+         * whose reduced User-Agent carries no model or build, so
+         * `emulator_device` would see nothing an iframe click shows it. The
+         * hint is incriminating only: `EmulatorDeviceRule` scans it *in
+         * addition to* the User-Agent, so a forged clean hint clears nothing.
+         */
+        public readonly ?string $deviceHint = null,
     ) {}
 
     public function dir(): string
@@ -158,6 +182,14 @@ final class WallContext
             // switch or a sort submit that dropped them would reset both.
             'theme' => in_array($theme, ['light', 'dark'], true) ? $theme : null,
             'balance' => $this->balance,
+            // Carried forward so the click a native SDK opens in the system
+            // browser still says which SDK, and still carries the build
+            // evidence the emulator rule needs at click time.
+            'sdk' => $this->sdkPlatform,
+            'sdk_v' => $this->sdkPlatform !== null ? $this->sdkVersion : null,
+            'model' => $this->sdkPlatform !== null ? $this->deviceModel : null,
+            'dh' => $this->sdkPlatform !== null ? $this->deviceHint : null,
+            ...$this->subs,
         ], fn (?string $value) => $value !== null && $value !== ''));
     }
 
@@ -174,6 +206,7 @@ final class WallContext
             browser: $this->browser,
             referrer: $this->referrer,
             offer: $offer,
+            deviceHint: $this->deviceHint,
         );
     }
 

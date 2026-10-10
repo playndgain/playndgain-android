@@ -38,6 +38,10 @@ final class MacroResolver
             '{status}' => $reversal ? 'reversed' : 'credited',
             '{timestamp}' => (string) now()->getTimestamp(),
             '{signature}' => self::sign($conversion, $payout),
+            // Publisher sub-ids from the click, blank when not sent. Blank,
+            // not literal: these are optional by design, unlike a macro we do
+            // not know, which stays literal so a typo shows at setup time.
+            ...self::subs($conversion),
         ];
 
         return str_replace(
@@ -53,6 +57,26 @@ final class MacroResolver
     }
 
     /**
+     * `{sub1}`..`{sub5}` off the click the conversion resolved to. One lazy
+     * load per postback when the caller did not eager-load `offerClick`; a
+     * conversion with no click (a sample, a partner payout) resolves all five
+     * to blank.
+     *
+     * @return array<string, string>
+     */
+    private static function subs(Conversion $conversion): array
+    {
+        $click = $conversion->offer_click_id !== null ? $conversion->offerClick : null;
+        $macros = [];
+
+        foreach (range(1, 5) as $n) {
+            $macros["{sub{$n}}"] = (string) ($click?->getAttribute("sub{$n}") ?? '');
+        }
+
+        return $macros;
+    }
+
+    /**
      * A publisher callback is a URL *template*. Laravel's `url` rule rejects
      * `{user_id}` because the braces are not in its query alphabet — the same
      * reason the network wall URL is not `->url()`.
@@ -65,7 +89,7 @@ final class MacroResolver
             return true;
         }
 
-        $sample = (string) preg_replace('/\{[a-z_]+\}/i', 'x', $template);
+        $sample = (string) preg_replace('/\{[a-z0-9_]+\}/i', 'x', $template);
 
         return str_starts_with(strtolower($template), 'https://')
             && Str::isUrl($sample, ['https']);

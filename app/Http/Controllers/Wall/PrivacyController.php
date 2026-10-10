@@ -62,7 +62,7 @@ class PrivacyController extends Controller
             'clicks' => [
                 'count' => (clone $clicks)->count(),
                 'rows' => (clone $clicks)->latest('created_at')->limit(self::ROW_LIMIT)
-                    ->get(['click_id', 'offer_id', 'ip', 'country', 'device_type', 'os', 'browser', 'created_at']),
+                    ->get(['click_id', 'offer_id', 'ip', 'country', 'device_type', 'os', 'browser', 'sdk_platform', 'sdk_version', 'device_model', 'device_hint', 'sub1', 'sub2', 'sub3', 'sub4', 'sub5', 'created_at']),
             ],
             'conversions' => [
                 'count' => (clone $conversions)->count(),
@@ -91,6 +91,17 @@ class PrivacyController extends Controller
                     'ip' => IpAnonymizer::REDACTED,
                     'user_agent' => null,
                     'referrer' => null,
+                    // Publisher-supplied and device-supplied strings: a sub-id
+                    // can be anything a publisher chose to pass, an email
+                    // included, and the model and build hint describe the
+                    // user's own phone. None of it is needed to reconcile money.
+                    'device_model' => null,
+                    'device_hint' => null,
+                    'sub1' => null,
+                    'sub2' => null,
+                    'sub3' => null,
+                    'sub4' => null,
+                    'sub5' => null,
                     'end_user_id' => $pseudonym,
                 ]);
 

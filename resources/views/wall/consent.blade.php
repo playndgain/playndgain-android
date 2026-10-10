@@ -22,13 +22,20 @@
         <dd>{{ __('wall.consent.who') }}</dd>
     </dl>
 
-    <form method="post" action="{{ route('wall.consent') }}" class="wall-actions">
+    {{-- `appid` rides in the query string too: the per-app rate limiter keys on
+         the query, and a body-only appid lands every consent POST in one
+         shared bucket. Every other wall parameter is carried as a hidden
+         field so the redirect back to the wall keeps sub-ids, SDK info,
+         theme and balance — not just who the user is. --}}
+    <form method="post" action="{{ route('wall.consent') }}?appid={{ $context->app->app_id }}" class="wall-actions">
         {{-- No CSRF token: the wall group is stateless by specification and an
              iframe on another origin never receives our session cookie. --}}
-        <input type="hidden" name="appid" value="{{ $context->app->app_id }}">
-        <input type="hidden" name="userid" value="{{ $context->endUserId }}">
-        <input type="hidden" name="sig" value="{{ request()->input('sig') }}">
-        <input type="hidden" name="lang" value="{{ $context->locale }}">
+        @php(parse_str($context->params(), $carried))
+        {{-- Not `country`: the consent row records where the user really is,
+             and a test-mode preview override must not be written as that. --}}
+        @foreach (\Illuminate\Support\Arr::except($carried, ['country']) as $name => $value)
+            <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+        @endforeach
 
         <button type="submit" name="action" value="accept" class="wall-button">{{ __('wall.consent.accept') }}</button>
         <button type="submit" name="action" value="decline" class="wall-button">{{ __('wall.consent.decline') }}</button>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Wall;
 use App\Enums\DeviceType;
 use App\Http\Controllers\Controller;
 use App\Services\Wall\OfferFeed;
+use App\Services\Wall\WallContext;
 use App\Services\Wall\WallGate;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -47,52 +48,23 @@ class WallController extends Controller
 
         $context = $this->gate->context($request, $app);
 
-        // Not merely "was consent required" — `escalate()` below must fire
-        // only once a real "yes" is in hand, never on the strength of the
-        // displayed country alone. That country can be a test-mode
-        // `?country=` override (see WallContext::$countryOverridden), so
-        // gating on `consentRequired($context->country)` at the escalate call
-        // site would ask a paid provider about a real IP the user was never
-        // asked to consent for.
-        $consentGranted = false;
+        // Steps 7–9, shared with the SDK API so the two cannot drift. See
+        // WallGate::admit() for why the order is what it is.
+        $admission = $this->gate->admit($request, $context, reviewConsent: $request->input('consent') === 'review');
+        $context = $admission->context;
 
-        if ($this->gate->consentRequired($context->country)) {
-            // `consent=review` is how a user reopens their own answer; without
-            // it a declined consent is permanent and the gate is a trap.
-            $consent = $request->input('consent') === 'review'
-                ? null
-                : $this->gate->consent($app, $context->endUserId);
+        return match ($admission->refusal) {
+            null => $this->render($request, $context),
+            'consent' => $this->page('consent', ['context' => $context]),
+            'declined' => $this->notice('declined', $context),
+            'banned' => $this->notice('banned', $context),
+            default => $this->notice($admission->refusal, $context, Response::HTTP_FORBIDDEN),
+        };
+    }
 
-            if ($consent === null) {
-                return $this->page('consent', ['context' => $context]);
-            }
-
-            if (! $consent->granted) {
-                return $this->notice('declined', $context);
-            }
-
-            $consentGranted = true;
-        }
-
-        if ($this->gate->isBanned($app, $context->endUserId)) {
-            $this->gate->observeIdentity($request, $context);
-
-            return $this->notice('banned', $context);
-        }
-
-        if ($consentGranted) {
-            $context = $this->gate->escalate($context);
-        }
-
-        $this->gate->observeIdentity($request, $context);
-
-        // Last, not first: a user with no consent decision belongs on the
-        // consent screen, and a protection block written ahead of it would put
-        // their IP and end user ID in a fraud_event before they answered.
-        if ($blocked = $this->gate->protectionBlock($context)) {
-            return $this->notice($blocked, $context, Response::HTTP_FORBIDDEN);
-        }
-
+    /** Steps 10–13: the offers, for a request the gate admitted. */
+    private function render(Request $request, WallContext $context): Response
+    {
         // Whitelisted here rather than trusted downstream: the value comes off a
         // URL the end user can edit, and it ends up in a `selected` attribute.
         $sort = in_array($request->input('sort'), self::SORTS, true)
@@ -105,7 +77,7 @@ class WallController extends Controller
             'context' => $context,
             'offers' => $offers,
             'sort' => $sort,
-            'categories' => $this->categories($offers),
+            'categories' => self::categories($offers),
             // Two ways to have no offers, and they are not the same sentence.
             // "Nothing in your country right now" is a lie when the country is
             // exactly what we failed to establish.
@@ -120,7 +92,7 @@ class WallController extends Controller
      * @param  list<array<string, mixed>>  $offers
      * @return list<string>
      */
-    private function categories(array $offers): array
+    public static function categories(array $offers): array
     {
         $categories = [];
 
