@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colours are drawn in code from the app's own wall theme. This only
+         removes the platform chrome so the first frame is not a white flash. -->
+    <style name="Playndgain.Theme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Activity</item>
+    </style>
+</resources>

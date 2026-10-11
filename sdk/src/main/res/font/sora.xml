@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static Sora weights, not the variable file: weight axes need API 26 and
+     the SDK supports API 23. The app: attributes are what ResourcesCompat
+     reads below API 26; the android: ones are read from API 26 up. -->
+<font-family xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="UnusedAttribute">
+    <font android:font="@font/sora_regular" android:fontStyle="normal" android:fontWeight="400"
+        app:font="@font/sora_regular" app:fontStyle="normal" app:fontWeight="400" />
+    <font android:font="@font/sora_semibold" android:fontStyle="normal" android:fontWeight="600"
+        app:font="@font/sora_semibold" app:fontStyle="normal" app:fontWeight="600" />
+    <font android:font="@font/sora_bold" android:fontStyle="normal" android:fontWeight="700"
+        app:font="@font/sora_bold" app:fontStyle="normal" app:fontWeight="700" />
+</font-family>

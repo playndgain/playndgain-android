@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Android 11+ hides other apps unless declared. Without this the SDK
+         cannot see a Custom Tabs browser and every offer falls back to a
+         plain browser intent. -->
+    <queries>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
+    <!-- No supportsRtl here: a library value would fight a host that sets
+         false. The Arabic wall mirrors when the host declares
+         android:supportsRtl="true" (see README). -->
+    <application>
+        <activity
+            android:name="com.playndgain.sdk.ui.PlayndgainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|locale|layoutDirection"
+            android:exported="false"
+            android:theme="@style/Playndgain.Theme" />
+    </application>
+</manifest>
