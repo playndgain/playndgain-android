@@ -22,8 +22,8 @@ first time anyone edited a header on the box and forgot to say so.
 
 | File | Goes to | What it is |
 |---|---|---|
-| `nginx/playndgain.com.conf` | `/etc/nginx/sites-available/` | Marketing site, `/docs`, both Filament panels. |
-| `nginx/wall.playndgain.com.conf` | `/etc/nginx/sites-available/` | The offerwall. **Iframe-embeddable — read the header comment before touching it.** |
+| `nginx/playndgain.com.conf` | `/etc/nginx/sites-available/` | Marketing site, `/docs`, both Filament panels, and the offerwall at `/wall`, whose location block is the one framable path on this host. **Read its comment before touching it.** |
+| `nginx/wall.playndgain.com.conf` | `/etc/nginx/sites-available/` | The offerwall on its own host, kept for embeds handed out before the move to `/wall`. **Iframe-embeddable — read the header comment before touching it.** |
 | `nginx/api.playndgain.com.conf` | `/etc/nginx/sites-available/` | Inbound network postbacks. Every other path is a 404. |
 | `nginx/conf.d/playndgain-limit-zones.conf` | `/etc/nginx/conf.d/` | `limit_req_zone` declarations. Must be in the `http` context. |
 | `nginx/snippets/playndgain-security-headers.conf` | `/etc/nginx/snippets/` | `X-Frame-Options: SAMEORIGIN`, nosniff, referrer policy, HSTS. Included by the main and API blocks, **never by the wall**. |

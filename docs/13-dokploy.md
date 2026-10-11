@@ -117,8 +117,8 @@ Three domains, all on the **`app`** service, port **80**:
 
 | Domain | |
 |---|---|
-| `playndgain.com` | Marketing site, `/docs`, both panels |
-| `wall.playndgain.com` | The offerwall |
+| `playndgain.com` | Marketing site, `/docs`, both panels, the offerwall at `/wall` |
+| `wall.playndgain.com` | The offerwall, for embeds handed out before the move to `/wall` |
 | `api.playndgain.com` | Inbound network postbacks |
 
 They must match `APP_DOMAIN`, `WALL_DOMAIN` and `API_DOMAIN` in the

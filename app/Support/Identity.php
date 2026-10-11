@@ -30,8 +30,8 @@ final class Identity
     }
 
     /**
-     * Base URL for anything a publisher embeds. The site host is
-     * frame-protected; the wall host is the only one an iframe can load.
+     * Base URL for anything a publisher embeds. The site host serves /wall
+     * framable, so this is APP_URL unless PLAYNDGAIN_WALL_URL overrides it.
      */
     public static function wallUrl(): string
     {

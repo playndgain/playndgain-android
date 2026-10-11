@@ -262,20 +262,48 @@ it('keeps the container nginx blocks in step with the deployed ones', function (
         ->and($container('docker/nginx/nginx.conf'))->toContain('real_ip_recursive on;');
 });
 
-it('points every embed at the wall host, never the frame-protected site host', function () {
-    config(['app.url' => 'https://playndgain.com', 'playndgain.wall_url' => 'https://wall.playndgain.com']);
+it('points every embed at the site host, which serves /wall framable', function () {
+    config(['app.url' => 'https://playndgain.com', 'playndgain.wall_url' => null]);
 
-    expect(Identity::wallUrl())->toBe('https://wall.playndgain.com')
+    expect(Identity::wallUrl())->toBe('https://playndgain.com')
         ->and(AppResource::snippet(null))
-        ->toContain('src="https://wall.playndgain.com/wall?appid=YOUR_APP_ID')
+        ->toContain('src="https://playndgain.com/wall?appid=YOUR_APP_ID')
         ->and(DocSource::substitute('{APP_URL}/wall?appid=1 {APP_URL}/docs'))
-        ->toBe('https://wall.playndgain.com/wall?appid=1 https://playndgain.com/docs');
+        ->toBe('https://playndgain.com/wall?appid=1 https://playndgain.com/docs');
 
-    // A stale embed on the site host is sent to the wall host instead of
-    // rendering "refused to connect".
-    expect(deployFile('nginx/playndgain.com.conf'))->toContain('return 308 https://wall.playndgain.com$request_uri;')
-        ->and((string) file_get_contents(base_path('docker/nginx/templates/10-site.conf.template')))
-        ->toContain('return 308 https://${WALL_DOMAIN}$request_uri;');
+    // PLAYNDGAIN_WALL_URL still overrides, for a deploy that wants the wall
+    // on its own host again.
+    config(['playndgain.wall_url' => 'https://wall.example.test/']);
+
+    expect(Identity::wallUrl())->toBe('https://wall.example.test');
+});
+
+it('clears framing on the site host for /wall only', function () {
+    $sites = [
+        'deploy' => deployFile('nginx/playndgain.com.conf'),
+        'container' => (string) file_get_contents(base_path('docker/nginx/templates/10-site.conf.template')),
+    ];
+
+    foreach ($sites as $site) {
+        // The rest of the host keeps the strict set, panels included.
+        expect($site)->toContain('include /etc/nginx/snippets/playndgain-security-headers.conf;')
+            ->and($site)->not->toContain('return 308');
+
+        expect(preg_match('/location ~ \^\/wall\(\/\|\$\) \{(.*?)\n    \}/s', $site, $match))->toBe(1);
+        $wall = $match[1];
+
+        // It must run PHP itself: falling through try_files would answer from
+        // the \.php$ block, whose inherited headers include SAMEORIGIN.
+        expect($wall)->toContain('fastcgi_pass ')
+            ->and($wall)->toContain('fastcgi_param SCRIPT_FILENAME $realpath_root/index.php;')
+            ->and($wall)->toContain('fastcgi_hide_header X-Frame-Options;')
+            ->and($wall)->toContain('add_header X-Frame-Options "" always;')
+            ->and($wall)->toContain('frame-ancestors *')
+            ->and($wall)->toContain('limit_req zone=wall')
+            ->and($wall)->not->toContain('SAMEORIGIN')
+            ->and($wall)->not->toContain('try_files')
+            ->and($wall)->not->toContain('Strict-Transport-Security');
+    }
 });
 
 it('lets the nginx worker write spilled request bodies', function () {

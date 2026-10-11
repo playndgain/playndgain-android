@@ -35,15 +35,14 @@ return [
     | Wall base URL
     |--------------------------------------------------------------------------
     |
-    | The wall is framed on publisher domains, so every embed URL we hand out
-    | must point at the wall host: the site host sends X-Frame-Options
-    | SAMEORIGIN and renders as "refused to connect" inside an iframe. Blank
-    | falls back to https://WALL_DOMAIN (set by the container entrypoint), then
-    | to APP_URL for local hosts that serve everything on one name.
+    | Base for every embed URL we hand out. Blank means APP_URL: the site host
+    | serves /wall framable (its nginx block clears SAMEORIGIN on that path
+    | only), so embeds read playndgain.com/wall. WALL_DOMAIN still serves the
+    | same routes for embeds handed out before, but no longer sets this.
     |
     */
 
-    'wall_url' => env('PLAYNDGAIN_WALL_URL') ?: (env('WALL_DOMAIN') ? 'https://'.env('WALL_DOMAIN') : null),
+    'wall_url' => env('PLAYNDGAIN_WALL_URL') ?: null,
 
     /*
     |--------------------------------------------------------------------------

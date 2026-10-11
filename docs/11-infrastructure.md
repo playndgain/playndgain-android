@@ -49,8 +49,8 @@ MySQL 8.4 is also still an LTS and is the conservative fallback if the host's pa
 
 | Domain | Serves |
 |---|---|
-| `playndgain.com` | Static marketing site + `/docs` + Laravel panels |
-| `wall.playndgain.com` | Offerwall only |
+| `playndgain.com` | Static marketing site + `/docs` + Laravel panels + the offerwall at `/wall` (the only framable path) |
+| `wall.playndgain.com` | Offerwall only, kept for embeds handed out before the wall moved to `/wall` |
 | `api.playndgain.com` | Postback endpoints only |
 
 Three server blocks, one machine, one certificate covering all three.

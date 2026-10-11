@@ -30,7 +30,7 @@ The publisher embeds one iframe:
 | `lang` | no | ISO-639-1. v1 ships `en` and `ar`. |
 | `balance` | no | The end user's balance in the app's own currency, shown in the topbar. A string, passed through as sent; integer strings are grouped (`21000` → `21,000`). Carried across tab and app-nav switches like `lang`. |
 
-The wall is served on its own subdomain (`wall.playndgain.com`) with its own nginx server block and no session cookie. That isolation is what lets it be aggressively cached and horizontally scaled later without touching the panels.
+Embeds point at `playndgain.com/wall`. The site's nginx block serves `/wall` from its own location that clears `X-Frame-Options` and sends `frame-ancestors *`; every other path on the host stays `SAMEORIGIN`. The wall has no session cookie, so an embed can reach nothing of the panels. `wall.playndgain.com` still serves the same routes for embeds handed out before the move. `PLAYNDGAIN_WALL_URL` puts embeds back on a separate host if the wall ever needs its own box.
 
 ---
 
