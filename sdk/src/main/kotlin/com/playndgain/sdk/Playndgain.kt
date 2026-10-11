@@ -115,7 +115,7 @@ public enum class PlayndgainTheme { APP, LIGHT, DARK, SYSTEM }
 
 public data class PlayndgainConfig @JvmOverloads constructor(
     /** Overridable for local testing. `http` is refused unless the host app is debuggable. */
-    val baseUrl: String = "https://wall.playndgain.com",
+    val baseUrl: String = "https://playndgain.com",
     /** Logs request outcomes. Never logs URLs (they carry the signature) or offer names. */
     val debugLogging: Boolean = false,
 )
