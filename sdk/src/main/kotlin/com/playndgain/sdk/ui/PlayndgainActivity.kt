@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -27,9 +26,6 @@ import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import android.window.OnBackInvokedDispatcher
-import androidx.browser.customtabs.CustomTabColorSchemeParams
-import androidx.browser.customtabs.CustomTabsClient
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.playndgain.sdk.Playndgain
@@ -109,6 +105,7 @@ public class PlayndgainActivity : Activity() {
     private var closedEmitted = false
     private var pendingRewardCheck = false
     private var sheet: View? = null
+    private var offerFlow: OfferFlow? = null
     /** Bumped per page request; a response from an older one is dropped. */
     private var generation = 0
     private var detailGeneration = 0
@@ -172,6 +169,7 @@ public class PlayndgainActivity : Activity() {
 
     override fun onDestroy() {
         io.shutdownNow()
+        offerFlow?.destroy()
         if (isFinishing) emitClosedOnce()
         super.onDestroy()
     }
@@ -183,6 +181,7 @@ public class PlayndgainActivity : Activity() {
 
     /** Closes the sheet, or leaves History. False when back should close the wall. */
     private fun handleBack(): Boolean = when {
+        offerFlow?.handleBack() == true -> true
         sheet != null -> { closeSheet(); true }
         tab == Tab.HISTORY -> { switchTab(Tab.OFFERS); true }
         else -> false
@@ -815,37 +814,30 @@ public class PlayndgainActivity : Activity() {
     // ---- Clicks -----------------------------------------------------------
 
     /**
-     * Out of the app, always: the click goes to `/click/{offer}` in the system
-     * browser, so the wall's own pre-click checks, the click row and the
-     * redirect to the advertiser all happen exactly as in the iframe.
+     * Inside the app: [OfferFlow] follows `/click/{offer}` once, so the wall's
+     * own pre-click checks, the click row and the redirect to the advertiser
+     * all happen exactly as in the iframe, then opens the Play Store or shows
+     * the page it landed on.
      */
     private fun startOffer(url: String) {
         // Only the wall's own click route, over the scheme the wall itself
         // was reached on (https outside a debuggable host).
-        if (!Responses.clickAllowed(url, Playndgain.config.baseUrl)) {
+        val base = Playndgain.config.baseUrl
+        val p = palette
+        if (offerFlow != null || p == null || !Responses.clickAllowed(url, base)) {
             Playndgain.emitError(PlayndgainError.INTERNAL)
             return
         }
-        pendingRewardCheck = true
-        val uri = Uri.parse(url)
-        try {
-            if (CustomTabsClient.getPackageName(this, null) != null) {
-                val p = palette
-                CustomTabsIntent.Builder()
-                    .apply {
-                        if (p != null) setDefaultColorSchemeParams(CustomTabColorSchemeParams.Builder().setToolbarColor(p.bg).build())
-                    }
-                    .setShowTitle(false)
-                    .build()
-                    .launchUrl(this, uri)
-            } else {
-                startActivity(Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE))
+        val flow = OfferFlow(this, root, p, fonts, strings.or("offer.close", getString(R.string.pg_close)), { pendingRewardCheck = it }) { end ->
+            offerFlow = null
+            when (end) {
+                OfferFlowEnd.RETURNED -> { Playndgain.emitRewardCheck(); reload() }
+                OfferFlowEnd.FAILED -> { Playndgain.emitError(PlayndgainError.NETWORK); showOffline() }
+                OfferFlowEnd.LEFT_APP, OfferFlowEnd.CANCELLED -> Unit
             }
-        } catch (_: RuntimeException) {
-            // No browser, a disabled one, or a security refusal from the system.
-            pendingRewardCheck = false
-            Playndgain.emitError(PlayndgainError.INTERNAL)
         }
+        offerFlow = flow
+        if (!flow.start(url, base)) { offerFlow = null; Playndgain.emitError(PlayndgainError.INTERNAL) }
     }
 
     // ---- History ----------------------------------------------------------

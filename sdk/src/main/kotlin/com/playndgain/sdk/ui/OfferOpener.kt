@@ -206,6 +206,9 @@ internal class OfferOpener(
     private val timeout = Runnable { resolution.timedOut()?.let(onResolve) }
     private var started = false
 
+    /** The revealed page's renderer died: the caller drops this web view. */
+    var onGone: (() -> Unit)? = null
+
     init {
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
@@ -294,9 +297,11 @@ internal class OfferOpener(
         }
 
         // Handled, so the host app is not taken down with the renderer. The
-        // caller drops this web view on Failed.
+        // caller drops this web view on Failed, or on [onGone] once revealed.
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+            val revealed = resolution.phase == OfferResolution.Phase.REVEALED
             failed()
+            if (revealed) onGone?.invoke()
             return true
         }
     }

@@ -17,8 +17,8 @@ import java.util.Locale
  *
  * Fraud parity with the iframe is the rule here. The wall's checks read the
  * User-Agent, so the SDK sends the exact UA a WebView in this app would send.
- * An offer click opens in the system browser, whose reduced UA has no model or
- * build, so the SDK also sends the build string as `dh` for the emulator rule.
+ * The build string also goes as `dh` for the emulator rule: before 1.1 an
+ * offer click opened in the system browser, whose reduced UA has none.
  */
 internal data class DeviceInfo(
     val userAgent: String,

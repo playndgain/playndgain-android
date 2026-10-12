@@ -1,9 +1,9 @@
 # Playndgain Android SDK
 
-A native offerwall for Android apps: an offer list, offer details and the player's history, drawn with native views. Offers open in the phone's browser or app store. Rewards reach your server by the same signed postback the iframe wall uses.
+A native offerwall for Android apps: an offer list, offer details and the player's history, drawn with native views. Offers open inside the app where they can (see below). Rewards reach your server by the same signed postback the iframe wall uses.
 
 - minSdk 23, compileSdk 35
-- Dependencies: `androidx.browser`, `androidx.recyclerview`. No OkHttp, no image library, no Play Services.
+- Dependencies: `androidx.recyclerview`. No OkHttp, no image library, no Play Services.
 - Your secret key never goes into the app.
 
 ## Install
@@ -15,7 +15,7 @@ Not published yet. Until it is, build the AAR locally:
 # sdk/build/outputs/aar/sdk-release.aar
 ```
 
-Maven Central coordinates once published: `com.playndgain:offerwall:1.0.0`.
+Maven Central coordinates once published: `com.playndgain:offerwall:1.1.0`.
 
 ## Use
 
@@ -39,6 +39,16 @@ Playndgain.show(activity, PlayndgainOptions(subIds = listOf("spring_promo")))
 Call `Playndgain.setListener(null)` when the screen that set it is destroyed; the listener is held strongly.
 
 `onRewardCheck` is a prompt to look, not a payment. Credit the player from your postback.
+
+### How an offer opens
+
+"Start this offer" shows a short loading state while the SDK follows the offer's link in a WebView the player does not see yet. The link is requested once.
+
+- A Google Play app: the Play Store app opens on its listing, or the listing on the web if the Play Store is missing.
+- Another app's link: the system opens that app.
+- A web page, or no store within about 8 seconds: the same WebView rises as a sheet with a Close button. Back goes back inside the page first, then closes it.
+
+`onRewardCheck` fires once per offer: when the player closes the web sheet, or when the app comes back after the offer left it. No `<queries>` entry is needed in your manifest.
 
 `setUser` with an id outside the allowed alphabet forgets the previous user as well and reports `INVALID_USER_ID`, so `show` then reports `USER_NOT_SET` instead of opening the last player's wall.
 
@@ -67,7 +77,7 @@ Every request goes to `/sdk/v1` on the wall host and carries what the wall needs
 | `dh` | `Build.MODEL`, `PRODUCT`, `DEVICE`, `HARDWARE`, `FINGERPRINT`. Used only by the emulator check |
 | `ds` | A small device-signal token in the format the wall's identity checks already read |
 
-Nothing persistent, no advertising ID, no install identifier. `setAdvertisingIdEnabled` and `setChildDirected` are stored and nothing reads them in 1.0.
+Nothing persistent, no advertising ID, no install identifier. `setAdvertisingIdEnabled` and `setChildDirected` are stored and nothing reads them yet.
 
 ## Sample app
 

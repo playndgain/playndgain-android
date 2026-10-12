@@ -3,20 +3,6 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Android 11+ hides other apps unless declared. Without this the SDK
-         cannot see a Custom Tabs browser and every offer falls back to a
-         plain browser intent. -->
-    <queries>
-        <intent>
-            <action android:name="android.support.customtabs.action.CustomTabsService" />
-        </intent>
-        <intent>
-            <action android:name="android.intent.action.VIEW" />
-            <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="https" />
-        </intent>
-    </queries>
-
     <!-- No supportsRtl here: a library value would fight a host that sets
          false. The Arabic wall mirrors when the host declares
          android:supportsRtl="true" (see README). -->

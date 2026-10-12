@@ -5,10 +5,10 @@ Run on the Mac. Needs the Android SDK at `~/Library/Android/sdk`, an arm64 AVD (
 ## 1. Unit tests and builds
 
 ```
-./gradlew :sdk:testDebugUnitTest :sdk:assembleRelease :sample:assembleDebug
+./gradlew :sdk:testDebugUnitTest :sdk:lintDebug :sdk:assembleRelease :sample:assembleDebug
 ```
 
-Expected: 19 tests, 0 failures. `sdk/build/outputs/aar/sdk-release.aar` and `sample/build/outputs/apk/debug/sample-debug.apk`.
+Expected: 39 tests, 0 failures, lint 0 errors. `StoreLinkTest` pins which URLs are Play listings (web, `market://`, `intent://`); `OfferResolutionTest` drives every navigation the click can take (store, app link, landing, timeout, failure) without a WebView. `sdk/build/outputs/aar/sdk-release.aar` and `sample/build/outputs/apk/debug/sample-debug.apk`.
 
 ## 2. Serve the wall
 
@@ -40,7 +40,7 @@ A stock AVD must be refused exactly as an iframe in a WebView would be.
 
 - **Show** lands on "Offers unavailable" (`blocked_unavailable`). Screenshot: `docs/screens/01-parity-sdk-blocked.png`.
 - The server's `fraud_events` row for that user has `rule_key = emulator_device`. Its context carries the WebView UA (`... sdk_gphone64_arm64 Build/...; wv ... PlayndgainSDK/1.0.0`) and the `dh` hint.
-- After an offer click from the SDK, the `offer_clicks` row stores `device_hint`. With the rule on, the click is blocked as `emulator_device` even though the browser's UA is the reduced `Android 10; K`.
+- After an offer click from the SDK, the `offer_clicks` row stores `device_hint`. With the rule on, the click is blocked as `emulator_device`: since 1.1 the click runs in the SDK's own WebView, whose UA carries the build string, and `dh` is there as well. The wall's refusal page then rises in the in-app sheet.
 
 Known, and older than the SDK: the wall URL opened straight in the emulator's **Chrome** is not refused, because Chrome's reduced UA has no build string. Inside an app the iframe runs in a WebView, whose UA has one, and is refused. Screenshot: `docs/screens/02-parity-iframe-chrome.png`.
 
@@ -52,8 +52,10 @@ Turn `emulator_device` off in the local `fraud_rules` table and test mode on for
 |---|---|---|
 | List loads | Header, tabs, search, category chips, sort, featured rail, cards | `03-offers.png` |
 | Detail | Sheet with steps, notes, who it is for, Important box, Start | `04-detail.png` |
-| Start | Opens a Custom Tab on `/click/{id}`; a click row is written with `sdk_platform=android`, `sub1` | `05-click-browser.png` |
-| Return | `onRewardCheck` in the sample log, list reloads | |
+| Start | A loading card, then the click's outcome inside the app: a Play listing opens the Play Store app; a web page rises as a sheet with Close. One click row is written with `sdk_platform=android`, `sub1` | `05-click-browser.png` |
+| Back in the sheet | Goes back inside the page, then closes the sheet | |
+| Return | Closing the sheet, or coming back from the Play Store: `onRewardCheck` once in the sample log, list reloads | |
+| Unreachable click | Airplane mode on after the list loads, then Start: the offline screen, no `onRewardCheck` | |
 | History | Rows with status as a word, credited amount in the primary colour, partner rows say "Partner wall" | `06-history.png` |
 | Arabic | `--es lang ar`: mirrored layout, chevrons point left, system Arabic face. Needs `supportsRtl="true"` in the host manifest (the sample sets it) | `07-arabic-rtl.png` |
 | Offline | Airplane mode: "You are offline", Try again recovers | `08-offline.png`, `09-offline-retry.png` |

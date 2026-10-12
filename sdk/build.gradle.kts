@@ -42,7 +42,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.androidx.browser)
     implementation(libs.androidx.recyclerview)
 
     testImplementation(libs.junit)
