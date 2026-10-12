@@ -26,7 +26,7 @@ internal enum class OfferFlowEnd {
     RETURNED,
     /** The click left the app: the check waits for onResume. */
     LEFT_APP,
-    /** Nothing loaded: the wall's offline screen. */
+    /** Nothing loaded: the wall stays and says the offer could not be opened. */
     FAILED,
     /** Back while the click was still resolving: nothing was shown. */
     CANCELLED,

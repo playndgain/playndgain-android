@@ -757,7 +757,6 @@ public class PlayndgainActivity : Activity() {
 
     /** Always says something: the server's notice, else its strings, else the bundled text. */
     private fun showSheetNotice(r: WallResponse?, error: PlayndgainError?) {
-        val p = palette ?: return
         val s = r?.strings ?: strings
         val n = r?.notice
         val (title, body) = when {
@@ -767,6 +766,11 @@ public class PlayndgainActivity : Activity() {
                 s.or("notice.unavailable.title", getString(R.string.pg_unavailable_title)) to s.or("too_many", getString(R.string.pg_unavailable_body))
             else -> s.or("notice.unavailable.title", getString(R.string.pg_unavailable_title)) to s.or("notice.unavailable.body", getString(R.string.pg_unavailable_body))
         }
+        showSheetMessage(title, body)
+    }
+
+    private fun showSheetMessage(title: String, body: String) {
+        val p = palette ?: return
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(16), dp(24), dp(32)) }
         col.addView(TextView(this).apply { text = title; style(fonts, 17f, 700, p.text) })
         col.addView(TextView(this).apply { text = body; style(fonts, 13.5f, 400, p.muted); setPadding(0, dp(8), 0, 0) })
@@ -832,7 +836,14 @@ public class PlayndgainActivity : Activity() {
             offerFlow = null
             when (end) {
                 OfferFlowEnd.RETURNED -> { Playndgain.emitRewardCheck(); reload() }
-                OfferFlowEnd.FAILED -> { Playndgain.emitError(PlayndgainError.NETWORK); showOffline() }
+                // The wall stays; the sheet says this offer could not be opened.
+                OfferFlowEnd.FAILED -> {
+                    Playndgain.emitError(PlayndgainError.NETWORK)
+                    showSheetMessage(
+                        strings.or("notice.blocked.title", getString(R.string.pg_unavailable_title)),
+                        strings.or("notice.blocked.body", getString(R.string.pg_unavailable_body)),
+                    )
+                }
                 OfferFlowEnd.LEFT_APP, OfferFlowEnd.CANCELLED -> Unit
             }
         }

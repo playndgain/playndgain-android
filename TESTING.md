@@ -55,7 +55,7 @@ Turn `emulator_device` off in the local `fraud_rules` table and test mode on for
 | Start | A loading card, then the click's outcome inside the app: a Play listing opens the Play Store app; a web page rises as a sheet with Close. One click row is written with `sdk_platform=android`, `sub1` | `05-click-browser.png` |
 | Back in the sheet | Goes back inside the page, then closes the sheet | |
 | Return | Closing the sheet, or coming back from the Play Store: `onRewardCheck` once in the sample log, list reloads | |
-| Unreachable click | Airplane mode on after the list loads, then Start: the offline screen, no `onRewardCheck` | |
+| Unreachable click | Airplane mode on after the list loads, then Start: the list stays and a sheet says "Offer unavailable", `onError(NETWORK)`, no `onRewardCheck` | |
 | History | Rows with status as a word, credited amount in the primary colour, partner rows say "Partner wall" | `06-history.png` |
 | Arabic | `--es lang ar`: mirrored layout, chevrons point left, system Arabic face. Needs `supportsRtl="true"` in the host manifest (the sample sets it) | `07-arabic-rtl.png` |
 | Offline | Airplane mode: "You are offline", Try again recovers | `08-offline.png`, `09-offline-retry.png` |
