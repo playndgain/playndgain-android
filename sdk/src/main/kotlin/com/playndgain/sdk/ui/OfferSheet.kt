@@ -3,6 +3,7 @@ package com.playndgain.sdk.ui
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
@@ -12,6 +13,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -59,7 +61,14 @@ internal class OfferFlow(
         val o = OfferOpener(activity, onResolve = ::resolved, onIntercept = ::intercepted)
         o.onGone = { finish(OfferFlowEnd.RETURNED) }
         val s = OfferSheet(activity, o.webView, palette, fonts, closeLabel) { finish(OfferFlowEnd.RETURNED) }
+        // The wall's search field keeps focus under the sheet and would bring
+        // its keyboard up over the page: hide it and take the focus here.
+        activity.currentFocus?.let { v ->
+            (activity.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)?.hideSoftInputFromWindow(v.windowToken, 0)
+            v.clearFocus()
+        }
         root.addView(s, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        s.requestFocus()
         opener = o
         sheet = s
         if (!o.start(url, base)) {
@@ -181,6 +190,8 @@ internal class OfferSheet(
         // The scrim the wall's other sheets use; it also keeps taps off the wall.
         setBackgroundColor(Color.argb(140, 0, 0, 0))
         isClickable = true
+        isFocusable = true
+        isFocusableInTouchMode = true
 
         val r = context.dp(p.radiusDp * 1.8f).toFloat()
         panel.background = GradientDrawable().apply { setColor(p.card); cornerRadii = floatArrayOf(r, r, r, r, 0f, 0f, 0f, 0f) }
