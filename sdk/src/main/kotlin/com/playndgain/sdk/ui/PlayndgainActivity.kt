@@ -52,6 +52,7 @@ import com.playndgain.sdk.PlayndgainTheme
 import com.playndgain.sdk.R
 import com.playndgain.sdk.internal.ApiClient
 import com.playndgain.sdk.internal.ApiException
+import com.playndgain.sdk.internal.Balance
 import com.playndgain.sdk.internal.Colors
 import com.playndgain.sdk.internal.HistoryRow
 import com.playndgain.sdk.internal.ImageLoader
@@ -504,13 +505,14 @@ public class PlayndgainActivity : Activity() {
     /** The user's money as a solid primary pill: the figure, then the currency. */
     private fun balancePill(balance: String, currency: String): View {
         val p = palette!!
+        val shown = Balance.display(balance)
         return LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             isBaselineAligned = true
             background = primaryFill(p, dp(999).toFloat())
             setPadding(dp(12), dp(6), dp(12), dp(6))
-            contentDescription = "$balance $currency"
-            addView(figure(balance, Role.ROW_TITLE, p.onPrimary).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }, wrap())
+            contentDescription = "$shown $currency"
+            addView(figure(shown, Role.ROW_TITLE, p.onPrimary).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }, wrap())
             addView(TextView(this@PlayndgainActivity).apply {
                 text = currency
                 style(fonts, Role.LABEL, 600, p.onPrimary)

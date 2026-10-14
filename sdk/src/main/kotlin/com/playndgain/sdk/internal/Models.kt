@@ -240,3 +240,22 @@ internal object Colors {
 
     fun alpha(c: Int, a: Float): Int = ((a * 255).toInt().coerceIn(0, 255) shl 24) or (c and 0xFFFFFF)
 }
+
+/**
+ * The balance a publisher passes in, as the web wall's header shows it: an
+ * all-digit string is grouped in thousands ("1250" reads "1,250", Western
+ * digits on every wall, as the rewards are); anything else ("21k", "21.5")
+ * is shown as given.
+ */
+internal object Balance {
+    fun display(raw: String): String {
+        if (raw.isEmpty() || !raw.all { it in '0'..'9' }) return raw
+        val digits = raw.trimStart('0').ifEmpty { return "0" }
+        val out = StringBuilder()
+        digits.forEachIndexed { i, c ->
+            if (i > 0 && (digits.length - i) % 3 == 0) out.append(',')
+            out.append(c)
+        }
+        return out.toString()
+    }
+}

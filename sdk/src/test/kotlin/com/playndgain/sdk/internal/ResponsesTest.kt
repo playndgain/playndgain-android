@@ -114,4 +114,19 @@ class ResponsesTest {
         assertTrue(d.upTo)
         assertEquals(listOf("iOS"), d.deviceLabels)
     }
+
+    @Test
+    fun `a balance of digits is grouped and anything else passes through`() {
+        assertEquals("1,250", Balance.display("1250"))
+        assertEquals("1,234,567", Balance.display("1234567"))
+        assertEquals("999", Balance.display("999"))
+        assertEquals("7", Balance.display("007"))
+        assertEquals("0", Balance.display("0"))
+        assertEquals("98,765,432,109,876,543,210", Balance.display("98765432109876543210"))
+        assertEquals("21k", Balance.display("21k"))
+        assertEquals("21.5", Balance.display("21.5"))
+        assertEquals("1,250", Balance.display("1,250"))
+        assertEquals("١٢٥٠", Balance.display("١٢٥٠"))
+        assertEquals("", Balance.display(""))
+    }
 }
