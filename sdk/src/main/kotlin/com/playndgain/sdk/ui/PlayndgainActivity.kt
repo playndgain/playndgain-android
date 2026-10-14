@@ -1,5 +1,6 @@
 package com.playndgain.sdk.ui
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -26,6 +27,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
@@ -40,6 +42,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
+import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.playndgain.sdk.Playndgain
@@ -129,6 +132,12 @@ public class PlayndgainActivity : Activity() {
     private var pendingRewardCheck = false
     private var sheet: View? = null
     private var sheetPanel: View? = null
+    /**
+     * The rows' entrance is owed: set by an answer from the wall, spent by
+     * the first screen of rows, cancelled by typing or a drag.
+     */
+    private var entrance = false
+    private val entered = HashSet<Int>()
     private var offerFlow: OfferFlow? = null
     /** Bumped per page request; a response from an older one is dropped. */
     private var generation = 0
@@ -159,9 +168,14 @@ public class PlayndgainActivity : Activity() {
         }
 
         root = FrameLayout(this)
-        // Draw behind the bars in the wall's colour, but keep content clear of
-        // them on every API level from 23 up.
-        root.fitsSystemWindows = true
+        // Draw behind the bars, and into a camera cutout in landscape, in the
+        // wall's colour, but keep the content clear of all of them.
+        if (Build.VERSION.SDK_INT >= 28) {
+            window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES }
+            root.setOnApplyWindowInsetsListener { v, insets -> padForInsets(v, insets) }
+        } else {
+            root.fitsSystemWindows = true
+        }
         page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         body = FrameLayout(this)
         root.addView(page, pageParams())
@@ -178,6 +192,24 @@ public class PlayndgainActivity : Activity() {
         showLoading()
         // onResume reloads when a reward check is owed; one request is enough.
         if (!pendingRewardCheck) reload()
+    }
+
+    /** The bars, the keyboard and the cutout, whichever is larger on each side. */
+    @RequiresApi(28)
+    @Suppress("DEPRECATION") // systemWindowInsets is the one form that also works below API 30.
+    private fun padForInsets(v: View, insets: WindowInsets): WindowInsets {
+        val bars = if (Build.VERSION.SDK_INT >= 30) {
+            insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.ime() or WindowInsets.Type.displayCutout())
+                .let { intArrayOf(it.left, it.top, it.right, it.bottom) }
+        } else {
+            val cut = insets.displayCutout
+            intArrayOf(
+                maxOf(insets.systemWindowInsetLeft, cut?.safeInsetLeft ?: 0), maxOf(insets.systemWindowInsetTop, cut?.safeInsetTop ?: 0),
+                maxOf(insets.systemWindowInsetRight, cut?.safeInsetRight ?: 0), maxOf(insets.systemWindowInsetBottom, cut?.safeInsetBottom ?: 0),
+            )
+        }
+        v.setPadding(bars[0], bars[1], bars[2], bars[3])
+        return insets
     }
 
     /** On a tablet the wall keeps a phone's reading width, centred. */
@@ -312,6 +344,8 @@ public class PlayndgainActivity : Activity() {
         when (r.status) {
             "ok", "unplaced" -> {
                 if (!opened) { opened = true; Playndgain.emitOpened() }
+                entrance = true
+                entered.clear()
                 buildChrome(r)
                 if (tab == Tab.OFFERS) showOffers(r) else showHistory(r.history)
             }
@@ -383,7 +417,7 @@ public class PlayndgainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(10), 0, dp(10), 0)
         }
-        titles.addView(TextView(this).apply { text = name; style(fonts, Role.ROW_TITLE, 600, p.text); maxLines = 1; ellipsize = TextUtils.TruncateAt.END; heading() })
+        titles.addView(TextView(this).apply { text = name; style(fonts, Role.ROW_TITLE, 600, p.text); maxLines = 1; ellipsize = TextUtils.TruncateAt.END; heading(); reads() })
         titles.addView(TextView(this).apply { text = strings["earn"]; style(fonts, Role.LABEL, 400, p.muted); setPadding(0, dp(3), 0, 0) })
         bar.addView(titles, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
 
@@ -449,19 +483,7 @@ public class PlayndgainActivity : Activity() {
     private fun showOffers(r: WallResponse) {
         body.removeAllViews()
         val adapter = OfferAdapter()
-        val list = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@PlayndgainActivity)
-            clipToPadding = false
-            setPadding(0, 0, 0, dp(40))
-            // Rows arrive with the wall's own rise; no second, default animation.
-            itemAnimator = null
-            // The keyboard goes as soon as the list is dragged.
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(rv: RecyclerView, state: Int) {
-                    if (state == RecyclerView.SCROLL_STATE_DRAGGING) hideKeyboard()
-                }
-            })
-        }
+        val list = rowList()
         list.adapter = adapter
         body.addView(list, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
@@ -485,18 +507,45 @@ public class PlayndgainActivity : Activity() {
             adapter.submit(items, emptyState(r, q.isNotEmpty() || category != null))
         }
 
-        fun header(): View = controls(r, onQuery = { refilter() }, onCategory = {
-            adapter.replaceHeader(header())
+        adapter.header = controls(r, onQuery = { entrance = false; refilter() }, onCategory = {
             refilter()
             list.scrollToPosition(0)
         })
-        adapter.replaceHeader(header())
         refilter()
+    }
+
+    /** The list both tabs use: the keyboard and the entrance end when it is dragged. */
+    private fun rowList() = RecyclerView(this).apply {
+        layoutManager = LinearLayoutManager(this@PlayndgainActivity)
+        clipToPadding = false
+        setPadding(0, 0, 0, dp(40))
+        // Rows arrive with the wall's own rise; no second, default animation.
+        itemAnimator = null
+        addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(rv: RecyclerView, state: Int) {
+                if (state == RecyclerView.SCROLL_STATE_DRAGGING) { entrance = false; hideKeyboard() }
+            }
+        })
+    }
+
+    /**
+     * The entrance plays once per answer from the wall, for the rows on the
+     * first screen only: never on scroll, never on a keystroke. A reused row
+     * always starts at rest.
+     */
+    private fun enter(v: View, index: Int) {
+        v.animate().cancel()
+        v.alpha = 1f
+        v.translationY = 0f
+        if (entrance && index < Motion.STAGGER_CAP && entered.add(index)) {
+            v.fadeRise(index, Motion.enabled(this), dp(20).toFloat())
+        }
     }
 
     /**
      * Search, categories and sort: the list's first item, so they scroll
-     * away and the offers get the screen, in landscape most of all.
+     * away and the offers get the screen, in landscape most of all. A picked
+     * category restyles the chips where they are; nothing is rebuilt.
      */
     private fun controls(r: WallResponse, onQuery: () -> Unit, onCategory: () -> Unit): View {
         val p = palette!!
@@ -535,19 +584,23 @@ public class PlayndgainActivity : Activity() {
 
         // The selected category takes the primary fill, as on the web wall;
         // the rest are hairline pills. Each is drawn 36dp tall in a 48dp target.
-        fun chip(label: String, on: Boolean, ink: Boolean, click: () -> Unit) = TextView(this).apply {
-            text = label
-            gravity = Gravity.CENTER
-            style(fonts, Role.LABEL, 600, if (ink && on) p.onPrimary else if (on) p.text else p.faint)
-            background = when {
+        fun styleChip(chip: TextView, on: Boolean, ink: Boolean) {
+            chip.setTextColor(if (ink && on) p.onPrimary else if (on) p.text else p.faint)
+            chip.background = when {
                 ink && on -> insetPill(p, primaryFill(p, pill), dp(6), pill)
                 ink -> insetPill(p, rounded(Color.TRANSPARENT, pill, p.line, dp(1)), dp(6), pill)
                 on -> insetPill(p, rounded(p.tile, pill), dp(6), pill)
                 else -> insetPill(p, null, dp(6), pill)
             }
+            chip.isSelected = on
+        }
+        fun chip(label: String, on: Boolean, ink: Boolean, click: () -> Unit) = TextView(this).apply {
+            text = label
+            gravity = Gravity.CENTER
+            style(fonts, Role.LABEL, 600, p.text)
+            styleChip(this, on, ink)
             setPadding(dp(if (ink) 14 else 12), dp(14), dp(if (ink) 14 else 12), dp(14))
             minHeight = dp(48)
-            isSelected = on
             setOnClickListener { click() }
         }
         fun row(views: List<View>, label: String? = null): View {
@@ -557,8 +610,18 @@ public class PlayndgainActivity : Activity() {
         }
 
         if (r.categories.isNotEmpty()) {
-            val chips = listOf(chip(strings.or("all", "All"), category == null, true) { if (category != null) { category = null; onCategory() } }) +
-                r.categories.map { c -> chip(c.replaceFirstChar { it.uppercase() }, category == c, true) { if (category != c) { category = c; onCategory() } } }
+            val keys: List<String?> = listOf(null) + r.categories
+            val chips = mutableListOf<TextView>()
+            keys.forEach { key ->
+                val label = key?.replaceFirstChar { it.uppercase() } ?: strings.or("all", "All")
+                chips += chip(label, category == key, true) {
+                    if (category != key) {
+                        category = key
+                        chips.forEachIndexed { i, c -> styleChip(c, keys[i] == key, true) }
+                        onCategory()
+                    }
+                }
+            }
             column.addView(row(chips))
         }
 
@@ -586,25 +649,19 @@ public class PlayndgainActivity : Activity() {
     /**
      * Position 0 is the controls, the same view for as long as the screen
      * lives, so typing in the search never rebinds it and the keyboard stays.
-     * The rows after it are replaced as a range.
+     * The rows after it are replaced as a range, and every row is a holder
+     * built once and bound to whichever offer it shows.
      */
     private inner class OfferAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-        private var header: View? = null
+        var header: View? = null
+            set(value) { field = value; notifyItemChanged(0) }
         private var items: List<Any> = emptyList()
         private var empty: Pair<String, String> = "" to ""
-        private val animate = Motion.enabled(this@PlayndgainActivity)
-        private var animated = 0
-
-        fun replaceHeader(v: View) {
-            header = v
-            notifyItemChanged(0)
-        }
 
         fun submit(items: List<Any>, empty: Pair<String, String>) {
             val before = bodyCount()
             this.items = items
             this.empty = empty
-            animated = 0
             notifyItemRangeRemoved(1, before)
             notifyItemRangeInserted(1, bodyCount())
         }
@@ -619,21 +676,20 @@ public class PlayndgainActivity : Activity() {
             else -> 0
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-            val v: View = when (viewType) {
-                1 -> HorizontalScrollView(parent.context).apply { isHorizontalScrollBarEnabled = false }
-                2 -> LinearLayout(parent.context).apply { orientation = LinearLayout.VERTICAL }
-                else -> FrameLayout(parent.context)
-            }
-            v.layoutParams = RecyclerView.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-            return object : RecyclerView.ViewHolder(v) {}
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder = when (viewType) {
+            0 -> OfferHolder()
+            1 -> RailHolder()
+            2 -> EmptyHolder()
+            else -> object : RecyclerView.ViewHolder(FrameLayout(parent.context).apply { layoutParams = RecyclerView.LayoutParams(MATCH_PARENT, WRAP_CONTENT) }) {}
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val v = holder.itemView
-            when (getItemViewType(position)) {
-                3 -> {
-                    val frame = v as FrameLayout
+            when (holder) {
+                is OfferHolder -> holder.bind(items[position - 1] as OfferCard)
+                is RailHolder -> holder.bind((items[position - 1] as Rail).offers)
+                is EmptyHolder -> holder.bind(empty.first, empty.second)
+                else -> {
+                    val frame = holder.itemView as FrameLayout
                     val h = header ?: return
                     if (h.parent !== frame) {
                         (h.parent as? ViewGroup)?.removeView(h)
@@ -642,36 +698,214 @@ public class PlayndgainActivity : Activity() {
                     }
                     return
                 }
-                2 -> bindEmpty(v as LinearLayout, empty.first, empty.second)
-                1 -> bindRail(v as HorizontalScrollView, (items[position - 1] as Rail).offers)
-                else -> {
-                    val frame = v as FrameLayout
-                    frame.removeAllViews()
-                    frame.addView(offerCard(items[position - 1] as OfferCard))
-                }
             }
-            if (position >= animated) {
-                v.fadeRise(position - 1, animate, dp(20).toFloat())
-                animated = position + 1
-            }
+            enter(holder.itemView, position - 1)
         }
     }
 
-    private fun bindRail(scroll: HorizontalScrollView, offers: List<OfferCard>) {
-        val p = palette ?: return
-        scroll.removeAllViews()
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        col.addView(TextView(this).apply {
-            text = strings.or("featured_offers", "Featured offers")
-            style(fonts, Role.LABEL, 600, p.muted)
-            setPadding(dp(16), dp(8), dp(16), dp(8))
-        })
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(16), 0, dp(8), dp(8)) }
-        offers.forEach { o ->
-            row.addView(railCard(o), LinearLayout.LayoutParams(dp(220), WRAP_CONTENT).apply { marginEnd = dp(8) })
+    private fun rewardSpeech(name: String, reward: String, upTo: Boolean): String {
+        val up = if (upTo) strings.or("up_to", "Up to") + " " else ""
+        return "$name, $up$reward ${last?.app?.currencyName.orEmpty()}"
+    }
+
+    private val bigText: Boolean get() = resources.configuration.fontScale >= 1.5f
+
+    /** Children of a ledger column keep their own width, so the column's END gravity lines them up. */
+    private fun wrap() = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+
+    /** A figure reads the same in both directions: "+6,125" keeps its sign in front on the Arabic wall too. */
+    private fun figure(text: String, sizeSp: Float, color: Int) = TextView(this).apply {
+        this.text = text
+        style(fonts, sizeSp, 700, color)
+        fontFeatureSettings = "tnum"
+        textDirection = View.TEXT_DIRECTION_LTR
+        maxLines = 1
+    }
+
+    /** 11/600 small capitals in the faint colour: the currency and "Up to". */
+    private fun caps(text: String) = TextView(this).apply {
+        this.text = if (fonts.rtl) text else text.uppercase()
+        style(fonts, Role.CAPS, 600, palette!!.faint)
+        tracking(fonts, 0.06f)
+        maxLines = 1
+    }
+
+    /**
+     * The ledger: "Up to", "+6,125" and the currency, stacked and flush to the
+     * row's end in a column at least 72dp wide, or on one baseline when the
+     * row is stacked at the largest font sizes.
+     */
+    private inner class Ledger {
+        val view = LinearLayout(this@PlayndgainActivity)
+        private val upTo = caps("")
+        private val fig = figure("", Role.REWARD, 0)
+        private val unit = caps("")
+
+        init {
+            view.addView(upTo, wrap())
+            view.addView(fig, wrap())
+            view.addView(unit, wrap())
         }
-        col.addView(row)
-        scroll.addView(col)
+
+        // The label is the wall's own formatted figure; the SDK only adds the sign.
+        @SuppressLint("SetTextI18n")
+        fun bind(label: String, up: Boolean, inline: Boolean, size: Float = Role.REWARD, color: Int = palette!!.text, sign: String = "+") {
+            val currency = last?.app?.currencyName.orEmpty()
+            upTo.visibility = if (up) View.VISIBLE else View.GONE
+            upTo.text = strings.or("up_to", "Up to").let { if (fonts.rtl) it else it.uppercase() }
+            fig.text = "$sign$label"
+            fig.setTextSize(TypedValue.COMPLEX_UNIT_SP, size)
+            fig.setTextColor(color)
+            unit.text = if (fonts.rtl) currency else currency.uppercase()
+            if (inline) {
+                view.orientation = LinearLayout.HORIZONTAL
+                view.isBaselineAligned = true
+                view.gravity = Gravity.START
+                view.minimumWidth = 0
+                (upTo.layoutParams as LinearLayout.LayoutParams).marginEnd = dp(6)
+                (fig.layoutParams as LinearLayout.LayoutParams).marginEnd = dp(6)
+            } else {
+                view.orientation = LinearLayout.VERTICAL
+                view.gravity = Gravity.END
+                view.minimumWidth = dp(72)
+                (upTo.layoutParams as LinearLayout.LayoutParams).marginEnd = 0
+                (fig.layoutParams as LinearLayout.LayoutParams).marginEnd = 0
+            }
+            view.requestLayout()
+        }
+    }
+
+    /** An icon over its letter, at a fixed size. */
+    private inner class Tile(sizeDp: Int) {
+        val view = FrameLayout(this@PlayndgainActivity).apply { clipToOutline = true }
+        private val letter = TextView(this@PlayndgainActivity).apply { gravity = Gravity.CENTER }
+        private val img = ImageView(this@PlayndgainActivity).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
+        private val size = sizeDp
+
+        init {
+            view.addView(letter, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+            view.addView(img, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        }
+
+        fun bind(name: String, url: String?) {
+            val p = palette!!
+            view.background = rounded(p.tile, dp(p.radiusDp * 0.6f).toFloat())
+            letter.text = name.take(1).uppercase()
+            letter.setTextSize(TypedValue.COMPLEX_UNIT_DIP, size * 0.4f)
+            letter.typeface = fonts.weight(700)
+            letter.setTextColor(p.muted)
+            if (img.tag == url && img.drawable != null) return
+            img.setImageDrawable(null)
+            img.visibility = View.GONE
+            letter.visibility = View.VISIBLE
+            ImageLoader.load(url, img) { ok -> img.visibility = if (ok) View.VISIBLE else View.GONE; letter.visibility = if (ok) View.GONE else View.VISIBLE }
+        }
+    }
+
+    /** One offer in the list, built once and bound to whichever offer it shows. */
+    private inner class OfferHolder : RecyclerView.ViewHolder(FrameLayout(this@PlayndgainActivity)) {
+        private val card = LinearLayout(this@PlayndgainActivity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            minimumHeight = dp(72)
+            isFocusable = true
+            isClickable = true
+        }
+        private val tile = Tile(48)
+        private val text = LinearLayout(this@PlayndgainActivity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(10), 0) }
+        private val name = TextView(this@PlayndgainActivity).apply { maxLines = 2; ellipsize = TextUtils.TruncateAt.END; reads() }
+        private val note = TextView(this@PlayndgainActivity).apply { maxLines = 2; ellipsize = TextUtils.TruncateAt.END; setPadding(0, dp(4), 0, 0); setLineSpacing(0f, 1.15f); reads() }
+        private val meta = TextView(this@PlayndgainActivity).apply { setPadding(0, dp(5), 0, 0); maxLines = 1; ellipsize = TextUtils.TruncateAt.END; reads() }
+        private val ledger = Ledger()
+        private val chevron = ImageView(this@PlayndgainActivity).apply {
+            setImageResource(R.drawable.pg_ic_chevron)
+            setPadding(dp(6), dp(6), dp(6), dp(6))
+            // Decoration only: the whole row is the button, and this never starts the offer.
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            isClickable = false
+            isFocusable = false
+        }
+
+        init {
+            itemView.layoutParams = RecyclerView.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            (itemView as FrameLayout).addView(card, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(16), dp(4), dp(16), dp(4)) })
+            card.addView(tile.view, LinearLayout.LayoutParams(dp(48), dp(48)))
+            text.addView(name)
+            text.addView(note)
+            text.addView(meta)
+            card.addView(text, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            card.addView(chevron, LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginStart = dp(8) })
+        }
+
+        fun bind(o: OfferCard) {
+            val p = palette!!
+            val r = dp(p.radiusDp).toFloat()
+            var bg: android.graphics.drawable.Drawable = pressable(p, rounded(p.card, r, p.line, dp(1)), r)
+            // A pinned offer carries the primary on its leading edge, inset like
+            // the web wall's, so the row's words stay on every other row's axis.
+            if (o.featured && !o.test) {
+                bg = LayerDrawable(arrayOf(bg, rounded(p.primary, dp(2).toFloat()))).apply {
+                    setLayerGravity(1, Gravity.START or Gravity.FILL_VERTICAL)
+                    setLayerWidth(1, dp(3))
+                    setLayerInsetRelative(1, dp(2), dp(12), 0, dp(12))
+                }
+            }
+            card.background = bg
+            card.contentDescription = rewardSpeech(o.name, o.rewardLabel, o.upTo)
+            card.setOnClickListener { openDetail(o.id) }
+            tile.bind(o.name, o.iconUrl)
+            name.text = o.name
+            name.style(fonts, Role.ROW_TITLE, 600, p.text)
+            note.text = o.instructions
+            note.style(fonts, Role.BODY, 400, p.muted)
+            note.visibility = if (o.instructions.isEmpty()) View.GONE else View.VISIBLE
+            val parts = listOfNotNull(
+                if (o.test) strings.or("test_badge", "Test offer") else null,
+                if (!o.test && o.featured) strings["featured"].ifEmpty { null } else null,
+                o.stepsLabel ?: if (o.repeatable) strings["multi_reward"].ifEmpty { null } else null,
+            )
+            meta.style(fonts, Role.LABEL, 400, p.faint)
+            meta.text = metaLine(parts, o.peopleLabel, p, meta.textSize)
+            meta.visibility = if (parts.isEmpty() && o.peopleLabel == null) View.GONE else View.VISIBLE
+            chevron.imageTintList = ColorStateList.valueOf(p.text)
+            chevron.background = rounded(p.tile, dp(999).toFloat())
+
+            // At the largest font sizes the figure goes under the words, so
+            // neither has to squeeze the other into a column of letters.
+            ledger.bind(o.rewardLabel, o.upTo, inline = bigText)
+            (ledger.view.parent as? ViewGroup)?.removeView(ledger.view)
+            if (bigText) text.addView(ledger.view, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { topMargin = dp(6) })
+            else card.addView(ledger.view, card.indexOfChild(chevron))
+        }
+    }
+
+    /** The featured rail. Its cards are rebuilt only when its offers change. */
+    private inner class RailHolder : RecyclerView.ViewHolder(HorizontalScrollView(this@PlayndgainActivity)) {
+        private val title = TextView(this@PlayndgainActivity).apply { setPadding(dp(16), dp(8), dp(16), dp(8)) }
+        private val row = LinearLayout(this@PlayndgainActivity).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(16), 0, dp(8), dp(8)) }
+        private var key = ""
+
+        init {
+            val scroll = itemView as HorizontalScrollView
+            scroll.isHorizontalScrollBarEnabled = false
+            scroll.layoutParams = RecyclerView.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            val col = LinearLayout(this@PlayndgainActivity).apply { orientation = LinearLayout.VERTICAL }
+            col.addView(title)
+            col.addView(row)
+            scroll.addView(col)
+        }
+
+        fun bind(offers: List<OfferCard>) {
+            val p = palette!!
+            title.text = strings.or("featured_offers", "Featured offers")
+            title.style(fonts, Role.LABEL, 600, p.muted)
+            val k = offers.joinToString(",") { it.id.toString() } + "|${p.bg}|${fonts.rtl}|$bigText"
+            if (k == key) return
+            key = k
+            row.removeAllViews()
+            offers.forEach { o -> row.addView(railCard(o), LinearLayout.LayoutParams(dp(220), WRAP_CONTENT).apply { marginEnd = dp(8) }) }
+        }
     }
 
     /** The featured rail's card: icon and reward on one line, the name below in full. */
@@ -688,13 +922,14 @@ public class PlayndgainActivity : Activity() {
             setOnClickListener { openDetail(o.id) }
         }
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        top.addView(iconTile(o.name, o.iconUrl, 44), LinearLayout.LayoutParams(dp(44), dp(44)))
+        val tile = Tile(44).also { it.bind(o.name, o.iconUrl) }
+        top.addView(tile.view, LinearLayout.LayoutParams(dp(44), dp(44)))
         top.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        top.addView(rewardColumn(o.rewardLabel, o.upTo))
+        top.addView(Ledger().also { it.bind(o.rewardLabel, o.upTo, inline = false) }.view)
         card.addView(top)
-        card.addView(TextView(this).apply { text = o.name; style(fonts, Role.ROW_TITLE, 600, p.text); maxLines = 2; ellipsize = TextUtils.TruncateAt.END; setPadding(0, dp(12), 0, 0) })
+        card.addView(TextView(this).apply { text = o.name; style(fonts, Role.ROW_TITLE, 600, p.text); maxLines = 2; ellipsize = TextUtils.TruncateAt.END; setPadding(0, dp(12), 0, 0); reads() })
         if (o.instructions.isNotEmpty()) {
-            card.addView(TextView(this).apply { text = o.instructions; style(fonts, Role.BODY, 400, p.muted); maxLines = 2; ellipsize = TextUtils.TruncateAt.END; setPadding(0, dp(4), 0, 0) })
+            card.addView(TextView(this).apply { text = o.instructions; style(fonts, Role.BODY, 400, p.muted); maxLines = 2; ellipsize = TextUtils.TruncateAt.END; setPadding(0, dp(4), 0, 0); reads() })
         }
         return card
     }
@@ -719,152 +954,29 @@ public class PlayndgainActivity : Activity() {
         return out
     }
 
-    private fun rewardSpeech(name: String, reward: String, upTo: Boolean): String {
-        val up = if (upTo) strings.or("up_to", "Up to") + " " else ""
-        return "$name, $up$reward ${last?.app?.currencyName.orEmpty()}"
-    }
+    /** A title and a line under it, centred: the empty and no-results states. */
+    private inner class EmptyHolder : RecyclerView.ViewHolder(LinearLayout(this@PlayndgainActivity)) {
+        private val title = TextView(this@PlayndgainActivity).apply { gravity = Gravity.CENTER }
+        private val text = TextView(this@PlayndgainActivity).apply { gravity = Gravity.CENTER; setPadding(0, dp(8), 0, 0); setLineSpacing(0f, 1.25f) }
 
-    /**
-     * The ledger column: one fixed inline size on every row, so the figures
-     * share an edge. It never gives way; the name beside it truncates instead.
-     */
-    private fun rewardColumn(label: String, upTo: Boolean): View {
-        val p = palette!!
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END; minimumWidth = dp(72) }
-        if (upTo) col.addView(caps(strings.or("up_to", "Up to")), wrap())
-        col.addView(figure("+$label", Role.REWARD, p.text), wrap())
-        col.addView(caps(last?.app?.currencyName.orEmpty()), wrap())
-        return col
-    }
-
-    private val bigText: Boolean get() = resources.configuration.fontScale >= 1.5f
-
-    /** "UP TO +6,125 COINS" on one baseline, for the stacked row and the detail head. */
-    private fun rewardLine(label: String, upTo: Boolean): View {
-        val p = palette!!
-        val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = true }
-        val gap = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(6) }
-        if (upTo) line.addView(caps(strings.or("up_to", "Up to")), LinearLayout.LayoutParams(gap))
-        line.addView(figure("+$label", Role.REWARD, p.text), LinearLayout.LayoutParams(gap))
-        line.addView(caps(last?.app?.currencyName.orEmpty()))
-        return line
-    }
-
-    /** Children of a ledger column keep their own width, so the column's END gravity lines them up. */
-    private fun wrap() = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
-
-    /** A figure reads the same in both directions: "+6,125" keeps its sign in front on the Arabic wall too. */
-    private fun figure(text: String, sizeSp: Float, color: Int) = TextView(this).apply {
-        this.text = text
-        style(fonts, sizeSp, 700, color)
-        fontFeatureSettings = "tnum"
-        textDirection = View.TEXT_DIRECTION_LTR
-        maxLines = 1
-    }
-
-    /** 11/600 small capitals in the faint colour: the currency and "Up to". */
-    private fun caps(text: String) = TextView(this).apply {
-        this.text = if (fonts.rtl) text else text.uppercase()
-        style(fonts, Role.CAPS, 600, palette!!.faint)
-        tracking(fonts, 0.06f)
-        maxLines = 1
-    }
-
-    /**
-     * Decoration only: the whole row is the button, and this never starts the
-     * offer. A tile disc with the text colour, mirrored on an RTL wall.
-     */
-    private fun chevron(): View {
-        val p = palette!!
-        return ImageView(this).apply {
-            setImageResource(R.drawable.pg_ic_chevron)
-            imageTintList = ColorStateList.valueOf(p.text)
-            background = rounded(p.tile, dp(999).toFloat())
-            setPadding(dp(6), dp(6), dp(6), dp(6))
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            isClickable = false
-            isFocusable = false
+        init {
+            val v = itemView as LinearLayout
+            v.orientation = LinearLayout.VERTICAL
+            v.gravity = Gravity.CENTER_HORIZONTAL
+            v.setPadding(dp(32), dp(56), dp(32), dp(32))
+            v.layoutParams = RecyclerView.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            v.addView(title)
+            v.addView(text)
         }
-    }
 
-    private fun offerCard(o: OfferCard): View {
-        val p = palette!!
-        val r = dp(p.radiusDp).toFloat()
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = pressable(p, rounded(p.card, r, p.line, dp(1)), r)
-            setPadding(dp(12), dp(12), dp(12), dp(12))
-            minimumHeight = dp(72)
-            isFocusable = true
-            isClickable = true
-            contentDescription = rewardSpeech(o.name, o.rewardLabel, o.upTo)
-            setOnClickListener { openDetail(o.id) }
+        fun bind(t: String, b: String) {
+            val p = palette!!
+            title.text = t
+            title.style(fonts, Role.SHEET_TITLE, 700, p.text)
+            title.heading()
+            text.text = b
+            text.style(fonts, Role.BODY, 400, p.muted)
         }
-        // A pinned offer carries the primary on its leading edge, inset like
-        // the web wall's, so the row's words stay on every other row's axis.
-        if (o.featured && !o.test) {
-            card.background = LayerDrawable(arrayOf(card.background, rounded(p.primary, dp(2).toFloat()))).apply {
-                setLayerGravity(1, Gravity.START or Gravity.FILL_VERTICAL)
-                setLayerWidth(1, dp(3))
-                setLayerInsetRelative(1, dp(2), dp(12), 0, dp(12))
-            }
-        }
-        card.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(16), dp(4), dp(16), dp(4)) }
-
-        card.addView(iconTile(o.name, o.iconUrl, 48), LinearLayout.LayoutParams(dp(48), dp(48)))
-
-        val text = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(10), 0) }
-        text.addView(TextView(this).apply { this.text = o.name; style(fonts, Role.ROW_TITLE, 600, p.text); maxLines = 2; ellipsize = TextUtils.TruncateAt.END })
-        if (o.instructions.isNotEmpty()) {
-            text.addView(TextView(this).apply {
-                this.text = o.instructions
-                style(fonts, Role.BODY, 400, p.muted)
-                maxLines = 2
-                ellipsize = TextUtils.TruncateAt.END
-                setPadding(0, dp(4), 0, 0)
-                setLineSpacing(0f, 1.15f)
-            })
-        }
-        val meta = listOfNotNull(
-            if (o.test) strings.or("test_badge", "Test offer") else null,
-            if (!o.test && o.featured) strings["featured"].ifEmpty { null } else null,
-            o.stepsLabel ?: if (o.repeatable) strings["multi_reward"].ifEmpty { null } else null,
-        )
-        if (meta.isNotEmpty() || o.peopleLabel != null) {
-            text.addView(TextView(this).apply { style(fonts, Role.LABEL, 400, p.faint); this.text = metaLine(meta, o.peopleLabel, p, textSize); setPadding(0, dp(5), 0, 0); maxLines = 1; ellipsize = TextUtils.TruncateAt.END })
-        }
-        card.addView(text, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-        // At the largest font sizes the figure goes under the words, so
-        // neither has to squeeze the other into a column of letters.
-        if (bigText) text.addView(rewardLine(o.rewardLabel, o.upTo), LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { topMargin = dp(6) })
-        else card.addView(rewardColumn(o.rewardLabel, o.upTo))
-        card.addView(chevron(), LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginStart = dp(8) })
-        return card
-    }
-
-    private fun iconTile(name: String, url: String?, sizeDp: Int): View {
-        val p = palette!!
-        val frame = FrameLayout(this).apply { background = rounded(p.tile, dp(p.radiusDp * 0.6f).toFloat()); clipToOutline = true }
-        val letter = TextView(this).apply {
-            text = name.take(1).uppercase()
-            gravity = Gravity.CENTER
-            style(fonts, (sizeDp * 0.4f), 700, p.muted)
-        }
-        val img = ImageView(this).apply { scaleType = ImageView.ScaleType.CENTER_CROP; visibility = View.GONE }
-        frame.addView(letter, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
-        frame.addView(img, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
-        ImageLoader.load(url, img) { ok -> img.visibility = if (ok) View.VISIBLE else View.GONE; letter.visibility = if (ok) View.GONE else View.VISIBLE }
-        return frame
-    }
-
-    private fun bindEmpty(v: LinearLayout, title: String, text: String) {
-        val p = palette ?: return
-        v.removeAllViews()
-        v.gravity = Gravity.CENTER_HORIZONTAL
-        v.setPadding(dp(32), dp(56), dp(32), dp(32))
-        v.addView(TextView(this).apply { this.text = title; style(fonts, Role.SHEET_TITLE, 700, p.text); gravity = Gravity.CENTER })
-        v.addView(TextView(this).apply { this.text = text; style(fonts, Role.BODY, 400, p.muted); gravity = Gravity.CENTER; setPadding(0, dp(8), 0, 0); setLineSpacing(0f, 1.25f) })
     }
 
     // ---- Detail sheet -----------------------------------------------------
@@ -883,14 +995,17 @@ public class PlayndgainActivity : Activity() {
         }
     }
 
+    // Step figures are set left to right on every wall, so their edge is named
+    // outright (LEFT on an RTL wall) rather than as START or END.
+    @SuppressLint("RtlHardcoded")
     private fun detailView(d: OfferDetail): View {
         val p = palette!!
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), dp(16)) }
 
         val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        head.addView(iconTile(d.name, d.iconUrl, 56), LinearLayout.LayoutParams(dp(56), dp(56)))
+        head.addView(Tile(56).also { it.bind(d.name, d.iconUrl) }.view, LinearLayout.LayoutParams(dp(56), dp(56)))
         val ht = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, 0, 0) }
-        ht.addView(TextView(this).apply { text = d.name; style(fonts, Role.SHEET_TITLE, 700, p.text); heading() })
+        ht.addView(TextView(this).apply { text = d.name; style(fonts, Role.SHEET_TITLE, 700, p.text); heading(); reads() })
         // The figure as the row has it: "Up to", then "+6,125", then the currency.
         val reward = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = true; setPadding(0, dp(4), 0, 0) }
         if (d.upTo) reward.addView(caps(strings.or("up_to", "Up to")), LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(6) })
@@ -910,20 +1025,21 @@ public class PlayndgainActivity : Activity() {
                 style(fonts, Role.LABEL, 700, p.text)
                 background = rounded(p.tile, dp(999).toFloat())
             }, LinearLayout.LayoutParams(dp(26), dp(26)))
-            row.addView(TextView(this).apply { text = step.name; style(fonts, Role.BODY, 400, p.text); setPadding(dp(12), 0, dp(8), 0) }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            row.addView(TextView(this).apply { text = step.name; style(fonts, Role.BODY, 400, p.text); setPaddingRelative(dp(12), 0, dp(8), 0); reads() }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
             // The same trailing column as the list, so the step figures line
             // up. A step that pays nothing on its own says so in words.
             val figureView = if (step.required) {
-                TextView(this).apply { text = step.reward.ifEmpty { strings.or("offer.required", getString(R.string.pg_required)) }; style(fonts, Role.LABEL, 600, p.muted) }
+                TextView(this).apply { text = step.reward.ifEmpty { strings.or("offer.required", wallString(R.string.pg_required)) }; style(fonts, Role.LABEL, 600, p.muted) }
             } else figure("+${step.reward}", Role.BODY, p.text)
-            row.addView(figureView.apply { gravity = Gravity.END; minWidth = dp(72) })
+            // A figure is set left to right, so "the row's end" is named outright.
+            row.addView(figureView.apply { gravity = if (step.required) Gravity.END else if (fonts.rtl) Gravity.LEFT else Gravity.RIGHT; minWidth = dp(72) })
             col.addView(row)
         }
         d.stepsNote?.let { col.addView(TextView(this).apply { text = it; style(fonts, Role.BODY, 400, p.faint); setPadding(0, dp(6), 0, 0) }) }
 
         if (d.notes.isNotEmpty()) {
             section(strings.or("offer.how", "Before you start"))
-            d.notes.forEach { n -> col.addView(TextView(this).apply { text = "•  $n"; style(fonts, Role.BODY, 400, p.text); setPadding(0, dp(3), 0, dp(3)); setLineSpacing(0f, 1.2f) }) }
+            d.notes.forEach { n -> col.addView(TextView(this).apply { text = "•  $n"; style(fonts, Role.BODY, 400, p.text); setPadding(0, dp(3), 0, dp(3)); setLineSpacing(0f, 1.2f); reads() }) }
         }
 
         section(strings.or("offer.requirements", "Who this is for"))
@@ -942,7 +1058,7 @@ public class PlayndgainActivity : Activity() {
             // Side by side, or the value under its name at the largest sizes.
             val row = LinearLayout(this).apply { orientation = if (bigText) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL; setPadding(0, dp(4), 0, dp(4)) }
             row.addView(TextView(this).apply { text = k; style(fonts, Role.BODY, 400, p.muted) }, if (bigText) LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT) else LinearLayout.LayoutParams(dp(120), WRAP_CONTENT))
-            row.addView(TextView(this).apply { text = v; style(fonts, Role.BODY, 400, p.text) }, if (bigText) LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT) else LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            row.addView(TextView(this).apply { text = v; style(fonts, Role.BODY, 400, p.text); reads() }, if (bigText) LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT) else LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
             col.addView(row)
         }
 
@@ -1005,7 +1121,7 @@ public class PlayndgainActivity : Activity() {
         col.addView(TextView(this).apply { text = body; style(fonts, Role.BODY, 400, p.muted); setPadding(0, dp(8), 0, 0); setLineSpacing(0f, 1.25f) })
         val pill = dp(999).toFloat()
         col.addView(TextView(this).apply {
-            text = strings.or("notice.back", getString(R.string.pg_back_to_offers))
+            text = strings.or("notice.back", wallString(R.string.pg_back_to_offers))
             gravity = Gravity.CENTER
             style(fonts, Role.BUTTON, 600, p.onPrimary)
             background = pressable(p, primaryFill(p, pill), pill)
@@ -1124,77 +1240,98 @@ public class PlayndgainActivity : Activity() {
      */
     private fun coverCopy(name: String, label: String?): CoverCopy {
         return CoverCopy(
-            opening = label ?: strings.or("offer.opening_any", getString(R.string.pg_opening, name)),
-            stalledTitle = strings.or("offer.still_opening", getString(R.string.pg_still_opening_title)),
-            stalledBody = strings.or("offer.still_opening_body", getString(R.string.pg_still_opening_body)),
-            keepWaiting = strings.or("offer.keep_waiting", getString(R.string.pg_keep_waiting)),
-            close = strings.or("offer.close", getString(R.string.pg_close)),
+            opening = label ?: strings.or("offer.opening_any", wallString(R.string.pg_opening, name)),
+            stalledTitle = strings.or("offer.still_opening", wallString(R.string.pg_still_opening_title)),
+            stalledBody = strings.or("offer.still_opening_body", wallString(R.string.pg_still_opening_body)),
+            keepWaiting = strings.or("offer.keep_waiting", wallString(R.string.pg_keep_waiting)),
+            close = strings.or("offer.close", wallString(R.string.pg_close)),
         )
     }
 
     // ---- History ----------------------------------------------------------
 
     private fun showHistory(rows: List<HistoryRow>) {
-        val p = palette ?: return
         body.removeAllViews()
         if (rows.isEmpty()) {
-            val v = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-            bindEmpty(v, strings["history.empty.title"], strings["history.empty.body"])
-            body.addView(v)
+            val holder = EmptyHolder()
+            holder.bind(strings["history.empty.title"], strings["history.empty.body"])
+            body.addView(holder.itemView, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
             return
         }
-        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(8), 0, dp(24)) }
-        val animate = Motion.enabled(this)
-        val currency = last?.app?.currencyName.orEmpty()
-        rows.forEachIndexed { i, r ->
+        val list = rowList().apply { setPadding(0, dp(8), 0, dp(24)) }
+        list.adapter = object : RecyclerView.Adapter<HistoryHolder>() {
+            override fun getItemCount() = rows.size
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = HistoryHolder()
+            override fun onBindViewHolder(holder: HistoryHolder, position: Int) {
+                holder.bind(rows[position])
+                enter(holder.itemView, position)
+            }
+        }
+        body.addView(list, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+    }
+
+    /** One History row, built once: the offer, a status pill and the date, and the money. */
+    private inner class HistoryHolder : RecyclerView.ViewHolder(LinearLayout(this@PlayndgainActivity)) {
+        private val row = LinearLayout(this@PlayndgainActivity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            isFocusable = true
+        }
+        private val tile = Tile(40)
+        private val name = TextView(this@PlayndgainActivity).apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END; reads() }
+        private val pill = TextView(this@PlayndgainActivity).apply { setPadding(dp(8), dp(3), dp(8), dp(3)); maxLines = 1 }
+        private val whenText = TextView(this@PlayndgainActivity).apply { maxLines = 1; ellipsize = TextUtils.TruncateAt.END; setPaddingRelative(dp(8), 0, 0, 0); reads() }
+        private val reason = TextView(this@PlayndgainActivity).apply { setPadding(0, dp(4), 0, 0); reads() }
+        private val ledger = Ledger()
+        private val line = View(this@PlayndgainActivity)
+
+        init {
+            val v = itemView as LinearLayout
+            v.orientation = LinearLayout.VERTICAL
+            v.layoutParams = RecyclerView.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
+            row.addView(tile.view, LinearLayout.LayoutParams(dp(40), dp(40)))
+            val t = LinearLayout(this@PlayndgainActivity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(10), 0) }
+            t.addView(name)
+            val meta = LinearLayout(this@PlayndgainActivity).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(4), 0, 0) }
+            meta.addView(pill)
+            meta.addView(whenText, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            t.addView(meta)
+            t.addView(reason)
+            row.addView(t, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            row.addView(ledger.view)
+            v.addView(row)
+            v.addView(line, LinearLayout.LayoutParams(MATCH_PARENT, dp(1)).apply { setMargins(dp(16), 0, dp(16), 0) })
+        }
+
+        fun bind(r: HistoryRow) {
+            val p = palette!!
+            val currency = last?.app?.currencyName.orEmpty()
             val reversed = r.status == "reversed"
             val sign = if (reversed) "\u2212" else "+"
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(dp(16), dp(12), dp(16), dp(12))
-                isFocusable = true
-                contentDescription = listOfNotNull(r.name, r.statusLabel, r.rewardLabel?.let { "$sign$it $currency" }).joinToString(", ")
-            }
-            row.addView(iconTile(r.name, r.iconUrl, 40), LinearLayout.LayoutParams(dp(40), dp(40)))
-            val t = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(10), 0) }
-            t.addView(TextView(this).apply { text = r.name; style(fonts, Role.ROW_TITLE, 600, p.text); maxLines = 1; ellipsize = TextUtils.TruncateAt.END })
+            row.contentDescription = listOfNotNull(r.name, r.statusLabel, r.rewardLabel?.let { "$sign$it $currency" }).joinToString(", ")
+            tile.bind(r.name, r.iconUrl)
+            name.text = r.name
+            name.style(fonts, Role.ROW_TITLE, 600, p.text)
             // Status is a word on a quiet pill, never a new colour: credited
             // takes the primary, waiting the faint text, refused the muted text.
-            val meta = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(4), 0, 0) }
-            meta.addView(TextView(this).apply {
-                text = r.statusLabel
-                style(fonts, Role.CAPS, 600, statusColor(p, r.status))
-                background = rounded(p.tile, dp(999).toFloat())
-                setPadding(dp(8), dp(3), dp(8), dp(3))
-                maxLines = 1
-            })
-            val whenText = listOfNotNull(r.partner, r.at?.let(::shortDate)).joinToString("  ·  ")
-            if (whenText.isNotEmpty()) {
-                meta.addView(TextView(this).apply {
-                    text = whenText
-                    style(fonts, Role.LABEL, 400, p.muted)
-                    maxLines = 1
-                    ellipsize = TextUtils.TruncateAt.END
-                    setPadding(dp(8), 0, 0, 0)
-                }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            }
-            t.addView(meta)
-            r.reason?.let { t.addView(TextView(this).apply { text = it; style(fonts, Role.LABEL, 400, p.faint); setPadding(0, dp(4), 0, 0) }) }
-            row.addView(t, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            r.rewardLabel?.let {
-                // Money keeps the primary. A reversed amount is taken back: a
-                // minus sign and the muted colour, with the word beside it.
-                val amount = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END; minimumWidth = dp(72) }
-                amount.addView(figure("$sign$it", Role.ROW_TITLE, if (reversed) p.muted else p.primary), wrap())
-                amount.addView(caps(currency), wrap())
-                row.addView(amount)
-            }
-            col.addView(row)
-            col.addView(View(this).apply { setBackgroundColor(p.line) }, LinearLayout.LayoutParams(MATCH_PARENT, dp(1)).apply { setMargins(dp(16), 0, dp(16), 0) })
-            row.fadeRise(i, animate, dp(20).toFloat())
+            pill.text = r.statusLabel
+            pill.style(fonts, Role.CAPS, 600, statusColor(p, r.status))
+            pill.background = rounded(p.tile, dp(999).toFloat())
+            val w = listOfNotNull(r.partner, r.at?.let(::shortDate)).joinToString("  ·  ")
+            whenText.text = w
+            whenText.style(fonts, Role.LABEL, 400, p.muted)
+            whenText.visibility = if (w.isEmpty()) View.GONE else View.VISIBLE
+            reason.text = r.reason
+            reason.style(fonts, Role.LABEL, 400, p.faint)
+            reason.visibility = if (r.reason == null) View.GONE else View.VISIBLE
+            // Money keeps the primary. A reversed amount is taken back: a
+            // minus sign and the muted colour, with the word beside it.
+            val reward = r.rewardLabel
+            ledger.view.visibility = if (reward == null) View.GONE else View.VISIBLE
+            if (reward != null) ledger.bind(reward, false, inline = false, size = Role.ROW_TITLE, color = if (reversed) p.muted else p.primary, sign = sign)
+            line.setBackgroundColor(p.line)
         }
-        body.addView(ScrollView(this).apply { addView(col) })
     }
 
     private fun statusColor(p: Palette, status: String): Int = when (status) {
@@ -1327,6 +1464,24 @@ public class PlayndgainActivity : Activity() {
     private fun showLoadingBody() {
         body.removeAllViews()
         body.addView(ProgressBar(this), FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { gravity = Gravity.CENTER })
+    }
+
+    /**
+     * The bundled text in the wall's language rather than the phone's, for
+     * words drawn inside a wall the server has already named the language of.
+     * Where a store's language split left that language out, Android falls
+     * back to the English text, as it did before.
+     */
+    @SuppressLint("AppBundleLocaleChanges")
+    private fun wallString(id: Int, vararg args: Any): String {
+        val lang = last?.app?.locale ?: return getString(id, *args)
+        val config = Configuration(resources.configuration).apply { setLocale(Locale(lang)) }
+        return createConfigurationContext(config).getString(id, *args)
+    }
+
+    /** Words on an RTL wall start at the reading edge, Latin names included. */
+    private fun TextView.reads() {
+        textAlignment = View.TEXT_ALIGNMENT_VIEW_START
     }
 
     /** A heading for TalkBack's heading navigation, where the platform has it (API 28). */

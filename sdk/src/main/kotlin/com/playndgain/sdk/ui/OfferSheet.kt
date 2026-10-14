@@ -293,8 +293,16 @@ internal class OfferSheet(
         }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = context.dp(10) })
         actions.visibility = View.GONE
         cover.addView(actions, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = context.dp(20) })
-        val width = minOf(context.dp(300), context.resources.displayMetrics.widthPixels - context.dp(64))
-        addView(cover, LayoutParams(width, WRAP_CONTENT).apply { gravity = Gravity.CENTER })
+        addView(cover, LayoutParams(coverWidth(context.resources.displayMetrics.widthPixels), WRAP_CONTENT).apply { gravity = Gravity.CENTER })
+    }
+
+    /** 300dp, or the width less 32dp each side on a narrow screen. */
+    private fun coverWidth(w: Int) = minOf(context.dp(300), w - context.dp(64))
+
+    /** A rotation keeps the card in proportion to the new width. */
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        if (w != oldw && cover.parent != null) post { cover.layoutParams = cover.layoutParams.apply { width = coverWidth(w) } }
     }
 
     /** Until revealed, the page under the cover takes no touches. */
