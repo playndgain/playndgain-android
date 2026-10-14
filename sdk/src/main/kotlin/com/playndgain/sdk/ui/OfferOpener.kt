@@ -29,7 +29,10 @@ internal sealed interface OfferOutcome {
     /** A web page finished loading and stayed: reveal the web view. */
     data object Landing : OfferOutcome
 
-    /** No store in time: reveal the web view with whatever it holds. */
+    /**
+     * Nothing settled in time: the cover says it is still opening. The click
+     * keeps resolving; a page is only shown once it has settled.
+     */
     data object Timeout : OfferOutcome
 
     /** Nothing usable loaded: the wall's error path. */
@@ -46,7 +49,7 @@ internal class OfferResolution {
     internal enum class Phase {
         /** Following the chain, web view not yet visible. */
         RESOLVING,
-        /** Landing or timeout: the user sees the web view and browses. */
+        /** A settled landing: the user sees the web view and browses. */
         REVEALED,
         /** Resolved to the store, an app, a failure, or cancelled. */
         DONE,
@@ -130,11 +133,12 @@ internal class OfferResolution {
         return OfferOutcome.Failed
     }
 
-    fun timedOut(): OfferOutcome? {
-        if (phase != Phase.RESOLVING) return null
-        phase = Phase.REVEALED
-        return OfferOutcome.Timeout
-    }
+    /**
+     * The wait ran out with nothing settled. The phase does not change: a
+     * store, an app or a settled page after this still resolves the click,
+     * and each wait that runs out is reported again.
+     */
+    fun timedOut(): OfferOutcome? = if (phase == Phase.RESOLVING) OfferOutcome.Timeout else null
 
     /**
      * The system could not open the app link the click resolved to: show
@@ -179,15 +183,16 @@ internal class OfferResolution {
 /**
  * Follows one offer click inside the app. Loads the allowed click URL once in
  * a web view that is not shown, watches every navigation, and reports where
- * it ended: the store, another app, a web landing, a timeout or a failure.
- * The caller shows [webView] itself for a landing or timeout, never a Custom
- * Tab or browser: that would request the click chain again in another cookie
- * jar. The caller attaches [webView] (invisible) before [start] and destroys
- * it when done.
+ * it ended: the store, another app, a web landing or a failure, and says when
+ * a wait ran out first. The caller shows [webView] itself for a landing, never
+ * a Custom Tab or browser: that would request the click chain again in another
+ * cookie jar. The caller attaches [webView] (invisible) before [start] and
+ * destroys it when done.
  *
- * Main thread only. [onResolve] is called once per click unless the opener is
+ * Main thread only. [onResolve] resolves the click once unless the opener is
  * cancelled first; after an [OfferOutcome.App] it may be called once more,
- * from [appUnopened]. [onIntercept] is called for each store or app link the
+ * from [appUnopened]. Before that it hears [OfferOutcome.Timeout] for each
+ * wait that runs out. [onIntercept] is called for each store or app link the
  * user follows from a revealed page.
  */
 @SuppressLint("SetJavaScriptEnabled") // Trackers redirect with script; no JS bridge is added.
@@ -229,6 +234,16 @@ internal class OfferOpener(
         handler.postDelayed(timeout, timeoutMs)
         webView.loadUrl(url)
         return true
+    }
+
+    /**
+     * The player chose to keep waiting after [OfferOutcome.Timeout]: one more
+     * wait on the same load. Never loads anything.
+     */
+    fun keepWaiting() {
+        if (!started || resolution.phase != OfferResolution.Phase.RESOLVING) return
+        handler.removeCallbacks(timeout)
+        handler.postDelayed(timeout, timeoutMs)
     }
 
     /** The system refused the app link from [OfferOutcome.App]: fall back to the page. */

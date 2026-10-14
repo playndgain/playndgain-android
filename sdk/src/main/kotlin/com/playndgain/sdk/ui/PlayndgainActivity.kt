@@ -3,13 +3,17 @@ package com.playndgain.sdk.ui
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.text.format.DateFormat
+import android.view.HapticFeedbackConstants
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -25,6 +29,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
+import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -42,6 +47,10 @@ import com.playndgain.sdk.internal.OfferDetail
 import com.playndgain.sdk.internal.Responses
 import com.playndgain.sdk.internal.Strings
 import com.playndgain.sdk.internal.WallResponse
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -142,7 +151,7 @@ public class PlayndgainActivity : Activity() {
         body = FrameLayout(this)
         root.addView(page, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         setContentView(root)
-        registerBackCallback()
+        syncBackCallback()
         showLoading()
         // onResume reloads when a reward check is owed; one request is enough.
         if (!pendingRewardCheck) reload()
@@ -190,12 +199,24 @@ public class PlayndgainActivity : Activity() {
     /**
      * On API 33+ a host with `enableOnBackInvokedCallback="true"` never calls
      * onBackPressed, so back would close the wall from inside a sheet. The
-     * same rules run from a registered callback there.
+     * same rules run from a callback there, registered only while there is
+     * something to step back from (a sheet, the click, History). At the top
+     * level nothing is registered, so the system's predictive back closes the
+     * wall and shows what is behind it.
      */
-    private fun registerBackCallback() {
+    private var backCallback: Any? = null
+
+    private fun syncBackCallback() {
         if (Build.VERSION.SDK_INT < 33) return
-        onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT) {
-            if (!handleBack()) { emitClosedOnce(); finish() }
+        val wanted = sheet != null || offerFlow != null || tab == Tab.HISTORY
+        val current = backCallback as? OnBackInvokedCallback
+        if (wanted && current == null) {
+            val cb = OnBackInvokedCallback { if (!handleBack()) { emitClosedOnce(); finish() } }
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, cb)
+            backCallback = cb
+        } else if (!wanted && current != null) {
+            onBackInvokedDispatcher.unregisterOnBackInvokedCallback(current)
+            backCallback = null
         }
     }
 
@@ -315,20 +336,24 @@ public class PlayndgainActivity : Activity() {
         bar.addView(titles, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
 
         (options.balance ?: app.balance)?.let { bal ->
+            // The user's money, as the one filled pill in the header.
             bar.addView(TextView(this).apply {
                 text = bal
                 style(fonts, 13f, 600, p.onPrimary)
-                background = rounded(p.primary, dp(999).toFloat())
+                background = primaryFill(p, dp(999).toFloat())
                 setPadding(dp(12), dp(6), dp(12), dp(6))
             }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(8) })
         }
 
-        bar.addView(TextView(this).apply {
-            text = "✕"
-            gravity = Gravity.CENTER
-            style(fonts, 16f, 600, p.muted)
+        bar.addView(ImageView(this).apply {
+            setImageResource(R.drawable.pg_ic_close)
+            imageTintList = ColorStateList.valueOf(p.muted)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            setPadding(dp(13), dp(13), dp(13), dp(13))
             contentDescription = strings.or("offer.close", getString(R.string.pg_close))
-            background = rounded(p.raise, dp(999).toFloat())
+            background = pressable(p, rounded(p.raise, dp(999).toFloat()), dp(999).toFloat())
+            isClickable = true
+            isFocusable = true
             setOnClickListener { emitClosedOnce(); finish() }
         }, LinearLayout.LayoutParams(dp(44), dp(44)))
         page.addView(bar)
@@ -343,7 +368,7 @@ public class PlayndgainActivity : Activity() {
                 text = label
                 gravity = Gravity.CENTER
                 style(fonts, 14f, if (on) 600 else 400, if (on) p.text else p.muted)
-                background = if (on) rounded(Colorsx.primarySoft(p), dp(999).toFloat()) else null
+                background = pressable(p, if (on) rounded(p.primarySoft, dp(999).toFloat()) else null, dp(999).toFloat())
                 setPadding(dp(16), 0, dp(16), 0)
                 minHeight = dp(40)
                 isSelected = on
@@ -359,6 +384,7 @@ public class PlayndgainActivity : Activity() {
 
     private fun switchTab(t: Tab) {
         tab = t
+        syncBackCallback()
         last?.let { buildChrome(it) }
         showLoadingBody()
         reload()
@@ -380,6 +406,12 @@ public class PlayndgainActivity : Activity() {
             setHintTextColor(p.faint)
             background = rounded(p.card, dp(p.radiusDp * 0.6f).toFloat(), p.line, dp(1))
             setPadding(dp(14), dp(10), dp(14), dp(10))
+            getDrawable(R.drawable.pg_ic_search)?.mutate()?.let { glass ->
+                glass.setTint(p.faint)
+                glass.setBounds(0, 0, dp(18), dp(18))
+                setCompoundDrawablesRelative(glass, null, null, null)
+                compoundDrawablePadding = dp(10)
+            }
             setSingleLine()
             imeOptions = EditorInfo.IME_ACTION_SEARCH
             contentDescription = strings.or("search", "Search offers")
@@ -387,13 +419,17 @@ public class PlayndgainActivity : Activity() {
         column.addView(search, LinearLayout.LayoutParams(MATCH_PARENT, dp(44)).apply { setMargins(dp(16), dp(12), dp(16), dp(8)) })
 
         val chipRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dp(16), 0, dp(16), 0) }
+        // The selected category takes the primary fill, as on the web wall;
+        // the rest are hairline pills.
         fun chip(label: String, on: Boolean, click: () -> Unit) = TextView(this).apply {
             text = label
             gravity = Gravity.CENTER
-            style(fonts, 13f, if (on) 600 else 400, if (on) p.onInk else p.muted)
-            background = if (on) rounded(p.ink, dp(999).toFloat()) else rounded(p.card, dp(999).toFloat(), p.line, dp(1))
+            style(fonts, 13f, 600, if (on) p.onPrimary else p.faint)
+            val pill = dp(999).toFloat()
+            background = pressable(p, if (on) primaryFill(p, pill) else rounded(Color.TRANSPARENT, pill, p.line, dp(1)), pill)
             setPadding(dp(14), 0, dp(14), 0)
             minHeight = dp(36)
+            isSelected = on
             setOnClickListener { click() }
         }
         chipRow.addView(chip(strings.or("all", "All"), category == null) { category = null; showOffers(r) },
@@ -421,9 +457,10 @@ public class PlayndgainActivity : Activity() {
                     text = label
                     gravity = Gravity.CENTER
                     style(fonts, 12f, if (on) 600 else 400, if (on) p.text else p.muted)
-                    background = if (on) rounded(p.tile, dp(999).toFloat()) else null
+                    background = pressable(p, if (on) rounded(p.tile, dp(999).toFloat()) else null, dp(999).toFloat())
                     setPadding(dp(10), 0, dp(10), 0)
                     minHeight = dp(32)
+                    isSelected = on
                     setOnClickListener { if (sort != key) { sort = key; showLoadingBody(); loadOffers() } }
                 }, LinearLayout.LayoutParams(WRAP_CONTENT, dp(32)).apply { marginStart = dp(2) })
             }
@@ -545,21 +582,18 @@ public class PlayndgainActivity : Activity() {
         val p = palette!!
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            background = rounded(p.card, dp(p.radiusDp).toFloat(), p.line, dp(1))
+            val r = dp(p.radiusDp).toFloat()
+            background = pressable(p, rounded(p.card, r, p.line, dp(1)), r)
             setPadding(dp(14), dp(14), dp(14), dp(14))
             isFocusable = true
             isClickable = true
-            contentDescription = "${o.name}, ${o.rewardLabel} ${last?.app?.currencyName.orEmpty()}"
+            contentDescription = rewardSpeech(o.name, o.rewardLabel, o.multiReward)
             setOnClickListener { openDetail(o.id) }
         }
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         top.addView(iconTile(o.name, o.iconUrl, 44), LinearLayout.LayoutParams(dp(44), dp(44)))
         top.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
-        val reward = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END }
-        if (o.multiReward) reward.addView(TextView(this).apply { text = strings.or("up_to", "Up to"); style(fonts, 10.5f, 400, p.faint) })
-        reward.addView(TextView(this).apply { text = o.rewardLabel; style(fonts, 17f, 700, p.text); fontFeatureSettings = "tnum"; textDirection = View.TEXT_DIRECTION_LTR })
-        reward.addView(TextView(this).apply { text = last?.app?.currencyName.orEmpty().let { if (fonts.rtl) it else it.uppercase() }; style(fonts, 10f, 600, p.faint); tracking(fonts, 0.06f) })
-        top.addView(reward)
+        top.addView(rewardColumn(o.rewardLabel, o.multiReward))
         card.addView(top)
         card.addView(TextView(this).apply { text = o.name; style(fonts, 15f, 600, p.text); maxLines = 2; ellipsize = TextUtils.TruncateAt.END; setPadding(0, dp(12), 0, 0) })
         if (o.instructions.isNotEmpty()) {
@@ -568,22 +602,85 @@ public class PlayndgainActivity : Activity() {
         return card
     }
 
-    private fun offerCard(o: OfferCard, compact: Boolean = false): View {
+    private fun rewardSpeech(name: String, reward: String, upTo: Boolean): String {
+        val up = if (upTo) strings.or("up_to", "Up to") + " " else ""
+        return "$name, $up$reward ${last?.app?.currencyName.orEmpty()}"
+    }
+
+    /**
+     * The ledger column: one fixed inline size on every row, so the figures
+     * share an edge. It never gives way; the name beside it truncates instead.
+     */
+    private fun rewardColumn(label: String, upTo: Boolean): View {
         val p = palette!!
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END; minimumWidth = dp(72) }
+        if (upTo) col.addView(caps(strings.or("up_to", "Up to")), wrap())
+        col.addView(figure("+$label", 19f, p.text), wrap())
+        col.addView(caps(last?.app?.currencyName.orEmpty()), wrap())
+        return col
+    }
+
+    /** Children of a ledger column keep their own width, so the column's END gravity lines them up. */
+    private fun wrap() = LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT)
+
+    /** A figure reads the same in both directions: "+6,125" keeps its sign in front on the Arabic wall too. */
+    private fun figure(text: String, sizeSp: Float, color: Int) = TextView(this).apply {
+        this.text = text
+        style(fonts, sizeSp, 700, color)
+        fontFeatureSettings = "tnum"
+        textDirection = View.TEXT_DIRECTION_LTR
+        maxLines = 1
+    }
+
+    /** 11/600 small capitals in the faint colour: the currency and "Up to". */
+    private fun caps(text: String) = TextView(this).apply {
+        this.text = if (fonts.rtl) text else text.uppercase()
+        style(fonts, 11f, 600, palette!!.faint)
+        tracking(fonts, 0.06f)
+        maxLines = 1
+    }
+
+    /**
+     * Decoration only: the whole row is the button, and this never starts the
+     * offer. A tile disc with the text colour, mirrored on an RTL wall.
+     */
+    private fun chevron(): View {
+        val p = palette!!
+        return ImageView(this).apply {
+            setImageResource(R.drawable.pg_ic_chevron)
+            imageTintList = ColorStateList.valueOf(p.text)
+            background = rounded(p.tile, dp(999).toFloat())
+            setPadding(dp(6), dp(6), dp(6), dp(6))
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            isClickable = false
+            isFocusable = false
+        }
+    }
+
+    private fun offerCard(o: OfferCard): View {
+        val p = palette!!
+        val r = dp(p.radiusDp).toFloat()
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = rounded(p.card, dp(p.radiusDp).toFloat(), p.line, dp(1))
+            background = pressable(p, rounded(p.card, r, p.line, dp(1)), r)
             setPadding(dp(12), dp(12), dp(12), dp(12))
             minimumHeight = dp(72)
             isFocusable = true
             isClickable = true
-            contentDescription = "${o.name}, ${o.rewardLabel} ${last?.app?.currencyName.orEmpty()}"
+            contentDescription = rewardSpeech(o.name, o.rewardLabel, o.multiReward)
             setOnClickListener { openDetail(o.id) }
         }
-        val lp = if (compact) FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT)
-        else FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(16), dp(4), dp(16), dp(4)) }
-        card.layoutParams = lp
+        // A pinned offer carries the primary on its leading edge, inset like
+        // the web wall's, so the row's words stay on every other row's axis.
+        if (o.featured && !o.test) {
+            card.background = LayerDrawable(arrayOf(card.background, rounded(p.primary, dp(2).toFloat()))).apply {
+                setLayerGravity(1, Gravity.START or Gravity.FILL_VERTICAL)
+                setLayerWidth(1, dp(3))
+                setLayerInsetRelative(1, dp(2), dp(12), 0, dp(12))
+            }
+        }
+        card.layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(16), dp(4), dp(16), dp(4)) }
 
         card.addView(iconTile(o.name, o.iconUrl, 48), LinearLayout.LayoutParams(dp(48), dp(48)))
 
@@ -606,32 +703,11 @@ public class PlayndgainActivity : Activity() {
             o.peopleLabel,
         )
         if (meta.isNotEmpty()) {
-            text.addView(TextView(this).apply { this.text = meta.joinToString("  ·  "); style(fonts, 11.5f, 400, p.faint); setPadding(0, dp(5), 0, 0); maxLines = 1 })
+            text.addView(TextView(this).apply { this.text = meta.joinToString("  ·  "); style(fonts, 11.5f, 400, p.faint); setPadding(0, dp(5), 0, 0); maxLines = 1; ellipsize = TextUtils.TruncateAt.END })
         }
         card.addView(text, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-
-        val reward = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END }
-        if (o.multiReward) reward.addView(TextView(this).apply { this.text = strings.or("up_to", "Up to"); style(fonts, 10.5f, 400, p.faint) })
-        reward.addView(TextView(this).apply {
-            this.text = o.rewardLabel
-            style(fonts, 16f, 700, p.text)
-            fontFeatureSettings = "tnum"
-            textDirection = View.TEXT_DIRECTION_LTR
-        })
-        reward.addView(TextView(this).apply { this.text = last?.app?.currencyName.orEmpty().let { if (fonts.rtl) it else it.uppercase() }; style(fonts, 10f, 600, p.faint); tracking(fonts, 0.06f) })
-        card.addView(reward)
-
-        card.addView(TextView(this).apply {
-            // A bidi-mirrored glyph: the RTL layout turns it to point the way
-            // the row reads, with no manual flip.
-            this.text = "›"
-            gravity = Gravity.CENTER
-            style(fonts, 18f, 700, p.onInk)
-            background = rounded(p.ink, dp(999).toFloat())
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            setOnClickListener { startOffer(o.clickUrl) }
-        }, LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginStart = dp(10) })
-
+        card.addView(rewardColumn(o.rewardLabel, o.multiReward))
+        card.addView(chevron(), LinearLayout.LayoutParams(dp(28), dp(28)).apply { marginStart = dp(8) })
         return card
     }
 
@@ -683,11 +759,12 @@ public class PlayndgainActivity : Activity() {
         head.addView(iconTile(d.name, d.iconUrl, 56), LinearLayout.LayoutParams(dp(56), dp(56)))
         val ht = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(14), 0, 0, 0) }
         ht.addView(TextView(this).apply { text = d.name; style(fonts, 18f, 700, p.text) })
-        ht.addView(TextView(this).apply {
-            text = "${if (d.steps.size > 1) strings.or("up_to", "Up to") + " " else ""}${d.rewardLabel} ${last?.app?.currencyName.orEmpty()}"
-            style(fonts, 14f, 600, p.muted)
-            setPadding(0, dp(4), 0, 0)
-        })
+        // The figure as the row has it: "Up to", then "+6,125", then the currency.
+        val reward = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; isBaselineAligned = true; setPadding(0, dp(4), 0, 0) }
+        if (d.steps.size > 1) reward.addView(caps(strings.or("up_to", "Up to")), LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(6) })
+        reward.addView(figure("+${d.rewardLabel}", 19f, p.text), LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(6) })
+        reward.addView(caps(last?.app?.currencyName.orEmpty()))
+        ht.addView(reward)
         head.addView(ht, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
         col.addView(head)
 
@@ -702,7 +779,8 @@ public class PlayndgainActivity : Activity() {
                 background = rounded(p.tile, dp(999).toFloat())
             }, LinearLayout.LayoutParams(dp(26), dp(26)))
             row.addView(TextView(this).apply { text = name; style(fonts, 14f, 400, p.text); setPadding(dp(12), 0, dp(8), 0) }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
-            row.addView(TextView(this).apply { text = reward; style(fonts, 14f, 600, p.text); fontFeatureSettings = "tnum"; textDirection = View.TEXT_DIRECTION_LTR })
+            // The same trailing column as the list, so the step figures line up.
+            row.addView(figure("+$reward", 14f, p.text).apply { gravity = Gravity.END; minWidth = dp(72) })
             col.addView(row)
         }
         d.stepsNote?.let { col.addView(TextView(this).apply { text = it; style(fonts, 12.5f, 400, p.faint); setPadding(0, dp(6), 0, 0) }) }
@@ -739,14 +817,24 @@ public class PlayndgainActivity : Activity() {
 
         val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         wrap.addView(ScrollView(this).apply { addView(col) }, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
+        // The one primary on the sheet, and the one glow on the wall.
         val start = TextView(this).apply {
             text = strings.or("offer.start", "Start this offer")
             gravity = Gravity.CENTER
             style(fonts, 15f, 600, p.onPrimary)
-            background = rounded(p.primary, dp(999).toFloat())
-            setOnClickListener { closeSheet(animated = false); startOffer(d.clickUrl) }
+            val pill = dp(999).toFloat()
+            background = pressable(p, primaryFill(p, pill, ring = true, ringPx = dp(1)), pill)
+            glow(p, dp(10).toFloat())
+            isHapticFeedbackEnabled = true
+            setOnClickListener {
+                it.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+                closeSheet(animated = false)
+                startOffer(d.clickUrl, d.name)
+            }
         }
-        wrap.addView(start, LinearLayout.LayoutParams(MATCH_PARENT, dp(52)).apply { setMargins(dp(20), dp(8), dp(20), dp(20)) })
+        wrap.clipToPadding = false
+        wrap.clipChildren = false
+        wrap.addView(start, LinearLayout.LayoutParams(MATCH_PARENT, dp(52)).apply { setMargins(dp(20), dp(12), dp(20), dp(20)) })
         wrap.addView(TextView(this).apply {
             text = strings["offer.terms"]
             style(fonts, 11f, 400, p.faint); gravity = Gravity.CENTER
@@ -798,6 +886,7 @@ public class PlayndgainActivity : Activity() {
         panel.post { if (panel.height > maxH) panel.layoutParams = panel.layoutParams.apply { height = maxH } }
         root.addView(scrim, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         sheet = scrim
+        syncBackCallback()
 
         if (Motion.enabled(this)) {
             scrim.alpha = 0f
@@ -810,6 +899,7 @@ public class PlayndgainActivity : Activity() {
     private fun closeSheet(animated: Boolean = true) {
         val s = sheet ?: return
         sheet = null
+        syncBackCallback()
         if (animated && Motion.enabled(this)) {
             s.animate().alpha(0f).setDuration(Motion.EXIT).setInterpolator(Motion.easeIn).withEndAction { root.removeView(s) }.start()
         } else root.removeView(s)
@@ -823,7 +913,7 @@ public class PlayndgainActivity : Activity() {
      * all happen exactly as in the iframe, then opens the Play Store or shows
      * the page it landed on.
      */
-    private fun startOffer(url: String) {
+    private fun startOffer(url: String, name: String) {
         // Only the wall's own click route, over the scheme the wall itself
         // was reached on (https outside a debuggable host).
         val base = Playndgain.config.baseUrl
@@ -832,8 +922,9 @@ public class PlayndgainActivity : Activity() {
             Playndgain.emitError(PlayndgainError.INTERNAL)
             return
         }
-        val flow = OfferFlow(this, root, p, fonts, strings.or("offer.close", getString(R.string.pg_close)), { pendingRewardCheck = it }) { end ->
+        val flow = OfferFlow(this, root, p, fonts, coverCopy(name), { pendingRewardCheck = it }) { end ->
             offerFlow = null
+            syncBackCallback()
             when (end) {
                 OfferFlowEnd.RETURNED -> { Playndgain.emitRewardCheck(); reload() }
                 // The wall stays; the sheet says this offer could not be opened.
@@ -849,6 +940,23 @@ public class PlayndgainActivity : Activity() {
         }
         offerFlow = flow
         if (!flow.start(url, base)) { offerFlow = null; Playndgain.emitError(PlayndgainError.INTERNAL) }
+        syncBackCallback()
+    }
+
+    /**
+     * The cover's words: the wall's own strings first (`offer.opening` with
+     * `:name`, `offer.still_opening`, `offer.still_opening_body`,
+     * `offer.keep_waiting`), then the bundled English or Arabic.
+     */
+    private fun coverCopy(name: String): CoverCopy {
+        val opening = strings["offer.opening"].let { if (it.isEmpty()) getString(R.string.pg_opening, name) else it.replace(":name", name) }
+        return CoverCopy(
+            opening = opening,
+            stalledTitle = strings.or("offer.still_opening", getString(R.string.pg_still_opening_title)),
+            stalledBody = strings.or("offer.still_opening_body", getString(R.string.pg_still_opening_body)),
+            keepWaiting = strings.or("offer.keep_waiting", getString(R.string.pg_keep_waiting)),
+            close = strings.or("offer.close", getString(R.string.pg_close)),
+        )
     }
 
     // ---- History ----------------------------------------------------------
@@ -864,36 +972,76 @@ public class PlayndgainActivity : Activity() {
         }
         val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(8), 0, dp(24)) }
         val animate = Motion.enabled(this)
+        val currency = last?.app?.currencyName.orEmpty()
         rows.forEachIndexed { i, r ->
+            val reversed = r.status == "reversed"
+            val sign = if (reversed) "\u2212" else "+"
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(16), dp(12), dp(16), dp(12))
                 isFocusable = true
-                contentDescription = listOfNotNull(r.name, r.statusLabel, r.rewardLabel).joinToString(", ")
+                contentDescription = listOfNotNull(r.name, r.statusLabel, r.rewardLabel?.let { "$sign$it $currency" }).joinToString(", ")
             }
             row.addView(iconTile(r.name, r.iconUrl, 40), LinearLayout.LayoutParams(dp(40), dp(40)))
             val t = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(12), 0, dp(10), 0) }
-            t.addView(TextView(this).apply { text = r.name; style(fonts, 14.5f, 600, p.text); maxLines = 1; ellipsize = TextUtils.TruncateAt.END })
-            val meta = listOfNotNull(r.partner, r.at?.take(10), r.statusLabel).joinToString("  ·  ")
-            // Status is a word, never a colour: the one colour on this screen is
-            // the credited amount, because it is the money.
-            t.addView(TextView(this).apply { text = meta; style(fonts, 11.5f, 400, p.muted); setPadding(0, dp(3), 0, 0); textDirection = View.TEXT_DIRECTION_LOCALE })
-            r.reason?.let { t.addView(TextView(this).apply { text = it; style(fonts, 11f, 400, p.faint); setPadding(0, dp(3), 0, 0) }) }
+            t.addView(TextView(this).apply { text = r.name; style(fonts, 15f, 600, p.text); maxLines = 1; ellipsize = TextUtils.TruncateAt.END })
+            // Status is a word on a quiet pill, never a new colour: credited
+            // takes the primary, waiting the faint text, refused the muted text.
+            val meta = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(4), 0, 0) }
+            meta.addView(TextView(this).apply {
+                text = r.statusLabel
+                style(fonts, 11f, 600, statusColor(p, r.status))
+                background = rounded(p.tile, dp(999).toFloat())
+                setPadding(dp(8), dp(3), dp(8), dp(3))
+                maxLines = 1
+            })
+            val whenText = listOfNotNull(r.partner, r.at?.let(::shortDate)).joinToString("  ·  ")
+            if (whenText.isNotEmpty()) {
+                meta.addView(TextView(this).apply {
+                    text = whenText
+                    style(fonts, 12f, 400, p.muted)
+                    maxLines = 1
+                    ellipsize = TextUtils.TruncateAt.END
+                    setPadding(dp(8), 0, 0, 0)
+                }, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
+            }
+            t.addView(meta)
+            r.reason?.let { t.addView(TextView(this).apply { text = it; style(fonts, 12f, 400, p.faint); setPadding(0, dp(4), 0, 0) }) }
             row.addView(t, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
             r.rewardLabel?.let {
-                row.addView(TextView(this).apply {
-                    text = "+$it"
-                    style(fonts, 15f, 700, p.primary)
-                    fontFeatureSettings = "tnum"
-                    textDirection = View.TEXT_DIRECTION_LTR
-                })
+                // Money keeps the primary. A reversed amount is taken back: a
+                // minus sign and the muted colour, with the word beside it.
+                val amount = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END; minimumWidth = dp(72) }
+                amount.addView(figure("$sign$it", 15f, if (reversed) p.muted else p.primary), wrap())
+                amount.addView(caps(currency), wrap())
+                row.addView(amount)
             }
             col.addView(row)
             col.addView(View(this).apply { setBackgroundColor(p.line) }, LinearLayout.LayoutParams(MATCH_PARENT, dp(1)).apply { setMargins(dp(16), 0, dp(16), 0) })
             row.fadeRise(i, animate, dp(20).toFloat())
         }
         body.addView(ScrollView(this).apply { addView(col) })
+    }
+
+    private fun statusColor(p: Palette, status: String): Int = when (status) {
+        "approved" -> p.primary
+        "rejected", "reversed" -> p.muted
+        else -> p.faint
+    }
+
+    /**
+     * "14 Oct" the way the wall's language writes it, not the device's. The
+     * day is the wall's own (the date part it sent), as on the web wall.
+     */
+    private fun shortDate(iso: String): String {
+        val day = iso.take(10)
+        val utc = TimeZone.getTimeZone("UTC")
+        val date = try {
+            SimpleDateFormat("yyyy-MM-dd", Locale.US).apply { timeZone = utc }.parse(day)
+        } catch (_: ParseException) { null } ?: return day
+        val locale = Locale(last?.app?.locale ?: "en")
+        return SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale).apply { timeZone = utc }.format(date)
     }
 
     // ---- Consent, notice, offline, loading ---------------------------------
@@ -914,7 +1062,7 @@ public class PlayndgainActivity : Activity() {
             buttons.addView(TextView(this).apply {
                 text = label; gravity = Gravity.CENTER
                 style(fonts, 15f, 600, p.text)
-                background = rounded(p.card, dp(999).toFloat(), p.line, dp(1))
+                background = pressable(p, rounded(p.card, dp(999).toFloat(), p.line, dp(1)), dp(999).toFloat())
                 setOnClickListener { showLoading(); loadPage { api.consent(accept) } }
             }, LinearLayout.LayoutParams(0, dp(52), 1f).apply { marginEnd = if (accept) dp(10) else 0 })
         }
@@ -957,7 +1105,7 @@ public class PlayndgainActivity : Activity() {
         col.addView(TextView(this).apply {
             this.text = getString(R.string.pg_close); gravity = Gravity.CENTER
             style(fonts, 14f, 600, p.text)
-            background = rounded(p.card, dp(999).toFloat(), p.line, dp(1))
+            background = pressable(p, rounded(p.card, dp(999).toFloat(), p.line, dp(1)), dp(999).toFloat())
             setPadding(dp(28), 0, dp(28), 0)
             setOnClickListener { emitClosedOnce(); finish() }
         }, LinearLayout.LayoutParams(WRAP_CONTENT, dp(48)))
@@ -974,7 +1122,7 @@ public class PlayndgainActivity : Activity() {
         col.addView(TextView(this).apply {
             text = getString(R.string.pg_close); gravity = Gravity.CENTER
             style(fonts, 14f, 600, p.text)
-            background = rounded(p.card, dp(999).toFloat(), p.line, dp(1))
+            background = pressable(p, rounded(p.card, dp(999).toFloat(), p.line, dp(1)), dp(999).toFloat())
             setPadding(dp(28), 0, dp(28), 0)
             setOnClickListener { emitClosedOnce(); finish() }
         }, LinearLayout.LayoutParams(WRAP_CONTENT, dp(48)))
@@ -984,7 +1132,7 @@ public class PlayndgainActivity : Activity() {
     private fun retryButton(p: Palette) = TextView(this).apply {
         text = getString(R.string.pg_retry); gravity = Gravity.CENTER
         style(fonts, 14f, 600, p.onPrimary)
-        background = rounded(p.primary, dp(999).toFloat())
+        background = pressable(p, primaryFill(p, dp(999).toFloat()), dp(999).toFloat())
         setPadding(dp(28), 0, dp(28), 0)
         setOnClickListener { showLoading(); reload() }
     }
@@ -1002,9 +1150,4 @@ public class PlayndgainActivity : Activity() {
     }
 
     private fun dp(v: Number) = (this as android.content.Context).dp(v)
-}
-
-/** --wall-primary-soft: the active tab's tint, the same place the wall spends it. */
-internal object Colorsx {
-    fun primarySoft(p: Palette): Int = com.playndgain.sdk.internal.Colors.mix(p.primary, p.card, 0.14f)
 }

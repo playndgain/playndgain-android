@@ -23,6 +23,8 @@ internal data class AppInfo(
     val theme: ThemeInfo,
     val balance: String?,
     val testMode: Boolean,
+    /** The wall's language (`en`, `ar`), for dates written the player's way. */
+    val locale: String = "en",
 )
 
 internal data class ThemeInfo(
@@ -133,6 +135,7 @@ internal object Parser {
             ),
             balance = o.optNullableString("balance"),
             testMode = o.optBoolean("test_mode"),
+            locale = o.optString("locale").ifEmpty { "en" },
         )
     }
 

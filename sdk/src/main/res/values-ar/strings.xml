@@ -6,4 +6,8 @@
     <string name="pg_close">إغلاق</string>
     <string name="pg_unavailable_title">العروض غير متاحة</string>
     <string name="pg_unavailable_body">لا يمكن عرض العروض الآن. يرجى المحاولة لاحقا.</string>
+    <string name="pg_opening">جارٍ فتح %1$s…</string>
+    <string name="pg_still_opening_title">لا يزال العرض قيد الفتح…</string>
+    <string name="pg_still_opening_body">يستغرق هذا العرض وقتا أطول من المعتاد. يمكنك الانتظار أو إغلاقه.</string>
+    <string name="pg_keep_waiting">متابعة الانتظار</string>
 </resources>

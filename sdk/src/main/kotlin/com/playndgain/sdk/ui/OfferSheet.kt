@@ -5,9 +5,11 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -30,9 +32,18 @@ internal enum class OfferFlowEnd {
     LEFT_APP,
     /** Nothing loaded: the wall stays and says the offer could not be opened. */
     FAILED,
-    /** Back while the click was still resolving: nothing was shown. */
+    /** Back, or Close on the cover, while the click was still resolving: nothing was shown. */
     CANCELLED,
 }
+
+/** The words on the loading cover, from the wall's strings with bundled English and Arabic behind them. */
+internal data class CoverCopy(
+    val opening: String,
+    val stalledTitle: String,
+    val stalledBody: String,
+    val keepWaiting: String,
+    val close: String,
+)
 
 /**
  * One offer click inside the app: a loading cover while [OfferOpener] follows
@@ -48,7 +59,7 @@ internal class OfferFlow(
     private val root: FrameLayout,
     private val palette: Palette,
     private val fonts: Fonts,
-    private val closeLabel: String,
+    private val copy: CoverCopy,
     private val leaving: (Boolean) -> Unit,
     private val ended: (OfferFlowEnd) -> Unit,
 ) {
@@ -60,7 +71,12 @@ internal class OfferFlow(
         if (opener != null) return false
         val o = OfferOpener(activity, onResolve = ::resolved, onIntercept = ::intercepted)
         o.onGone = { finish(OfferFlowEnd.RETURNED) }
-        val s = OfferSheet(activity, o.webView, palette, fonts, closeLabel) { finish(OfferFlowEnd.RETURNED) }
+        val s = OfferSheet(
+            activity, o.webView, palette, fonts, copy,
+            onClose = { finish(OfferFlowEnd.RETURNED) },
+            onCancel = { finish(OfferFlowEnd.CANCELLED) },
+            onKeepWaiting = { opener?.keepWaiting() },
+        )
         // The wall's search field keeps focus under the sheet and would bring
         // its keyboard up over the page: hide it and take the focus here.
         activity.currentFocus?.let { v ->
@@ -109,7 +125,8 @@ internal class OfferFlow(
                 leaving(true)
                 if (openApp(o.url)) finish(OfferFlowEnd.LEFT_APP) else { leaving(false); opener?.appUnopened() }
             }
-            OfferOutcome.Landing, OfferOutcome.Timeout -> sheet?.reveal()
+            OfferOutcome.Landing -> sheet?.reveal()
+            OfferOutcome.Timeout -> sheet?.showStalled()
             OfferOutcome.Failed -> finish(OfferFlowEnd.FAILED)
         }
     }
@@ -169,21 +186,31 @@ internal class OfferFlow(
  * over the wall. While the click resolves, the web view sits in the sheet at
  * almost zero opacity under the cover: attached and drawn, so the page keeps
  * running the timers its redirects use.
+ *
+ * The cover names the offer it is opening. When a wait runs out it says the
+ * offer is still opening, with Keep waiting (the same load, waited on longer)
+ * and Close; a page is only revealed once it has settled.
  */
 @SuppressLint("ViewConstructor") // Built in code for one click, never inflated.
 internal class OfferSheet(
     activity: Activity,
     val webView: WebView,
     private val palette: Palette,
-    fonts: Fonts,
-    closeLabel: String,
+    private val fonts: Fonts,
+    private val copy: CoverCopy,
     onClose: () -> Unit,
+    onCancel: () -> Unit,
+    private val onKeepWaiting: () -> Unit,
 ) : FrameLayout(activity) {
     var revealed: Boolean = false
         private set
 
     private val panel = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
-    private val cover = FrameLayout(activity)
+    private val cover = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL }
+    private val spinner = ProgressBar(activity)
+    private val title = TextView(activity)
+    private val body = TextView(activity)
+    private val actions = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
 
     init {
         val p = palette
@@ -204,10 +231,11 @@ internal class OfferSheet(
             gravity = Gravity.END or Gravity.CENTER_VERTICAL
         }
         header.addView(TextView(activity).apply {
-            text = closeLabel
+            text = copy.close
             gravity = Gravity.CENTER
             style(fonts, 15f, 600, p.text)
             setPadding(context.dp(20), 0, context.dp(20), 0)
+            background = pressable(p, null, context.dp(999).toFloat())
             setOnClickListener { onClose() }
         }, LinearLayout.LayoutParams(WRAP_CONTENT, MATCH_PARENT))
         panel.addView(header, LinearLayout.LayoutParams(MATCH_PARENT, context.dp(52)))
@@ -216,14 +244,81 @@ internal class OfferSheet(
         panel.addView(webView, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
         addView(panel, LayoutParams(MATCH_PARENT, MATCH_PARENT).apply { topMargin = context.dp(12) })
 
-        // The wall's own loading spinner, on a card so it reads on the scrim.
-        cover.background = rounded(p.card, context.dp(p.radiusDp).toFloat())
-        cover.addView(ProgressBar(activity), LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { gravity = Gravity.CENTER })
-        addView(cover, LayoutParams(context.dp(64), context.dp(64)).apply { gravity = Gravity.CENTER })
+        // The wall's own loading state, on a card so it reads on the scrim.
+        cover.background = rounded(p.card, context.dp(p.radiusDp).toFloat(), p.line, context.dp(1))
+        cover.setPadding(context.dp(20), context.dp(24), context.dp(20), context.dp(20))
+        spinner.indeterminateTintList = ColorStateList.valueOf(p.muted)
+        cover.addView(spinner, LinearLayout.LayoutParams(context.dp(32), context.dp(32)))
+        title.apply {
+            text = copy.opening
+            style(fonts, 15f, 600, p.text)
+            gravity = Gravity.CENTER
+            maxLines = 2
+            ellipsize = TextUtils.TruncateAt.END
+            setPadding(0, context.dp(12), 0, 0)
+            accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+        cover.addView(title, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        body.apply {
+            text = copy.stalledBody
+            style(fonts, 13f, 400, p.muted)
+            gravity = Gravity.CENTER
+            setLineSpacing(0f, 1.25f)
+            setPadding(0, context.dp(8), 0, 0)
+            visibility = View.GONE
+        }
+        cover.addView(body, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        val pill = context.dp(999).toFloat()
+        actions.addView(TextView(activity).apply {
+            text = copy.keepWaiting
+            gravity = Gravity.CENTER
+            style(fonts, 14f, 600, p.onPrimary)
+            background = pressable(p, primaryFill(p, pill), pill)
+            minHeight = context.dp(48)
+            setOnClickListener { keepWaiting() }
+        }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        actions.addView(TextView(activity).apply {
+            text = copy.close
+            gravity = Gravity.CENTER
+            style(fonts, 14f, 600, p.text)
+            background = pressable(p, rounded(Color.TRANSPARENT, pill, p.lineStrong, context.dp(1)), pill)
+            minHeight = context.dp(48)
+            setOnClickListener { onCancel() }
+        }, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = context.dp(10) })
+        actions.visibility = View.GONE
+        cover.addView(actions, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { topMargin = context.dp(20) })
+        val width = minOf(context.dp(300), context.resources.displayMetrics.widthPixels - context.dp(64))
+        addView(cover, LayoutParams(width, WRAP_CONTENT).apply { gravity = Gravity.CENTER })
     }
 
     /** Until revealed, the page under the cover takes no touches. */
-    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean = !revealed || super.onInterceptTouchEvent(ev)
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean =
+        if (revealed) super.onInterceptTouchEvent(ev) else !isInCover(ev)
+
+    private fun isInCover(ev: MotionEvent): Boolean =
+        cover.parent != null && ev.x >= cover.left && ev.x <= cover.right && ev.y >= cover.top && ev.y <= cover.bottom
+
+    /** A wait ran out with nothing settled: say so, and offer to keep waiting. */
+    fun showStalled() {
+        if (revealed) return
+        spinner.visibility = View.GONE
+        title.text = copy.stalledTitle
+        title.style(fonts, 17f, 700, palette.text)
+        body.visibility = View.VISIBLE
+        actions.visibility = View.VISIBLE
+        announceForAccessibility("${copy.stalledTitle} ${copy.stalledBody}")
+    }
+
+    /** Back to the spinner, waiting longer on the same load. */
+    private fun keepWaiting() {
+        if (revealed) return
+        spinner.visibility = View.VISIBLE
+        title.text = copy.opening
+        title.style(fonts, 15f, 600, palette.text)
+        body.visibility = View.GONE
+        actions.visibility = View.GONE
+        onKeepWaiting()
+    }
 
     /** The click landed on a web page: the sheet rises with it. */
     fun reveal() {

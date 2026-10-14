@@ -2,8 +2,13 @@ package com.playndgain.sdk.ui
 
 import android.animation.TimeInterpolator
 import android.content.Context
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
+import android.os.Build
 import android.provider.Settings
 import android.util.TypedValue
 import android.view.View
@@ -31,6 +36,7 @@ internal class Palette(t: ThemeInfo, val radiusDp: Int) {
     val faint = Colors.mix(t.text, t.background, 0.64f)
     /** --wall-line: text at 10% over the surface. */
     val line = Colors.alpha(t.text, 0.10f)
+    val lineStrong = Colors.alpha(t.text, 0.18f)
     /** --wall-tile: text 8% into the card. */
     val tile = Colors.mix(t.text, t.card, 0.08f)
     /** --wall-raise. */
@@ -38,6 +44,13 @@ internal class Palette(t: ThemeInfo, val radiusDp: Int) {
     /** --wall-ink: the filled disc on a card. */
     val ink = t.text
     val onInk = t.background
+    /** --wall-primary-soft: the active tab's tint. */
+    val primarySoft = Colors.mix(t.primary, t.card, 0.14f)
+    /** The two stops of --wall-primary-fill. */
+    val primaryHi = Colors.mix(t.primary, Color.WHITE, 0.84f)
+    val primaryLo = Colors.mix(t.primary, Color.BLACK, 0.82f)
+    /** The pressed ripple: the text colour, faint, over whatever it sits on. */
+    val ripple = Colors.alpha(t.text, 0.12f)
 }
 
 /** Motion tokens from `resources/css/wall.css`. */
@@ -108,4 +121,30 @@ internal fun View.fadeRise(index: Int, enabled: Boolean, risePx: Float) {
         .setDuration(Motion.ENTER)
         .setInterpolator(Motion.easeOut)
         .start()
+}
+
+/** --wall-primary-fill: the publisher's colour as two stops at 135 degrees. */
+internal fun primaryFill(p: Palette, radiusPx: Float, ring: Boolean = false, ringPx: Int = 0) =
+    GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(p.primaryHi, p.primaryLo)).apply {
+        cornerRadius = radiusPx
+        if (ring) setStroke(ringPx, Colors.alpha(p.primary, 0.25f))
+    }
+
+/**
+ * The pressed state every tappable shares: a ripple of the text colour,
+ * clipped to the control's own shape.
+ */
+internal fun pressable(p: Palette, content: Drawable?, radiusPx: Float): Drawable =
+    RippleDrawable(ColorStateList.valueOf(p.ripple), content, rounded(Color.WHITE, radiusPx))
+
+/**
+ * The wall's one glow, under Start: the primary as the shadow colour where
+ * the platform can tint one (API 28), none below, as the web wall has none
+ * without color-mix.
+ */
+internal fun View.glow(p: Palette, elevationPx: Float) {
+    if (Build.VERSION.SDK_INT < 28) return
+    outlineSpotShadowColor = p.primary
+    outlineAmbientShadowColor = p.primary
+    elevation = elevationPx
 }

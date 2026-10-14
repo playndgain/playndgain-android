@@ -83,11 +83,46 @@ class OfferResolutionTest {
     }
 
     @Test
-    fun `timeout reveals and later store taps are intercepted each time`() {
+    fun `a timeout reveals nothing and the click still resolves`() {
         val r = OfferResolution()
+        r.didCommit()
         assertEquals(OfferOutcome.Timeout, r.timedOut())
+        assertEquals(Phase.RESOLVING, r.phase)
+        // Each wait that runs out is reported again.
+        assertEquals(OfferOutcome.Timeout, r.timedOut())
+        assertEquals(Step.Allow, r.navigate(tracker, mainFrame = true))
+        assertEquals(Step.Resolve(listing), r.navigate(store, mainFrame = true))
+        assertNull(r.timedOut())
+
+        val app = OfferResolution()
+        app.timedOut()
+        assertEquals(Step.Resolve(OfferOutcome.App(deepLink)), app.navigate(deepLink, mainFrame = true))
+    }
+
+    @Test
+    fun `a page that settles after a timeout is revealed`() {
+        val r = OfferResolution()
+        r.didCommit()
+        assertEquals(OfferOutcome.Timeout, r.timedOut())
+        assertEquals(OfferOutcome.Landing, r.settled(r.didFinish()!!))
         assertEquals(Phase.REVEALED, r.phase)
         assertNull(r.timedOut())
+    }
+
+    @Test
+    fun `a failure after a timeout is still the click failing`() {
+        val r = OfferResolution()
+        r.didCommit()
+        r.timedOut()
+        assertEquals(OfferOutcome.Failed, r.didFail())
+        assertEquals(Phase.DONE, r.phase)
+    }
+
+    @Test
+    fun `a revealed page intercepts store taps each time`() {
+        val r = OfferResolution()
+        r.settled(r.didFinish()!!)
+        assertEquals(Phase.REVEALED, r.phase)
         assertEquals(Step.Allow, r.navigate(tracker, mainFrame = true))
         assertEquals(Step.Intercept(listing), r.navigate(store, mainFrame = true))
         assertEquals(Step.Intercept(listing), r.navigate(market, mainFrame = true))
@@ -135,7 +170,7 @@ class OfferResolutionTest {
         cancelled.cancel()
         assertNull(cancelled.appUnopened())
         val revealed = OfferResolution()
-        revealed.timedOut()
+        revealed.settled(revealed.didFinish()!!)
         revealed.navigate(deepLink, mainFrame = true)
         assertNull(revealed.appUnopened())
     }

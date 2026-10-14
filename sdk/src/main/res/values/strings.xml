@@ -8,4 +8,8 @@
     <string name="pg_close">Close</string>
     <string name="pg_unavailable_title">Offers unavailable</string>
     <string name="pg_unavailable_body">Offers cannot be shown right now. Please try again later.</string>
+    <string name="pg_opening">Opening %1$s…</string>
+    <string name="pg_still_opening_title">Still opening…</string>
+    <string name="pg_still_opening_body">This offer is taking longer than usual. You can keep waiting or close it.</string>
+    <string name="pg_keep_waiting">Keep waiting</string>
 </resources>
