@@ -89,4 +89,29 @@ class ResponsesTest {
         assertTrue(Responses.clickAllowed("http://10.0.2.2:8000/click/12", "http://10.0.2.2:8000"))
         assertFalse(Responses.clickAllowed("http://10.0.2.3:8000/click/12", "http://10.0.2.2:8000"))
     }
+
+    @Test
+    fun `reads the newer wall fields and falls back without them`() {
+        val newer = """{"status":"ok","data":{"offers":[{"id":3,"name":"Royal Match","instructions":"old","subtitle":"Reach level 50","reward_label":"6,125","multi_reward":true,"up_to":true,"repeatable":false,"opening_label":"Opening Royal Match…"}]}}"""
+        val o = Parser.parse(200, newer).offers.first()
+        assertEquals("Reach level 50", o.instructions)
+        assertTrue(o.upTo)
+        assertFalse(o.repeatable)
+        assertEquals("Opening Royal Match…", o.openingLabel)
+
+        // A 1.0 wall: `multi_reward` meant both, and there is no cover sentence.
+        val older = """{"status":"ok","data":{"offers":[{"id":3,"name":"X","instructions":"old","reward_label":"1","multi_reward":true}]}}"""
+        val old = Parser.parse(200, older).offers.first()
+        assertEquals("old", old.instructions)
+        assertTrue(old.upTo)
+        assertTrue(old.repeatable)
+        assertEquals(null, old.openingLabel)
+
+        val detail = """{"status":"ok","data":{"id":3,"name":"X","reward_label":"5","steps":[{"name":"Install","reward":"Required","required":true},{"name":"Play","reward":"5"}],"device_labels":["iOS"]}}"""
+        val d = Parser.parse(200, detail).detail!!
+        assertTrue(d.steps[0].required)
+        assertFalse(d.steps[1].required)
+        assertTrue(d.upTo)
+        assertEquals(listOf("iOS"), d.deviceLabels)
+    }
 }

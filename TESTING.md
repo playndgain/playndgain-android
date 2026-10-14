@@ -8,7 +8,7 @@ Run on the Mac. Needs the Android SDK at `~/Library/Android/sdk`, an arm64 AVD (
 ./gradlew :sdk:testDebugUnitTest :sdk:lintDebug :sdk:assembleRelease :sample:assembleDebug
 ```
 
-Expected: 42 tests, 0 failures, lint 0 errors. `StoreLinkTest` pins which URLs are Play listings (web, `market://`, `intent://`); `OfferResolutionTest` drives every navigation the click can take (store, app link, landing, a wait that runs out, failure) without a WebView. `sdk/build/outputs/aar/sdk-release.aar` and `sample/build/outputs/apk/debug/sample-debug.apk`.
+Expected: 43 tests, 0 failures, lint 0 errors. `StoreLinkTest` pins which URLs are Play listings (web, `market://`, `intent://`); `OfferResolutionTest` drives every navigation the click can take (store, app link, landing, a wait that runs out, failure) without a WebView. `sdk/build/outputs/aar/sdk-release.aar` and `sample/build/outputs/apk/debug/sample-debug.apk`.
 
 ## 2. Serve the wall
 

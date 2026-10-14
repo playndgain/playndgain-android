@@ -53,13 +53,22 @@ internal data class OfferCard(
     val devices: List<String>,
     val iconUrl: String?,
     val clickUrl: String,
+    /** "Up to": the steps pay separately. `up_to` from a newer wall, else `multi_reward`. */
+    val upTo: Boolean = multiReward,
+    /** Truly repeatable. A 1.0 wall only had `multi_reward` for both meanings. */
+    val repeatable: Boolean = multiReward,
+    /** The cover's finished sentence ("Opening Royal Match…"), when the wall sends it. */
+    val openingLabel: String? = null,
 )
+
+/** One step of an offer. [required]: it has to be done but pays nothing on its own. */
+internal data class OfferStep(val name: String, val reward: String, val required: Boolean = false)
 
 internal data class OfferDetail(
     val id: Int,
     val name: String,
     val rewardLabel: String,
-    val steps: List<Pair<String, String>>,
+    val steps: List<OfferStep>,
     val stepsNote: String?,
     val notes: List<String>,
     val lead: String,
@@ -69,6 +78,10 @@ internal data class OfferDetail(
     val important: List<String>,
     val iconUrl: String?,
     val clickUrl: String,
+    val upTo: Boolean = steps.size > 1,
+    /** "iOS", "Android" in the wall's language, when the wall sends them. */
+    val deviceLabels: List<String> = emptyList(),
+    val openingLabel: String? = null,
 )
 
 internal data class HistoryRow(
@@ -142,7 +155,7 @@ internal object Parser {
     private fun offer(o: JSONObject) = OfferCard(
         id = o.optInt("id"),
         name = o.optString("name"),
-        instructions = o.optString("instructions"),
+        instructions = o.optNullableString("subtitle") ?: o.optString("instructions"),
         rewardLabel = o.optString("reward_label"),
         multiReward = o.optBoolean("multi_reward"),
         stepsLabel = o.optNullableString("steps_label"),
@@ -153,13 +166,16 @@ internal object Parser {
         devices = o.optJSONArray("devices")?.strings().orEmpty(),
         iconUrl = o.optNullableString("icon_url"),
         clickUrl = o.optString("click_url"),
+        upTo = if (o.has("up_to")) o.optBoolean("up_to") else o.optBoolean("multi_reward"),
+        repeatable = if (o.has("repeatable")) o.optBoolean("repeatable") else o.optBoolean("multi_reward"),
+        openingLabel = o.optNullableString("opening_label"),
     )
 
     private fun detail(o: JSONObject) = OfferDetail(
         id = o.optInt("id"),
         name = o.optString("name"),
         rewardLabel = o.optString("reward_label"),
-        steps = o.optJSONArray("steps")?.objects()?.map { it.optString("name") to it.optString("reward") }.orEmpty(),
+        steps = o.optJSONArray("steps")?.objects()?.map { OfferStep(it.optString("name"), it.optString("reward"), it.optBoolean("required")) }.orEmpty(),
         stepsNote = o.optNullableString("steps_note"),
         notes = o.optJSONArray("notes")?.strings().orEmpty(),
         lead = o.optString("lead"),
@@ -169,7 +185,13 @@ internal object Parser {
         important = o.optJSONArray("important")?.strings().orEmpty(),
         iconUrl = o.optNullableString("icon_url"),
         clickUrl = o.optString("click_url"),
-    )
+    ).let { d ->
+        d.copy(
+            upTo = if (o.has("up_to")) o.optBoolean("up_to") else d.steps.size > 1,
+            deviceLabels = o.optJSONArray("device_labels")?.strings().orEmpty(),
+            openingLabel = o.optNullableString("opening_label"),
+        )
+    }
 
     private fun row(o: JSONObject) = HistoryRow(
         name = o.optString("name"),

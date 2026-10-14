@@ -10,4 +10,6 @@
     <string name="pg_still_opening_title">لا يزال العرض قيد الفتح…</string>
     <string name="pg_still_opening_body">يستغرق هذا العرض وقتا أطول من المعتاد. يمكنك الانتظار أو إغلاقه.</string>
     <string name="pg_keep_waiting">متابعة الانتظار</string>
+    <string name="pg_back_to_offers">العودة إلى العروض</string>
+    <string name="pg_required">مطلوب</string>
 </resources>

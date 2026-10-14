@@ -118,10 +118,14 @@ internal class OfferFlow(
     private fun resolved(o: OfferOutcome) {
         when (o) {
             is OfferOutcome.Store -> {
+                // Resolved under a "Still opening" card: back to the spinner
+                // while the store takes over.
+                sheet?.showOpening()
                 leaving(true)
                 if (openStore(o.pkg)) finish(OfferFlowEnd.LEFT_APP) else { leaving(false); finish(OfferFlowEnd.FAILED) }
             }
             is OfferOutcome.App -> {
+                sheet?.showOpening()
                 leaving(true)
                 if (openApp(o.url)) finish(OfferFlowEnd.LEFT_APP) else { leaving(false); opener?.appUnopened() }
             }
@@ -233,12 +237,14 @@ internal class OfferSheet(
         header.addView(TextView(activity).apply {
             text = copy.close
             gravity = Gravity.CENTER
-            style(fonts, 15f, 600, p.text)
+            style(fonts, Role.BUTTON, 600, p.text)
             setPadding(context.dp(20), 0, context.dp(20), 0)
+            minWidth = context.dp(48)
             background = pressable(p, null, context.dp(999).toFloat())
             setOnClickListener { onClose() }
         }, LinearLayout.LayoutParams(WRAP_CONTENT, MATCH_PARENT))
-        panel.addView(header, LinearLayout.LayoutParams(MATCH_PARENT, context.dp(52)))
+        panel.addView(header, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+        header.minimumHeight = context.dp(52)
         panel.addView(View(activity).apply { setBackgroundColor(p.line) }, LinearLayout.LayoutParams(MATCH_PARENT, context.dp(1)))
         webView.setBackgroundColor(p.card)
         panel.addView(webView, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
@@ -251,9 +257,9 @@ internal class OfferSheet(
         cover.addView(spinner, LinearLayout.LayoutParams(context.dp(32), context.dp(32)))
         title.apply {
             text = copy.opening
-            style(fonts, 15f, 600, p.text)
+            style(fonts, Role.ROW_TITLE, 600, p.text)
             gravity = Gravity.CENTER
-            maxLines = 2
+            maxLines = 3
             ellipsize = TextUtils.TruncateAt.END
             setPadding(0, context.dp(12), 0, 0)
             accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
@@ -261,7 +267,7 @@ internal class OfferSheet(
         cover.addView(title, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
         body.apply {
             text = copy.stalledBody
-            style(fonts, 13f, 400, p.muted)
+            style(fonts, Role.BODY, 400, p.muted)
             gravity = Gravity.CENTER
             setLineSpacing(0f, 1.25f)
             setPadding(0, context.dp(8), 0, 0)
@@ -272,7 +278,7 @@ internal class OfferSheet(
         actions.addView(TextView(activity).apply {
             text = copy.keepWaiting
             gravity = Gravity.CENTER
-            style(fonts, 14f, 600, p.onPrimary)
+            style(fonts, Role.BUTTON, 600, p.onPrimary)
             background = pressable(p, primaryFill(p, pill), pill)
             minHeight = context.dp(48)
             setOnClickListener { keepWaiting() }
@@ -280,7 +286,7 @@ internal class OfferSheet(
         actions.addView(TextView(activity).apply {
             text = copy.close
             gravity = Gravity.CENTER
-            style(fonts, 14f, 600, p.text)
+            style(fonts, Role.BUTTON, 600, p.text)
             background = pressable(p, rounded(Color.TRANSPARENT, pill, p.lineStrong, context.dp(1)), pill)
             minHeight = context.dp(48)
             setOnClickListener { onCancel() }
@@ -303,7 +309,7 @@ internal class OfferSheet(
         if (revealed) return
         spinner.visibility = View.GONE
         title.text = copy.stalledTitle
-        title.style(fonts, 17f, 700, palette.text)
+        title.style(fonts, Role.SHEET_TITLE, 700, palette.text)
         body.visibility = View.VISIBLE
         actions.visibility = View.VISIBLE
         announceForAccessibility("${copy.stalledTitle} ${copy.stalledBody}")
@@ -312,12 +318,21 @@ internal class OfferSheet(
     /** Back to the spinner, waiting longer on the same load. */
     private fun keepWaiting() {
         if (revealed) return
+        showOpening()
+        onKeepWaiting()
+    }
+
+    /**
+     * The spinner and the offer's name again: after Keep waiting, or when the
+     * click resolved to the store or an app under the stalled card.
+     */
+    fun showOpening() {
+        if (revealed) return
         spinner.visibility = View.VISIBLE
         title.text = copy.opening
-        title.style(fonts, 15f, 600, palette.text)
+        title.style(fonts, Role.ROW_TITLE, 600, palette.text)
         body.visibility = View.GONE
         actions.visibility = View.GONE
-        onKeepWaiting()
     }
 
     /** The click landed on a web page: the sheet rises with it. */
@@ -347,5 +362,69 @@ internal class OfferSheet(
     private companion object {
         /** Drawn, so not throttled, and invisible under the cover. */
         const val HIDDEN_ALPHA = 0.01f
+    }
+}
+
+/**
+ * The detail sheet's panel: dragged down from anywhere while its content is
+ * scrolled to the top, it follows the finger and closes past a quarter of its
+ * height or on a quick fling; otherwise it settles back.
+ */
+@SuppressLint("ViewConstructor") // Built in code, never inflated.
+internal class DraggablePanel(context: Context, private val onDismiss: () -> Unit) : FrameLayout(context) {
+    /** The scrolling content: the drag starts only once it is at its top. */
+    var scrollTarget: View? = null
+    /** The tallest the sheet gets; past it the content scrolls inside. */
+    var maxHeight = Int.MAX_VALUE
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val size = MeasureSpec.getSize(heightMeasureSpec).let { if (MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.UNSPECIFIED) maxHeight else minOf(it, maxHeight) }
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(size, MeasureSpec.AT_MOST))
+    }
+
+    private val slop = android.view.ViewConfiguration.get(context).scaledTouchSlop
+    private val flingPx = context.dp(1200).toFloat()
+    private var startY = 0f
+    private var lastY = 0f
+    private var lastT = 0L
+    private var velocity = 0f
+
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> track(ev, reset = true)
+            MotionEvent.ACTION_MOVE -> {
+                val dy = ev.rawY - startY
+                if (dy > slop && scrollTarget?.canScrollVertically(-1) != true) {
+                    startY = ev.rawY
+                    track(ev)
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    @SuppressLint("ClickableViewAccessibility") // A drag, not a click: the scrim and Back close it for everyone else.
+    override fun onTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> track(ev, reset = true)
+            MotionEvent.ACTION_MOVE -> {
+                track(ev)
+                translationY = (ev.rawY - startY).coerceAtLeast(0f)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (ev.actionMasked == MotionEvent.ACTION_UP && (translationY > height * 0.25f || velocity > flingPx)) onDismiss()
+                else animate().translationY(0f).setDuration(if (Motion.enabled(context)) Motion.BASE else 0L).setInterpolator(Motion.easeOut).start()
+            }
+        }
+        return true
+    }
+
+    private fun track(ev: MotionEvent, reset: Boolean = false) {
+        if (reset) { startY = ev.rawY; velocity = 0f }
+        val dt = ev.eventTime - lastT
+        if (!reset && dt > 0) velocity = (ev.rawY - lastY) / dt * 1000f
+        lastY = ev.rawY
+        lastT = ev.eventTime
     }
 }

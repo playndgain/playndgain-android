@@ -12,4 +12,6 @@
     <string name="pg_still_opening_title">Still opening…</string>
     <string name="pg_still_opening_body">This offer is taking longer than usual. You can keep waiting or close it.</string>
     <string name="pg_keep_waiting">Keep waiting</string>
+    <string name="pg_back_to_offers">Back to offers</string>
+    <string name="pg_required">Required</string>
 </resources>

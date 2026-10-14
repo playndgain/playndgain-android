@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Build
 import android.provider.Settings
@@ -148,3 +149,27 @@ internal fun View.glow(p: Palette, elevationPx: Float) {
     outlineAmbientShadowColor = p.primary
     elevation = elevationPx
 }
+
+/**
+ * The type roles, and nothing between them, in sp so they follow the reader's
+ * font size: title 22/700, sheet title 18/700, row title 15/600, body 13/400,
+ * label 12/600, reward 19/700, the currency's small capitals 11/600, and
+ * buttons 15/600 (design.md §3).
+ */
+internal object Role {
+    const val TITLE = 22f
+    const val SHEET_TITLE = 18f
+    const val ROW_TITLE = 15f
+    const val BODY = 13f
+    const val LABEL = 12f
+    const val REWARD = 19f
+    const val CAPS = 11f
+    const val BUTTON = 15f
+}
+
+/**
+ * A pill drawn [insetPx] inside its view on top and bottom: the control keeps
+ * the wall's 36dp look while its touch target is the full 48dp.
+ */
+internal fun insetPill(p: Palette, content: Drawable?, insetPx: Int, radiusPx: Float): Drawable =
+    InsetDrawable(pressable(p, content, radiusPx), 0, insetPx, 0, insetPx)
