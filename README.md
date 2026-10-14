@@ -46,7 +46,8 @@ Call `Playndgain.setListener(null)` when the screen that set it is destroyed; th
 
 - A Google Play app: the Play Store app opens on its listing, or the listing on the web if the Play Store is missing.
 - Another app's link: the system opens that app.
-- A web page, or no store within about 8 seconds: the same WebView rises as a sheet with a Close button. Back goes back inside the page first, then closes it.
+- A web page that has finished loading: the same WebView rises as a sheet with a Close button. Back goes back inside the page first, then closes it.
+- Nothing settled within about 8 seconds: the loading card says the offer is still opening, with Keep waiting (waits on the same load, never a second click) and Close.
 
 `onRewardCheck` fires once per offer: when the player closes the web sheet, or when the app comes back after the offer left it. No `<queries>` entry is needed in your manifest.
 
