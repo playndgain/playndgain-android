@@ -46,6 +46,7 @@ class MainActivity : Activity() {
         val secret = field("Secret: local testing only, never ship this", "", password = true)
         val lang = field("Language (en / ar, blank = device)", intent.getStringExtra("lang") ?: "")
         val sub1 = field("sub1 (optional)", "sample")
+        val balance = field("Balance shown in the header (optional)", intent.getStringExtra("balance") ?: "")
 
         Button(this).apply {
             text = "Show"
@@ -57,6 +58,7 @@ class MainActivity : Activity() {
                 }
                 Playndgain.show(this@MainActivity, PlayndgainOptions(
                     language = lang.text.toString().ifBlank { null },
+                    balance = balance.text.toString().ifBlank { null },
                     subIds = listOfNotNull(sub1.text.toString().ifBlank { null }),
                 ))
             }

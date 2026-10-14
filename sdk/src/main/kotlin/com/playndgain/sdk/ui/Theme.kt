@@ -47,9 +47,6 @@ internal class Palette(t: ThemeInfo, val radiusDp: Int) {
     val onInk = t.background
     /** --wall-primary-soft: the active tab's tint. */
     val primarySoft = Colors.mix(t.primary, t.card, 0.14f)
-    /** The two stops of --wall-primary-fill. */
-    val primaryHi = Colors.mix(t.primary, Color.WHITE, 0.84f)
-    val primaryLo = Colors.mix(t.primary, Color.BLACK, 0.82f)
     /** The pressed ripple: the text colour, faint, over whatever it sits on. */
     val ripple = Colors.alpha(t.text, 0.12f)
 }
@@ -124,12 +121,8 @@ internal fun View.fadeRise(index: Int, enabled: Boolean, risePx: Float) {
         .start()
 }
 
-/** --wall-primary-fill: the publisher's colour as two stops at 135 degrees. */
-internal fun primaryFill(p: Palette, radiusPx: Float, ring: Boolean = false, ringPx: Int = 0) =
-    GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(p.primaryHi, p.primaryLo)).apply {
-        cornerRadius = radiusPx
-        if (ring) setStroke(ringPx, Colors.alpha(p.primary, 0.25f))
-    }
+/** The primary action's fill: the publisher's colour, solid. No gradient, no glow. */
+internal fun primaryFill(p: Palette, radiusPx: Float) = rounded(p.primary, radiusPx)
 
 /**
  * The pressed state every tappable shares: a ripple of the text colour,
@@ -137,18 +130,6 @@ internal fun primaryFill(p: Palette, radiusPx: Float, ring: Boolean = false, rin
  */
 internal fun pressable(p: Palette, content: Drawable?, radiusPx: Float): Drawable =
     RippleDrawable(ColorStateList.valueOf(p.ripple), content, rounded(Color.WHITE, radiusPx))
-
-/**
- * The wall's one glow, under Start: the primary as the shadow colour where
- * the platform can tint one (API 28), none below, as the web wall has none
- * without color-mix.
- */
-internal fun View.glow(p: Palette, elevationPx: Float) {
-    if (Build.VERSION.SDK_INT < 28) return
-    outlineSpotShadowColor = p.primary
-    outlineAmbientShadowColor = p.primary
-    elevation = elevationPx
-}
 
 /**
  * The type roles, and nothing between them, in sp so they follow the reader's
@@ -173,3 +154,112 @@ internal object Role {
  */
 internal fun insetPill(p: Palette, content: Drawable?, insetPx: Int, radiusPx: Float): Drawable =
     InsetDrawable(pressable(p, content, radiusPx), 0, insetPx, 0, insetPx)
+
+/**
+ * Offers and History as one segmented control: a tile track with a thumb in
+ * the primary tint that slides to the chosen segment over --motion-base (at
+ * once when animations are off). TalkBack hears each segment as selected or
+ * not, and as "1 of 2" from the collection the track reports.
+ */
+// Built in code, never inflated; the thumb is placed in absolute pixels on purpose.
+@android.annotation.SuppressLint("ViewConstructor", "RtlHardcoded")
+internal class SegmentedTabs(
+    context: Context,
+    titles: List<String>,
+    selected: Int,
+    private val palette: Palette,
+    fonts: Fonts,
+    private val onChange: (Int) -> Unit,
+) : android.widget.FrameLayout(context) {
+    private val thumb = View(context)
+    private val row = android.widget.LinearLayout(context)
+    private val segments = mutableListOf<TextView>()
+    var selectedIndex = selected
+        private set
+    private var sliding = false
+
+    init {
+        val pill = context.dp(999).toFloat()
+        background = rounded(palette.tile, pill)
+        setPadding(context.dp(3), context.dp(3), context.dp(3), context.dp(3))
+        thumb.background = rounded(palette.primarySoft, pill, Colors.alpha(palette.primary, 0.35f), context.dp(1))
+        // Sized and placed from the chosen segment, never from the track: a
+        // full-height child would make the track as tall as its parent.
+        // Positioned from the left in absolute terms, so the same offset works
+        // on an RTL wall, where the segments themselves are mirrored.
+        addView(thumb, LayoutParams(0, 0, android.view.Gravity.LEFT or android.view.Gravity.TOP))
+        titles.forEachIndexed { i, title ->
+            val t = TextView(context).apply {
+                text = title
+                gravity = android.view.Gravity.CENTER
+                style(fonts, Role.BODY, 600, palette.muted)
+                minHeight = context.dp(42)
+                setPadding(context.dp(12), context.dp(8), context.dp(12), context.dp(8))
+                background = pressable(palette, null, pill)
+                setOnClickListener { choose(i) }
+                accessibilityDelegate = object : View.AccessibilityDelegate() {
+                    override fun onInitializeAccessibilityNodeInfo(host: View, info: android.view.accessibility.AccessibilityNodeInfo) {
+                        super.onInitializeAccessibilityNodeInfo(host, info)
+                        info.className = android.widget.Button::class.java.name
+                        info.isSelected = i == selectedIndex
+                        info.collectionItemInfo = android.view.accessibility.AccessibilityNodeInfo.CollectionItemInfo.obtain(0, 1, i, 1, false, i == selectedIndex)
+                    }
+                }
+            }
+            segments += t
+            row.addView(t, android.widget.LinearLayout.LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+        }
+        addView(row, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
+        accessibilityDelegate = object : View.AccessibilityDelegate() {
+            override fun onInitializeAccessibilityNodeInfo(host: View, info: android.view.accessibility.AccessibilityNodeInfo) {
+                super.onInitializeAccessibilityNodeInfo(host, info)
+                info.collectionInfo = android.view.accessibility.AccessibilityNodeInfo.CollectionInfo.obtain(1, titles.size, false)
+            }
+        }
+        restyle()
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        if (!sliding) place(animated = false)
+    }
+
+    private fun place(animated: Boolean) {
+        val target = segments.getOrNull(selectedIndex) ?: return
+        val x = (row.left + target.left - paddingLeft).toFloat()
+        if (thumb.width != target.width || thumb.height != target.height) {
+            thumb.layoutParams = (thumb.layoutParams as LayoutParams).apply {
+                width = target.width
+                height = target.height
+                topMargin = row.top - paddingTop + target.top
+            }
+        }
+        if (animated && Motion.enabled(context)) {
+            sliding = true
+            thumb.animate().translationX(x).setDuration(Motion.BASE).setInterpolator(Motion.easeOut).withEndAction { sliding = false }.start()
+        } else {
+            thumb.animate().cancel()
+            thumb.translationX = x
+        }
+    }
+
+    private fun choose(i: Int) {
+        if (i == selectedIndex) return
+        select(i, animated = true)
+        onChange(i)
+    }
+
+    fun select(i: Int, animated: Boolean) {
+        selectedIndex = i
+        restyle()
+        place(animated)
+    }
+
+    private fun restyle() {
+        segments.forEachIndexed { i, t ->
+            val on = i == selectedIndex
+            t.setTextColor(if (on) palette.text else palette.muted)
+            t.isSelected = on
+        }
+    }
+}

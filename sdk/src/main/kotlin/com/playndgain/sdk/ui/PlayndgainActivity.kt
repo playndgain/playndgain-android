@@ -146,6 +146,27 @@ public class PlayndgainActivity : Activity() {
     private lateinit var root: FrameLayout
     private lateinit var page: LinearLayout
     private lateinit var body: FrameLayout
+    /**
+     * Offers and History each keep their own list, alive for as long as the
+     * wall is open: switching crossfades between them and keeps each one's
+     * scroll position; nothing above them is rebuilt.
+     */
+    private lateinit var offersHost: FrameLayout
+    private lateinit var historyHost: FrameLayout
+    private var tabs: SegmentedTabs? = null
+    private var historyRows: List<HistoryRow> = emptyList()
+    private var historyAdapter: RecyclerView.Adapter<HistoryHolder>? = null
+    /**
+     * History is fetched in the background once the wall has loaded, and
+     * again on a switch only when it is older than 30 s or a reward check has
+     * happened since.
+     */
+    private var historyAt = 0L
+    private var historyStale = false
+    private var historyLoading = false
+    private var historyGeneration = 0
+    private val historyFresh: Boolean
+        get() = historyAt > 0 && !historyStale && android.os.SystemClock.elapsedRealtime() - historyAt < 30_000
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -178,6 +199,10 @@ public class PlayndgainActivity : Activity() {
         }
         page = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         body = FrameLayout(this)
+        offersHost = FrameLayout(this)
+        historyHost = FrameLayout(this)
+        body.addView(offersHost, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        body.addView(historyHost, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
         root.addView(page, pageParams())
         // The first frame in the palette this app last used, so a light wall
         // does not open on a black window.
@@ -238,7 +263,9 @@ public class PlayndgainActivity : Activity() {
         if (pendingRewardCheck) {
             pendingRewardCheck = false
             Playndgain.emitRewardCheck()
+            historyStale = true
             reload()
+            if (tab == Tab.HISTORY) loadHistory()
         }
     }
 
@@ -294,9 +321,40 @@ public class PlayndgainActivity : Activity() {
 
     // ---- Loading ----------------------------------------------------------
 
-    private fun reload() = if (tab == Tab.OFFERS) loadOffers() else loadHistory()
+    private fun reload() = loadOffers()
     private fun loadOffers() = loadPage { api.wall(sort) }
-    private fun loadHistory() = loadPage { api.history() }
+
+    /**
+     * History, in the background or on a switch. A failure while History is
+     * not on screen stays quiet; it is fetched again on the switch.
+     */
+    private fun loadHistory() {
+        historyLoading = true
+        val g = ++historyGeneration
+        if (historyAt == 0L) showHistoryLoading()
+        io.execute {
+            val result = try { Result.success(api.history()) } catch (e: Throwable) { Result.failure(e) }
+            runOnUiThread {
+                if (isFinishing || isDestroyed || g != historyGeneration) return@runOnUiThread
+                historyLoading = false
+                result.onSuccess { r ->
+                    if (r.status == "ok" || r.status == "unplaced") {
+                        historyRows = r.history
+                        historyAt = android.os.SystemClock.elapsedRealtime()
+                        historyStale = false
+                        showHistory()
+                    } else if (tab == Tab.HISTORY) {
+                        render(r)
+                    }
+                }.onFailure { e ->
+                    if (tab != Tab.HISTORY || historyAt != 0L) return@onFailure
+                    val error = (e as? ApiException)?.error ?: PlayndgainError.INTERNAL
+                    Playndgain.emitError(error)
+                    showError(error)
+                }
+            }
+        }
+    }
 
     /** A request that redraws the page. Only the newest one is drawn. */
     private fun loadPage(call: () -> WallResponse) {
@@ -347,7 +405,10 @@ public class PlayndgainActivity : Activity() {
                 entrance = true
                 entered.clear()
                 buildChrome(r)
-                if (tab == Tab.OFFERS) showOffers(r) else showHistory(r.history)
+                showOffers(r)
+                showHistory()
+                show(tab, animated = false)
+                if (!historyFresh && !historyLoading) loadHistory()
             }
             "consent_required" -> showConsent()
             "rate_limited" -> {
@@ -396,39 +457,24 @@ public class PlayndgainActivity : Activity() {
         val app = r.app ?: return
         page.removeAllViews()
 
+        // The app's name as a small label over "Earn Coins", the close at the
+        // trailing edge, and the balance before it when there is one.
         val bar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), dp(14), dp(12), dp(10))
+            setPaddingRelative(dp(16), dp(12), dp(12), dp(10))
         }
         val name = options.title ?: app.name
-        val mark = TextView(this).apply {
-            text = name.take(1).uppercase()
-            gravity = Gravity.CENTER
-            setTextSize(TypedValue.COMPLEX_UNIT_DIP, Role.ROW_TITLE)
-            typeface = fonts.weight(700)
-            setTextColor(p.primary)
-            background = rounded(p.tile, dp(p.radiusDp * 0.6f).toFloat())
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        }
-        bar.addView(mark, LinearLayout.LayoutParams(dp(36), dp(36)))
-
-        val titles = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), 0, dp(10), 0)
-        }
-        titles.addView(TextView(this).apply { text = name; style(fonts, Role.ROW_TITLE, 600, p.text); maxLines = 1; ellipsize = TextUtils.TruncateAt.END; heading(); reads() })
-        titles.addView(TextView(this).apply { text = strings["earn"]; style(fonts, Role.LABEL, 400, p.muted); setPadding(0, dp(3), 0, 0) })
+        val titles = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPaddingRelative(0, 0, dp(12), 0) }
+        titles.addView(TextView(this).apply { text = name; style(fonts, Role.LABEL, 600, p.muted); maxLines = 1; ellipsize = TextUtils.TruncateAt.END; reads() })
+        titles.addView(TextView(this).apply { text = strings.or("earn", app.currencyName); style(fonts, Role.TITLE, 700, p.text); heading(); reads(); setPadding(0, dp(2), 0, 0) })
         bar.addView(titles, LinearLayout.LayoutParams(0, WRAP_CONTENT, 1f))
 
         (options.balance ?: app.balance)?.let { bal ->
-            // The user's money, as the one filled pill in the header.
-            bar.addView(TextView(this).apply {
-                text = bal
-                style(fonts, Role.BODY, 600, p.onPrimary)
-                background = primaryFill(p, dp(999).toFloat())
-                setPadding(dp(12), dp(6), dp(12), dp(6))
-            }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(8) })
+            val pill = balancePill(bal, app.currencyName)
+            // At the largest font sizes the balance goes under the title.
+            if (bigText) titles.addView(pill, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { topMargin = dp(8) })
+            else bar.addView(pill, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(8) })
         }
 
         bar.addView(ImageView(this).apply {
@@ -444,48 +490,75 @@ public class PlayndgainActivity : Activity() {
         }, LinearLayout.LayoutParams(dp(48), dp(48)))
         page.addView(bar)
 
-        val tabs = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(16), 0, dp(16), dp(4))
-        }
-        listOf(Tab.OFFERS to strings.or("tabs.offers", "Offers"), Tab.HISTORY to strings.or("tabs.history", "History")).forEach { (t, label) ->
-            val on = t == tab
-            tabs.addView(TextView(this).apply {
-                text = label
-                gravity = Gravity.CENTER
-                style(fonts, Role.BODY, if (on) 700 else 600, if (on) p.text else p.faint)
-                val pill = dp(999).toFloat()
-                background = insetPill(p, if (on) rounded(p.primarySoft, pill, Colors.alpha(p.primary, 0.35f), dp(1)) else null, dp(4), pill)
-                setPadding(dp(16), dp(12), dp(16), dp(12))
-                minHeight = dp(48)
-                isSelected = on
-                setOnClickListener { if (!on) switchTab(t) }
-            }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { marginEnd = dp(6) })
-        }
-        page.addView(tabs)
+        val segments = SegmentedTabs(this, listOf(strings.or("tabs.offers", "Offers"), strings.or("tabs.history", "History")),
+            if (tab == Tab.OFFERS) 0 else 1, p, fonts) { i -> switchTab(if (i == 0) Tab.OFFERS else Tab.HISTORY) }
+        segments.contentDescription = strings.or("tabs.label", "Offerwall sections")
+        tabs = segments
+        page.addView(segments, LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT).apply { setMargins(dp(16), dp(2), dp(16), dp(10)) })
         page.addView(View(this).apply { setBackgroundColor(p.line) }, LinearLayout.LayoutParams(MATCH_PARENT, dp(1)))
 
         (body.parent as? ViewGroup)?.removeView(body)
         page.addView(body, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
     }
 
+    /** The user's money as a solid primary pill: the figure, then the currency. */
+    private fun balancePill(balance: String, currency: String): View {
+        val p = palette!!
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            isBaselineAligned = true
+            background = primaryFill(p, dp(999).toFloat())
+            setPadding(dp(12), dp(6), dp(12), dp(6))
+            contentDescription = "$balance $currency"
+            addView(figure(balance, Role.ROW_TITLE, p.onPrimary).apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }, wrap())
+            addView(TextView(this@PlayndgainActivity).apply {
+                text = currency
+                style(fonts, Role.LABEL, 600, p.onPrimary)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                setPaddingRelative(dp(4), 0, 0, 0)
+            }, wrap())
+        }
+    }
+
+    /**
+     * The thumb has already moved; the lists crossfade over --motion-fast and
+     * History is fetched only when what is in hand is out of date.
+     */
     private fun switchTab(t: Tab) {
+        if (t == tab) return
         tab = t
         syncBackCallback()
+        hideKeyboard()
+        show(t, animated = true)
         root.announceForAccessibility(if (t == Tab.OFFERS) strings.or("tabs.offers", "Offers") else strings.or("tabs.history", "History"))
-        last?.let { buildChrome(it) }
-        showLoadingBody()
-        reload()
+        if (t == Tab.HISTORY && !historyFresh && !historyLoading) loadHistory()
+    }
+
+    private fun show(t: Tab, animated: Boolean) {
+        tabs?.select(if (t == Tab.OFFERS) 0 else 1, animated)
+        val incoming = if (t == Tab.OFFERS) offersHost else historyHost
+        val outgoing = if (t == Tab.OFFERS) historyHost else offersHost
+        incoming.visibility = View.VISIBLE
+        outgoing.animate().cancel()
+        incoming.animate().cancel()
+        if (!animated || !Motion.enabled(this)) {
+            incoming.alpha = 1f
+            outgoing.alpha = 0f
+            outgoing.visibility = View.GONE
+            return
+        }
+        incoming.animate().alpha(1f).setDuration(Motion.FAST).start()
+        outgoing.animate().alpha(0f).setDuration(Motion.FAST).withEndAction { if (tab == t) outgoing.visibility = View.GONE }.start()
     }
 
     // ---- Offers -----------------------------------------------------------
 
     private fun showOffers(r: WallResponse) {
-        body.removeAllViews()
+        offersHost.removeAllViews()
         val adapter = OfferAdapter()
         val list = rowList()
         list.adapter = adapter
-        body.addView(list, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        offersHost.addView(list, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
         fun refilter() {
             val q = queryText.trim().lowercase()
@@ -585,22 +658,25 @@ public class PlayndgainActivity : Activity() {
         // The selected category takes the primary fill, as on the web wall;
         // the rest are hairline pills. Each is drawn 36dp tall in a 48dp target.
         fun styleChip(chip: TextView, on: Boolean, ink: Boolean) {
-            chip.setTextColor(if (ink && on) p.onPrimary else if (on) p.text else p.faint)
+            chip.setTextColor(if (on) p.onPrimary else p.faint)
             chip.background = when {
-                ink && on -> insetPill(p, primaryFill(p, pill), dp(6), pill)
+                on -> insetPill(p, primaryFill(p, pill), dp(6), pill)
                 ink -> insetPill(p, rounded(Color.TRANSPARENT, pill, p.line, dp(1)), dp(6), pill)
-                on -> insetPill(p, rounded(p.tile, pill), dp(6), pill)
                 else -> insetPill(p, null, dp(6), pill)
             }
+            // An InsetDrawable hands the view its own padding (the insets
+            // only), which drops the label's side padding: set it back every
+            // time, so a chip restyled after a tap keeps its size.
+            chip.setPaddingRelative(dp(16), dp(14), dp(16), dp(14))
             chip.isSelected = on
         }
         fun chip(label: String, on: Boolean, ink: Boolean, click: () -> Unit) = TextView(this).apply {
             text = label
             gravity = Gravity.CENTER
             style(fonts, Role.LABEL, 600, p.text)
-            styleChip(this, on, ink)
-            setPadding(dp(if (ink) 14 else 12), dp(14), dp(if (ink) 14 else 12), dp(14))
+            maxLines = 1
             minHeight = dp(48)
+            styleChip(this, on, ink)
             setOnClickListener { click() }
         }
         fun row(views: List<View>, label: String? = null): View {
@@ -1073,14 +1149,13 @@ public class PlayndgainActivity : Activity() {
 
         val wrap = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         wrap.addView(ScrollView(this).apply { addView(col); tag = SCROLL_TAG }, LinearLayout.LayoutParams(MATCH_PARENT, 0, 1f))
-        // The one primary on the sheet, and the one glow on the wall.
+        // The one primary on the sheet.
         val start = TextView(this).apply {
             text = strings.or("offer.start", "Start this offer")
             gravity = Gravity.CENTER
             style(fonts, Role.ROW_TITLE, 600, p.onPrimary)
             val pill = dp(999).toFloat()
-            background = pressable(p, primaryFill(p, pill, ring = true, ringPx = dp(1)), pill)
-            glow(p, dp(10).toFloat())
+            background = pressable(p, primaryFill(p, pill), pill)
             minHeight = dp(52)
             setPadding(dp(16), dp(14), dp(16), dp(14))
             isHapticFeedbackEnabled = true
@@ -1250,24 +1325,41 @@ public class PlayndgainActivity : Activity() {
 
     // ---- History ----------------------------------------------------------
 
-    private fun showHistory(rows: List<HistoryRow>) {
-        body.removeAllViews()
+    private fun showHistoryLoading() {
+        if (historyHost.childCount > 0) return
+        historyHost.addView(ProgressBar(this), FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { gravity = Gravity.CENTER })
+    }
+
+    /**
+     * The History list from what is in hand: rows, the empty state, or the
+     * spinner while the first answer is on its way. The list itself stays,
+     * so its scroll position does too.
+     */
+    private fun showHistory() {
+        if (historyAt == 0L) { historyHost.removeAllViews(); showHistoryLoading(); return }
+        val rows = historyRows
         if (rows.isEmpty()) {
+            historyHost.removeAllViews()
+            historyAdapter = null
             val holder = EmptyHolder()
             holder.bind(strings["history.empty.title"], strings["history.empty.body"])
-            body.addView(holder.itemView, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
+            historyHost.addView(holder.itemView, FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT))
             return
         }
-        val list = rowList().apply { setPadding(0, dp(8), 0, dp(24)) }
-        list.adapter = object : RecyclerView.Adapter<HistoryHolder>() {
-            override fun getItemCount() = rows.size
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = HistoryHolder()
-            override fun onBindViewHolder(holder: HistoryHolder, position: Int) {
-                holder.bind(rows[position])
-                enter(holder.itemView, position)
-            }
+        historyAdapter?.let {
+            @Suppress("NotifyDataSetChanged") it.notifyDataSetChanged()
+            return
         }
-        body.addView(list, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+        historyHost.removeAllViews()
+        val list = rowList().apply { setPadding(0, dp(8), 0, dp(24)) }
+        val adapter = object : RecyclerView.Adapter<HistoryHolder>() {
+            override fun getItemCount() = historyRows.size
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = HistoryHolder()
+            override fun onBindViewHolder(holder: HistoryHolder, position: Int) = holder.bind(historyRows[position])
+        }
+        historyAdapter = adapter
+        list.adapter = adapter
+        historyHost.addView(list, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
     }
 
     /** One History row, built once: the offer, a status pill and the date, and the money. */
@@ -1462,8 +1554,8 @@ public class PlayndgainActivity : Activity() {
     }
 
     private fun showLoadingBody() {
-        body.removeAllViews()
-        body.addView(ProgressBar(this), FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { gravity = Gravity.CENTER })
+        offersHost.removeAllViews()
+        offersHost.addView(ProgressBar(this), FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { gravity = Gravity.CENTER })
     }
 
     /**
